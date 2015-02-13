@@ -1,0 +1,58 @@
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+
+    dependencies {
+        classpath 'com.android.tools.build:gradle:1.0.0'
+    }
+}
+repositories {
+    mavenCentral()
+}
+
+apply plugin: 'android'
+
+apply from: '../../Configs/gradle/android.gradle'
+
+android {
+    compileSdkVersion 21
+    buildToolsVersion "21.1.2"
+
+    defaultConfig {
+        applicationId "kvj.tegmine.android"
+        minSdkVersion 16
+        targetSdkVersion 21
+        versionCode 1
+        versionName "1.0"
+    }
+
+    androidAutoVersion(defaultConfig, "0.1.")
+
+    dependencies {
+        compile project(':Lima1')
+        compile project(':AutoUpdateApk')
+        compile 'com.android.support:appcompat-v7:21.0.3'
+    }
+
+    signingConfigs {
+        debug {
+        }
+        release {
+        }
+    }
+
+    androidSetupSignConfig(signingConfigs.debug)
+    androidSetupSignConfig(signingConfigs.release)
+
+    buildTypes {
+
+        debug {
+            signingConfig signingConfigs.debug
+            debuggable true
+        }
+        release {
+            signingConfig signingConfigs.release
+        }
+    }
+}

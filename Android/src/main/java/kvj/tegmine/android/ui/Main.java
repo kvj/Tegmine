@@ -1,17 +1,22 @@
 package kvj.tegmine.android.ui;
 
-import android.support.v7.app.ActionBarActivity;
+import android.content.Intent;
 import android.os.Bundle;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentTransaction;
+import android.support.v7.app.ActionBarActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 
 import org.kvj.bravo7.ControllerConnector;
+import org.kvj.bravo7.log.Logger;
 
 import kvj.tegmine.android.R;
 import kvj.tegmine.android.Tegmine;
 import kvj.tegmine.android.data.TegmineController;
 import kvj.tegmine.android.infra.ControllerService;
+import kvj.tegmine.android.ui.fragment.FileSystemBrowser;
 
 
 public class Main extends ActionBarActivity implements ControllerConnector.ControllerReceiver<TegmineController> {
@@ -19,10 +24,31 @@ public class Main extends ActionBarActivity implements ControllerConnector.Contr
     private ControllerConnector<Tegmine, TegmineController, ControllerService> conn = new ControllerConnector<>(this, this);
     private TegmineController controller = null;
     private Toolbar toolbar;
+    private Logger logger = Logger.forInstance(this);
+    private Bundle bundle = new Bundle();
+
+    private FileSystemBrowser browser = null;
+
+    protected void initBundle(Bundle savedInstanceState) {
+        if (null != savedInstanceState) {
+            this.bundle = savedInstanceState;
+        }
+        if (null != getIntent() && null != getIntent().getExtras()) { // Have intent extras
+            logger.d("initBundle", savedInstanceState, getIntent().getExtras());
+            this.bundle = getIntent().getExtras();
+        }
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        logger.d("newIntent", intent.getExtras());
+        super.onNewIntent(intent);
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        initBundle(savedInstanceState);
         setContentView(R.layout.activity_main);
         toolbar = (Toolbar) findViewById(R.id.main_toolbar);
         setupToolbar(toolbar);
@@ -62,6 +88,38 @@ public class Main extends ActionBarActivity implements ControllerConnector.Contr
 
     @Override
     public void onController(TegmineController controller) {
+        logger.d("Controller connected");
+        if (this.controller != null) { // Already set
+            return;
+        }
+        findViewById(R.id.main_root).setBackgroundColor(controller.theme().backgroundColor());
         this.controller = controller;
+        String mode = getIntent().getStringExtra(Tegmine.BUNDLE_VIEW_TYPE);
+        if (null == mode) { // Not defined
+            mode = Tegmine.VIEW_TYPE_BROWSER;
+        }
+        logger.d("View type?", mode);
+        if (Tegmine.VIEW_TYPE_BROWSER.equals(mode)) { // Open single browser
+            browser = new FileSystemBrowser().create(controller, bundle);
+            openIn(browser, R.id.main_single_view, "file_browser");
+        }
     }
+
+    private void openIn(Fragment fragment, int id, String tag) {
+//        fragment.setRetainInstance(true);
+        FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
+        fragmentTransaction.replace(id, fragment, tag);
+//        fragmentTransaction.addToBackStack(null);
+        fragmentTransaction.commit();
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        if (null != browser) {
+            browser.saveState(outState);
+        }
+    }
+
+
 }

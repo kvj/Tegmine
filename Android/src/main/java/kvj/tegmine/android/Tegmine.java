@@ -11,9 +11,20 @@ import kvj.tegmine.android.data.TegmineController;
  */
 public class Tegmine extends ApplicationContext {
 
+    public static final String BUNDLE_VIEW_TYPE = "view_type";
+    public static final String BUNDLE_FILE_LOCATION = "file_location";
+    public static final String VIEW_TYPE_BROWSER = "browser";
+    public static final String VIEW_TYPE_FILE = "file";
+    public static final String VIEW_TYPE_EDITOR = "editor";
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        Logger.setOutput(new AndroidLogger("Tegmine:"));
+        publishBean(new TegmineController());
+    }
+
     @Override
     protected void init() {
-        Logger.setOutput(new AndroidLogger());
-        publishBean(new TegmineController());
     }
 }

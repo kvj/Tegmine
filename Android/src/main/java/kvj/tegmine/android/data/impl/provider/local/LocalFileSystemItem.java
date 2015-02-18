@@ -32,4 +32,9 @@ public class LocalFileSystemItem extends FileSystemItem<LocalFileSystemItem> {
     public String toString() {
         return "LocalFileSystemItem: "+file.getAbsolutePath();
     }
+
+    @Override
+    public String details() {
+        return file.getAbsolutePath();
+    }
 }

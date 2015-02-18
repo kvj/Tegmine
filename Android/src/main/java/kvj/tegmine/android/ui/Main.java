@@ -1,6 +1,5 @@
 package kvj.tegmine.android.ui;
 
-import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentTransaction;
@@ -17,6 +16,7 @@ import kvj.tegmine.android.Tegmine;
 import kvj.tegmine.android.data.TegmineController;
 import kvj.tegmine.android.infra.ControllerService;
 import kvj.tegmine.android.ui.fragment.FileSystemBrowser;
+import kvj.tegmine.android.ui.fragment.OneFileViewer;
 
 
 public class Main extends ActionBarActivity implements ControllerConnector.ControllerReceiver<TegmineController> {
@@ -28,21 +28,15 @@ public class Main extends ActionBarActivity implements ControllerConnector.Contr
     private Bundle bundle = new Bundle();
 
     private FileSystemBrowser browser = null;
+    private OneFileViewer viewer = null;
 
     protected void initBundle(Bundle savedInstanceState) {
         if (null != savedInstanceState) {
             this.bundle = savedInstanceState;
         }
         if (null != getIntent() && null != getIntent().getExtras()) { // Have intent extras
-            logger.d("initBundle", savedInstanceState, getIntent().getExtras());
             this.bundle = getIntent().getExtras();
         }
-    }
-
-    @Override
-    protected void onNewIntent(Intent intent) {
-        logger.d("newIntent", intent.getExtras());
-        super.onNewIntent(intent);
     }
 
     @Override
@@ -88,7 +82,6 @@ public class Main extends ActionBarActivity implements ControllerConnector.Contr
 
     @Override
     public void onController(TegmineController controller) {
-        logger.d("Controller connected");
         if (this.controller != null) { // Already set
             return;
         }
@@ -98,10 +91,14 @@ public class Main extends ActionBarActivity implements ControllerConnector.Contr
         if (null == mode) { // Not defined
             mode = Tegmine.VIEW_TYPE_BROWSER;
         }
-        logger.d("View type?", mode);
+//        logger.d("View type", mode);
         if (Tegmine.VIEW_TYPE_BROWSER.equals(mode)) { // Open single browser
             browser = new FileSystemBrowser().create(controller, bundle);
             openIn(browser, R.id.main_single_view, "file_browser");
+        }
+        if (Tegmine.VIEW_TYPE_FILE.equals(mode)) { // Open one file viewer
+            viewer = new OneFileViewer().create(controller, bundle);
+            openIn(viewer, R.id.main_single_view, "one_file");
         }
     }
 
@@ -118,6 +115,9 @@ public class Main extends ActionBarActivity implements ControllerConnector.Contr
         super.onSaveInstanceState(outState);
         if (null != browser) {
             browser.saveState(outState);
+        }
+        if (null != viewer) {
+            viewer.saveState(outState);
         }
     }
 

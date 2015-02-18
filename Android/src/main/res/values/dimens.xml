@@ -1,3 +1,5 @@
 <resources>
     <dimen name="textPadding">8dp</dimen>
+    <dimen name="button_elevation">2dp</dimen>
+    <dimen name="button_press_elevation">4dp</dimen>
 </resources>

@@ -4,6 +4,9 @@ import android.os.Bundle;
 import android.text.TextUtils;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -34,7 +37,6 @@ public class LocalFileSystemProvider extends FileSystemProvider<LocalFileSystemI
             throw new FileSystemException("Invalid parent file: "+from.getAbsolutePath());
         }
         for (File file : from.listFiles()) {
-            logger.d("File", file.getAbsolutePath());
             result.add(new LocalFileSystemItem(file, parent));
         }
         Collections.sort(result, new Comparator<LocalFileSystemItem>() {
@@ -84,5 +86,18 @@ public class LocalFileSystemProvider extends FileSystemProvider<LocalFileSystemI
             current = parent;
         }
         return item;
+    }
+
+    @Override
+    protected InputStream readT(LocalFileSystemItem file) throws FileSystemException {
+        if (!file.file.isFile() || !file.file.canRead()) { // Invalid access
+            throw new FileSystemException("Invalid file: "+file.file);
+        }
+        try {
+            return new FileInputStream(file.file);
+        } catch (FileNotFoundException e) {
+            logger.e(e, "Failed to read:", file.file);
+            throw new FileSystemException("Invalid file: "+file.file);
+        }
     }
 }

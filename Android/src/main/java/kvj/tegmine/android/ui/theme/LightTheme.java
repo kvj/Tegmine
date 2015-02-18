@@ -29,6 +29,10 @@ public class LightTheme {
         return 16;
     }
 
+    public int fileIndentSp() {
+        return 16;
+    }
+
     public int editorTextSp() {
         return 16;
     }

@@ -99,6 +99,22 @@ public class FileSystemBrowser extends ListFragment {
         if (item.type == FileSystemItemType.Folder) { // Collapse/expand
             adapter.collapseExpand(position);
         }
+        if (item.type == FileSystemItemType.File) { // Open viewer
+            Intent intent = new Intent(this.getActivity(), Main.class);
+            intent.putExtra(Tegmine.BUNDLE_VIEW_TYPE, Tegmine.VIEW_TYPE_FILE);
+            try {
+                Bundle bundle = new Bundle();
+                if (null != adapter.root()) { // Have custom root
+                    controller.fileSystemProvider().toBundle(bundle, "root_", adapter.root());
+                }
+                controller.fileSystemProvider().toBundle(bundle, "select_", item);
+                intent.putExtras(bundle);
+            } catch (FileSystemException e) {
+                logger.e(e, "Failed to put item to bundle", item);
+            }
+            startActivity(intent);
+        }
+
     }
 
     public void saveState(Bundle outState) {

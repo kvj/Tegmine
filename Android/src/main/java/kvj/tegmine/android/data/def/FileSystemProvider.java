@@ -4,8 +4,8 @@ import android.os.Bundle;
 
 import org.kvj.bravo7.log.Logger;
 
-import java.io.Reader;
-import java.io.Writer;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.List;
 
 /**
@@ -23,11 +23,11 @@ abstract public class FileSystemProvider<T extends FileSystemItem> {
         throw new FileSystemException("Not implemented");
     }
 
-    public final Reader read(FileSystemItem file) throws FileSystemException {
+    public final InputStream read(FileSystemItem file) throws FileSystemException {
         return readT(cast(file));
     }
 
-    protected Reader readT(T file) throws FileSystemException{
+    protected InputStream readT(T file) throws FileSystemException{
         throw new FileSystemException("Not implemented");
     }
 
@@ -47,11 +47,11 @@ abstract public class FileSystemProvider<T extends FileSystemItem> {
         throw new FileSystemException("Not implemented");
     }
 
-    protected void replaceT(T file, Writer writer) throws FileSystemException {
+    protected void replaceT(T file, OutputStream writer) throws FileSystemException {
         throw new FileSystemException("Not implemented");
     }
 
-    protected void appendT(T file, Writer writer) throws FileSystemException {
+    protected void appendT(T file, OutputStream writer) throws FileSystemException {
         throw new FileSystemException("Not implemented");
     }
 

@@ -8,6 +8,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import org.kvj.bravo7.form.FormController;
 import org.kvj.bravo7.log.Logger;
 import org.kvj.bravo7.util.Tasks;
 
@@ -15,32 +16,46 @@ import java.util.ArrayList;
 import java.util.List;
 
 import kvj.tegmine.android.R;
+import kvj.tegmine.android.Tegmine;
 import kvj.tegmine.android.data.TegmineController;
 import kvj.tegmine.android.data.def.FileSystemException;
-import kvj.tegmine.android.data.impl.provider.local.LocalFileSystemItem;
+import kvj.tegmine.android.data.def.FileSystemItem;
 import kvj.tegmine.android.ui.adapter.OneFileAdapter;
+import kvj.tegmine.android.ui.form.FileSystemItemWidgetAdapter;
 
 /**
  * Created by kvorobyev on 2/16/15.
  */
 public class OneFileViewer extends ListFragment {
 
+    public static interface FileViewerListener {
+        public void openEditor(Bundle data);
+    }
+
     private Logger logger = Logger.forInstance(this);
     private TegmineController controller = null;
     private TextView titleText = null;
-    private LocalFileSystemItem item = null;
-    private LocalFileSystemItem rootItem = null;
     private OneFileAdapter adapter = null;
     private List<Long> offsets = null;
+    private FormController form = new FormController(null);
+    private FileSystemItem item = null;
+    private FileViewerListener listener = null;
+
+    public OneFileViewer() {
+        super();
+    }
+
+    public OneFileViewer setListener(FileViewerListener listener) {
+        this.listener = listener;
+        return this;
+    }
 
     public OneFileViewer create(TegmineController controller, Bundle bundle) {
         this.controller = controller;
-        try {
-            item = controller.fileSystemProvider().fromBundle("select_", bundle);
-            rootItem = controller.fileSystemProvider().fromBundle("root_", bundle);
-        } catch (FileSystemException e) {
-            logger.e(e, "Failed to load", bundle);
-        }
+        form.add(new FileSystemItemWidgetAdapter(controller), "select");
+        form.add(new FileSystemItemWidgetAdapter(controller), "root");
+        form.load(bundle);
+        item = form.getValue("select", FileSystemItem.class);
         adapter = new OneFileAdapter(controller, item);
         setListAdapter(adapter);
         adapter.setBounds(0, -1);
@@ -52,12 +67,24 @@ public class OneFileViewer extends ListFragment {
         if (null == controller) { // Invalid fragment
             return null;
         }
-        // logger.d("Will create view", controller);
+        logger.d("Will create view", controller);
         View view = inflater.inflate(R.layout.fragment_one_file, container, false);
         titleText = (TextView) view.findViewById(R.id.one_file_title_text);
         titleText.setTextSize(TypedValue.COMPLEX_UNIT_SP, controller.theme().headerTextSp());
         titleText.setTextColor(controller.theme().textColor());
         titleText.setText(item.details());
+        view.findViewById(R.id.one_file_do_add).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startEditor(Tegmine.EDIT_TYPE_ADD);
+            }
+        });
+        view.findViewById(R.id.one_file_do_edit).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startEditor(Tegmine.EDIT_TYPE_EDIT);
+            }
+        });
         return view;
     }
 
@@ -84,15 +111,27 @@ public class OneFileViewer extends ListFragment {
     }
 
     public void saveState(Bundle outState) {
-        try {
-            if (null != item) {
-                    controller.fileSystemProvider().toBundle(outState, "select_", item);
-            }
-            if (null != rootItem) {
-                controller.fileSystemProvider().toBundle(outState, "root_", rootItem);
-            }
-        } catch (FileSystemException e) {
-            logger.e(e, "Failed to save");
+        form.save(outState, "root", "select");
+    }
+
+    private void startEditor(String editType) {
+        Bundle bundle = new Bundle();
+        bundle.putString(Tegmine.BUNDLE_EDIT_TYPE, editType);
+        form.save(bundle, "root", "select");
+        if (null != listener) {
+            listener.openEditor(bundle);
         }
+    }
+
+    public void refresh() {
+        if (null != adapter) { // Reload contents
+            adapter.setBounds(0, -1);
+        }
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        listener = null;
     }
 }

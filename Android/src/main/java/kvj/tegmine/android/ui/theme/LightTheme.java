@@ -26,15 +26,15 @@ public class LightTheme {
     }
 
     public int fileTextSp() {
-        return 16;
+        return 14;
     }
 
     public int fileIndentSp() {
-        return 16;
+        return 14;
     }
 
     public int editorTextSp() {
-        return 16;
+        return 14;
     }
 
     public int padding() {

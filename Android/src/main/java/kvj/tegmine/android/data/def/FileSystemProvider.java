@@ -47,11 +47,19 @@ abstract public class FileSystemProvider<T extends FileSystemItem> {
         throw new FileSystemException("Not implemented");
     }
 
-    protected void replaceT(T file, OutputStream writer) throws FileSystemException {
+    public final OutputStream replace(FileSystemItem file) throws FileSystemException {
+        return replaceT(cast(file));
+    }
+
+    protected OutputStream replaceT(T file) throws FileSystemException {
         throw new FileSystemException("Not implemented");
     }
 
-    protected void appendT(T file, OutputStream writer) throws FileSystemException {
+    public final OutputStream append(FileSystemItem file) throws FileSystemException {
+        return appendT(cast(file));
+    }
+
+    protected OutputStream appendT(T file) throws FileSystemException {
         throw new FileSystemException("Not implemented");
     }
 

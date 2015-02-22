@@ -6,7 +6,9 @@ import android.text.TextUtils;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -97,6 +99,32 @@ public class LocalFileSystemProvider extends FileSystemProvider<LocalFileSystemI
             return new FileInputStream(file.file);
         } catch (FileNotFoundException e) {
             logger.e(e, "Failed to read:", file.file);
+            throw new FileSystemException("Invalid file: "+file.file);
+        }
+    }
+
+    @Override
+    protected OutputStream appendT(LocalFileSystemItem file) throws FileSystemException {
+        if (!file.file.isFile() || !file.file.canWrite()) { // Invalid access
+            throw new FileSystemException("Invalid file: "+file.file);
+        }
+        try {
+            return new FileOutputStream(file.file, true);
+        } catch (FileNotFoundException e) {
+            logger.e(e, "Failed to append:");
+            throw new FileSystemException("Invalid file: "+file.file);
+        }
+    }
+
+    @Override
+    protected OutputStream replaceT(LocalFileSystemItem file) throws FileSystemException {
+        if (!file.file.isFile() || !file.file.canWrite()) { // Invalid access
+            throw new FileSystemException("Invalid file: "+file.file);
+        }
+        try {
+            return new FileOutputStream(file.file, false);
+        } catch (FileNotFoundException e) {
+            logger.e(e, "Failed to append:");
             throw new FileSystemException("Invalid file: "+file.file);
         }
     }

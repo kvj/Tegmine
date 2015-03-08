@@ -78,4 +78,8 @@ abstract public class FileSystemProvider<T extends FileSystemItem> {
     public T fromBundle(String prefix, Bundle bundle) throws FileSystemException {
         throw new FileSystemException("Not implemented");
     }
+
+    public T fromURL(String url) throws FileSystemException {
+        throw new FileSystemException("Not implemented");
+    }
 }

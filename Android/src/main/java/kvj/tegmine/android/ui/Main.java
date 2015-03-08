@@ -16,6 +16,7 @@ import org.kvj.bravo7.log.Logger;
 import kvj.tegmine.android.R;
 import kvj.tegmine.android.Tegmine;
 import kvj.tegmine.android.data.TegmineController;
+import kvj.tegmine.android.data.def.FileSystemItem;
 import kvj.tegmine.android.infra.ControllerService;
 import kvj.tegmine.android.ui.fragment.Editor;
 import kvj.tegmine.android.ui.fragment.FileSystemBrowser;
@@ -72,7 +73,11 @@ public class Main extends ActionBarActivity implements ControllerConnector.Contr
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
-
+        switch (id) {
+            case R.id.menu_settings:
+                startActivity(new Intent(this, Settings.class));
+                break;
+        }
         return super.onOptionsItemSelected(item);
     }
 
@@ -166,7 +171,7 @@ public class Main extends ActionBarActivity implements ControllerConnector.Contr
     }
 
     @Override
-    public void openFile(Bundle data) {
+    public void openFile(Bundle data, FileSystemItem item) {
         Intent intent = new Intent(this, Main.class);
         intent.putExtra(Tegmine.BUNDLE_VIEW_TYPE, Tegmine.VIEW_TYPE_FILE);
         intent.putExtras(data);

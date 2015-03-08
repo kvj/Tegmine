@@ -14,6 +14,7 @@ import org.kvj.bravo7.form.FormController;
 import org.kvj.bravo7.log.Logger;
 
 import kvj.tegmine.android.R;
+import kvj.tegmine.android.Tegmine;
 import kvj.tegmine.android.data.TegmineController;
 import kvj.tegmine.android.data.def.FileSystemException;
 import kvj.tegmine.android.data.def.FileSystemItem;
@@ -30,7 +31,7 @@ public class FileSystemBrowser extends ListFragment {
 
         public void openNewWindow(Bundle data);
 
-        public void openFile(Bundle data);
+        public void openFile(Bundle data, FileSystemItem item);
     }
 
     private TegmineController controller = null;
@@ -58,11 +59,12 @@ public class FileSystemBrowser extends ListFragment {
 
     public FileSystemBrowser create(TegmineController controller, Bundle bundle) {
         this.controller = controller;
-        form.add(new FileSystemItemWidgetAdapter(controller), "select");
-        form.add(new FileSystemItemWidgetAdapter(controller), "root");
+        String providerName = bundle.getString(Tegmine.BUNDLE_PROVIDER, null);
+        form.add(new FileSystemItemWidgetAdapter(controller, providerName), "select");
+        form.add(new FileSystemItemWidgetAdapter(controller, providerName), "root");
         form.load(bundle);
 //        logger.d("New browser", , rootItem);
-        this.adapter = new FileBrowserAdapter(controller, form.getValue("root", FileSystemItem.class));
+        this.adapter = new FileBrowserAdapter(controller, providerName, form.getValue("root", FileSystemItem.class));
         setListAdapter(adapter);
         adapter.expandTo(form.getValue("select", FileSystemItem.class));
         return this;
@@ -125,7 +127,7 @@ public class FileSystemBrowser extends ListFragment {
                 }
                 controller.fileSystemProvider().toBundle(bundle, "select_", item);
                 if (null != listener) {
-                    listener.openFile(bundle);
+                    listener.openFile(bundle, item);
                 }
             } catch (FileSystemException e) {
                 logger.e(e, "Failed to put item to bundle", item);

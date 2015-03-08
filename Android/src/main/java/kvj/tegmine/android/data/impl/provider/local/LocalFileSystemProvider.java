@@ -25,9 +25,11 @@ import kvj.tegmine.android.data.def.FileSystemProvider;
 public class LocalFileSystemProvider extends FileSystemProvider<LocalFileSystemItem> {
 
     private final File parent;
+    final String name;
 
-    public LocalFileSystemProvider(File parent) {
+    public LocalFileSystemProvider(File parent, String name) {
         this.parent = parent;
+        this.name = name;
     }
 
     @Override
@@ -39,7 +41,7 @@ public class LocalFileSystemProvider extends FileSystemProvider<LocalFileSystemI
             throw new FileSystemException("Invalid parent file: "+from.getAbsolutePath());
         }
         for (File file : from.listFiles()) {
-            result.add(new LocalFileSystemItem(file, parent));
+            result.add(new LocalFileSystemItem(this, file, parent));
         }
         Collections.sort(result, new Comparator<LocalFileSystemItem>() {
             @Override
@@ -61,9 +63,7 @@ public class LocalFileSystemProvider extends FileSystemProvider<LocalFileSystemI
         bundle.putString(prefix+Tegmine.BUNDLE_FILE_LOCATION, item.file.getAbsolutePath());
     }
 
-    @Override
-    public LocalFileSystemItem fromBundle(String prefix, Bundle bundle) throws FileSystemException {
-        String path = bundle.getString(prefix+Tegmine.BUNDLE_FILE_LOCATION, null);
+    private LocalFileSystemItem fromPath(String path) throws FileSystemException {
         if (TextUtils.isEmpty(path)) { // Not defined
             return null;
         }
@@ -71,7 +71,7 @@ public class LocalFileSystemProvider extends FileSystemProvider<LocalFileSystemI
         if (!file.exists()) { // Invalid file
             return null;
         }
-        LocalFileSystemItem item = new LocalFileSystemItem(file, null);
+        LocalFileSystemItem item = new LocalFileSystemItem(this, file, null);
         List<File> parents = new ArrayList<>();
         file = file.getParentFile();
         while (!this.parent.equals(file)) {
@@ -83,11 +83,18 @@ public class LocalFileSystemProvider extends FileSystemProvider<LocalFileSystemI
         }
         LocalFileSystemItem current = item;
         for (File parentPath : parents) { // Create parents
-            LocalFileSystemItem parent = new LocalFileSystemItem(parentPath, null);
+            LocalFileSystemItem parent = new LocalFileSystemItem(this, parentPath, null);
             current.parent = parent;
             current = parent;
         }
         return item;
+
+    }
+
+    @Override
+    public LocalFileSystemItem fromBundle(String prefix, Bundle bundle) throws FileSystemException {
+        String path = bundle.getString(prefix+Tegmine.BUNDLE_FILE_LOCATION, null);
+        return fromPath(path);
     }
 
     @Override
@@ -127,5 +134,14 @@ public class LocalFileSystemProvider extends FileSystemProvider<LocalFileSystemI
             logger.e(e, "Failed to append:");
             throw new FileSystemException("Invalid file: "+file.file);
         }
+    }
+
+    @Override
+    public LocalFileSystemItem fromURL(String url) throws FileSystemException {
+        LocalFileSystemItem item = fromPath(url);
+        if (null == item) { // Failed to read
+            throw new FileSystemException("Invalud URL");
+        }
+        return item;
     }
 }

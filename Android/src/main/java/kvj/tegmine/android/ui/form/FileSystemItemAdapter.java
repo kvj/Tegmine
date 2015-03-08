@@ -5,6 +5,7 @@ import android.os.Bundle;
 import org.kvj.bravo7.form.BundleAdapter;
 import org.kvj.bravo7.log.Logger;
 
+import kvj.tegmine.android.Tegmine;
 import kvj.tegmine.android.data.TegmineController;
 import kvj.tegmine.android.data.def.FileSystemException;
 import kvj.tegmine.android.data.def.FileSystemItem;
@@ -16,15 +17,17 @@ public class FileSystemItemAdapter implements BundleAdapter<FileSystemItem> {
 
     Logger logger = Logger.forInstance(this);
     private final TegmineController controller;
+    private final String providerName;
 
-    public FileSystemItemAdapter(TegmineController controller) {
+    public FileSystemItemAdapter(TegmineController controller, String providerName) {
         this.controller = controller;
+        this.providerName = providerName;
     }
 
     @Override
     public FileSystemItem get(Bundle bundle, String name, FileSystemItem def) {
         try {
-            FileSystemItem item = controller.fileSystemProvider().fromBundle(name+"_", bundle);
+            FileSystemItem item = controller.fileSystemProvider(providerName).fromBundle(name+"_", bundle);
             if (null != item) { // Found item
                 return item;
             }
@@ -40,6 +43,7 @@ public class FileSystemItemAdapter implements BundleAdapter<FileSystemItem> {
             return;
         }
         try {
+            bundle.putString(Tegmine.BUNDLE_PROVIDER, providerName);
             controller.fileSystemProvider().toBundle(bundle, name+"_", value);
         } catch (FileSystemException e) {
             logger.e(e, "");

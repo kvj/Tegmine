@@ -74,8 +74,8 @@ public class Editor extends Fragment {
         TextView title = (TextView) view.findViewById(R.id.editor_title_text);
         controller.applyHeaderStyle(title);
         form = new FormController(view);
-        form.add(new FileSystemItemWidgetAdapter(controller), "select");
-        form.add(new FileSystemItemWidgetAdapter(controller), "root");
+        form.add(new FileSystemItemWidgetAdapter(controller, null), "select");
+        form.add(new FileSystemItemWidgetAdapter(controller, null), "root");
         form.add(new TransientAdapter<String>(new StringBundleAdapter(), Tegmine.EDIT_TYPE_ADD), Tegmine.BUNDLE_EDIT_TYPE);
         form.add(new TextViewStringAdapter(R.id.editor_text, null), "contents");
         form.load(bundle);

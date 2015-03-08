@@ -12,12 +12,14 @@ import kvj.tegmine.android.data.def.FileSystemItemType;
 public class LocalFileSystemItem extends FileSystemItem<LocalFileSystemItem> {
 
     final File file;
+    private final LocalFileSystemProvider provider;
 
-    public LocalFileSystemItem(File file, LocalFileSystemItem parent) throws FileSystemException {
+    public LocalFileSystemItem(LocalFileSystemProvider provider, File file, LocalFileSystemItem parent) throws FileSystemException {
         this.name = file.getName();
         this.type = file.isDirectory()? FileSystemItemType.Folder: FileSystemItemType.File;
         this.parent = parent;
         this.file = file;
+        this.provider = provider;
     }
 
     @Override
@@ -31,6 +33,11 @@ public class LocalFileSystemItem extends FileSystemItem<LocalFileSystemItem> {
     @Override
     public String toString() {
         return "LocalFileSystemItem: "+file.getAbsolutePath();
+    }
+
+    @Override
+    public String toURL() {
+        return String.format("tegmine+%s://%s", provider.name, file.getAbsolutePath());
     }
 
     @Override

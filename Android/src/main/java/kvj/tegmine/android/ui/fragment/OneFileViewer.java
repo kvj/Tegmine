@@ -52,8 +52,8 @@ public class OneFileViewer extends ListFragment {
 
     public OneFileViewer create(TegmineController controller, Bundle bundle) {
         this.controller = controller;
-        form.add(new FileSystemItemWidgetAdapter(controller), "select");
-        form.add(new FileSystemItemWidgetAdapter(controller), "root");
+        form.add(new FileSystemItemWidgetAdapter(controller, null), "select");
+        form.add(new FileSystemItemWidgetAdapter(controller, null), "root");
         form.load(bundle);
         item = form.getValue("select", FileSystemItem.class);
         adapter = new OneFileAdapter(controller, item);

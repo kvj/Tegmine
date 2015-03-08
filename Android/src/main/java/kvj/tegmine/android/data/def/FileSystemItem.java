@@ -3,7 +3,7 @@ package kvj.tegmine.android.data.def;
 /**
  * Created by kvorobyev on 2/13/15.
  */
-public class FileSystemItem<T> {
+abstract public class FileSystemItem<T> {
 
     public String name = "";
     public FileSystemItemType type = FileSystemItemType.Folder;
@@ -17,4 +17,6 @@ public class FileSystemItem<T> {
     public String toString() {
         return "FileSystemItem: "+name;
     }
+
+    abstract public String toURL();
 }

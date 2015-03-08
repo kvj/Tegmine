@@ -77,6 +77,9 @@ public class Main extends ActionBarActivity implements ControllerConnector.Contr
             case R.id.menu_settings:
                 startActivity(new Intent(this, Settings.class));
                 break;
+            case R.id.menu_check_updates:
+                Tegmine.app().getAutoUpdate().checkUpdatesManually();
+                break;
         }
         return super.onOptionsItemSelected(item);
     }

@@ -5,6 +5,10 @@ import android.support.v4.app.Fragment;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
+import android.view.SubMenu;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
@@ -27,6 +31,7 @@ import kvj.tegmine.android.Tegmine;
 import kvj.tegmine.android.data.TegmineController;
 import kvj.tegmine.android.data.def.FileSystemException;
 import kvj.tegmine.android.data.def.FileSystemItem;
+import kvj.tegmine.android.data.model.TemplateDef;
 import kvj.tegmine.android.ui.form.FileSystemItemWidgetAdapter;
 
 /**
@@ -49,10 +54,12 @@ public class Editor extends Fragment {
     private Bundle bundle = null;
     private FileSystemItem item = null;
     private EditorListener listener = null;
+    private EditText editor = null;
 
     public Editor create(TegmineController controller, Bundle bundle) {
         this.controller = controller;
         this.bundle = bundle;
+        setHasOptionsMenu(true);
         return this;
     }
 
@@ -68,7 +75,7 @@ public class Editor extends Fragment {
         }
         logger.d("Load editor:", bundle);
         View view = inflater.inflate(R.layout.fragment_editor, container, false);
-        EditText editor = (EditText) view.findViewById(R.id.editor_text);
+        editor = (EditText) view.findViewById(R.id.editor_text);
         editor.setTextColor(controller.theme().textColor());
         editor.setTextSize(TypedValue.COMPLEX_UNIT_SP, controller.theme().editorTextSp());
         TextView title = (TextView) view.findViewById(R.id.editor_title_text);
@@ -193,5 +200,30 @@ public class Editor extends Fragment {
     public void onDestroyView() {
         super.onDestroyView();
         listener = null;
+    }
+
+    private MenuItem.OnMenuItemClickListener templateListener(final TemplateDef tmpl) {
+        return new MenuItem.OnMenuItemClickListener() {
+            @Override
+            public boolean onMenuItemClick(MenuItem item) {
+                TegmineController.TemplateApplyResult applyResult = controller.applyTemlate(tmpl);
+                editor.setText(applyResult.value());
+                editor.setSelection(applyResult.cursor());
+                return true;
+            }
+        };
+    }
+
+    @Override
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+        inflater.inflate(R.menu.menu_editor, menu);
+        if (null != controller) { // OK
+            SubMenu subMenu = menu.findItem(R.id.menu_editor_templates).getSubMenu();
+            int idx = 0;
+            for (TemplateDef template : controller.templates().values()) {
+                MenuItem menuItem = subMenu.add(1, idx++, idx, template.label());
+                menuItem.setOnMenuItemClickListener(templateListener(template));
+            }
+        }
     }
 }

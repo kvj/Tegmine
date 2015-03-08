@@ -14,7 +14,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -27,6 +29,7 @@ import kvj.tegmine.android.data.def.FileSystemException;
 import kvj.tegmine.android.data.def.FileSystemItem;
 import kvj.tegmine.android.data.def.FileSystemProvider;
 import kvj.tegmine.android.data.impl.provider.local.LocalFileSystemProvider;
+import kvj.tegmine.android.data.model.TemplateDef;
 import kvj.tegmine.android.ui.theme.LightTheme;
 
 /**
@@ -36,6 +39,7 @@ public class TegmineController {
 
     private static final int SPACES_IN_TAB = 2;
     private Map<String, FileSystemProvider> fileSystemProviders = new LinkedHashMap<>();
+    private Map<String, TemplateDef> templates = new LinkedHashMap<>();
     private FileSystemProvider defaultProvider = null;
     private LightTheme theme = new LightTheme();
     private Logger logger = Logger.forInstance(this);
@@ -282,7 +286,7 @@ public class TegmineController {
             loadFilePart(lines, configItem, 0, -1);
             config = new HashMap<>();
             readObject(lines, 0, config, 0);
-            logger.d("New config:", config);
+            // logger.d("New config:", config);
             fileSystemProviders.clear();
             defaultProvider = null;
             Map<String, Object> storageConfig = objectObject(config, "storage");
@@ -304,6 +308,19 @@ public class TegmineController {
                             defaultProvider = provider;
                         }
                     }
+                }
+            }
+            Map<String, Object> templatesConfig = objectObject(config, "templates");
+            templates.clear();
+            if (null != templatesConfig) {
+                for (String key : templatesConfig.keySet()) { // Create new instances
+                    Map<String, Object> conf = objectObject(templatesConfig, key);
+                    if (null == conf) { // Invalid
+                        continue;
+                    }
+                    TemplateDef tmpl = new TemplateDef(key, objectString(conf, "template", ""));
+                    tmpl.label(objectString(conf, "label", null));
+                    templates.put(key, tmpl);
                 }
             }
         } catch (FileSystemException e) {
@@ -338,5 +355,65 @@ public class TegmineController {
     public static boolean objectBoolean(Map<String, Object> obj, String name, boolean def) {
         String value = objectString(obj, name, "y");
         return (value.equalsIgnoreCase("y") || value.equalsIgnoreCase("yes") || value.equals("1") || value.equalsIgnoreCase("true"));
+    }
+
+    public Map<String, TemplateDef> templates() {
+        return templates;
+    }
+
+    public static class TemplateApplyResult {
+        private final String value;
+        private final int cursor;
+
+        public TemplateApplyResult(String value, int cursor) {
+            this.value = value;
+            this.cursor = cursor;
+        }
+
+        public int cursor() {
+            return cursor;
+        }
+
+        public String value() {
+            return value;
+        }
+    }
+
+    private static Pattern tmplPattern = Pattern.compile("\\$\\{([^\\}]+?)\\}");
+    public TemplateApplyResult applyTemlate(TemplateDef tmpl) {
+        Matcher m = tmplPattern.matcher(tmpl.template());
+        StringBuffer buffer = new StringBuffer();
+        int cursor = -1;
+        while (m.find()) {
+            String value = m.group(1);
+            StringBuilder repl = new StringBuilder("???");
+            if ("t".equals(value)) { // Tab
+                repl.setLength(0);
+                for (int i = 0; i < spacesInTab(); i++) { // Add spaces
+                    repl.append(' ');
+                }
+            }
+            if ("n".equals(value)) { // New line
+                repl.setLength(0);
+                repl.append('\n');
+            }
+            if ("c".equals(value)) { // Cursor - remove
+                repl.setLength(0);
+            }
+            if (value.startsWith("d:")) { // Date format
+                repl.setLength(0);
+                repl.append(new SimpleDateFormat(value.substring(2)).format(new Date()));
+            }
+            logger.d("Template:", tmpl.template(), value, repl);
+            m.appendReplacement(buffer, repl.toString());
+            if ("c".equals(value)) { // Cursor - remember position
+                cursor = buffer.length();
+            }
+        }
+        m.appendTail(buffer);
+        if (-1 == cursor) { // Not set yet
+            cursor = buffer.length();
+        }
+        return new TemplateApplyResult(buffer.toString(), cursor);
     }
 }

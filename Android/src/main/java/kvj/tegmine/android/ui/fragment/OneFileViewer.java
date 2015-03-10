@@ -1,11 +1,15 @@
 package kvj.tegmine.android.ui.fragment;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.app.ListFragment;
+import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.ListView;
 import android.widget.TextView;
 
 import org.kvj.bravo7.form.FormController;
@@ -85,7 +89,30 @@ public class OneFileViewer extends ListFragment {
                 startEditor(Tegmine.EDIT_TYPE_EDIT);
             }
         });
+        ListView listView = (ListView) view.findViewById(android.R.id.list);
+        listView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+            @Override
+            public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
+                onLongItemClick(position);
+                return true;
+            }
+        });
         return view;
+    }
+
+    private void onLongItemClick(int position) {
+        if (null != adapter) { // OK
+            String contents = adapter.partString(position);
+            if (TextUtils.isEmpty(contents)) { // No data
+                return;
+            }
+            Intent sendIntent = new Intent();
+            sendIntent.setAction(Intent.ACTION_SEND);
+            sendIntent.putExtra(Intent.EXTRA_TEXT, contents);
+            sendIntent.setType("text/plain");
+            startActivity(sendIntent);
+            logger.d("Sharing text:", contents);
+        }
     }
 
     private void loadFileLayout() {

@@ -45,6 +45,9 @@ public class TegmineController {
     private Logger logger = Logger.forInstance(this);
     private Map<String, Object> config = new HashMap<>();
 
+    private boolean newLineBefore = true;
+    private boolean newLineAfter = false;
+
     public TegmineController() {
         setupFailsave();
         try {
@@ -177,7 +180,7 @@ public class TegmineController {
         try {
             bufferedStream = new BufferedOutputStream(stream);
             String[] lines = contents.split("\n");
-            if (!doEdit) { // Append mode - leading new line
+            if (!doEdit && newLineBefore) { // Append mode - leading new line, if set
                 bufferedStream.write('\n');
             }
             for (int i = 0; i < lines.length; i++) { // Write lines one by one
@@ -189,6 +192,9 @@ public class TegmineController {
                     bufferedStream.write('\t');
                 }
                 bufferedStream.write(line.trim().getBytes("utf-8"));
+            }
+            if (newLineAfter) { // Trailing new line
+                bufferedStream.write('\n');
             }
         } catch (Throwable t) { // IO error
             logger.e(t, "Error writing contents:");
@@ -289,6 +295,8 @@ public class TegmineController {
             // logger.d("New config:", config);
             fileSystemProviders.clear();
             defaultProvider = null;
+            newLineBefore = objectBoolean(config, "newLineBefore", newLineBefore);
+            newLineAfter = objectBoolean(config, "newLineAfter", newLineAfter);
             Map<String, Object> storageConfig = objectObject(config, "storage");
             if (null != storageConfig) { // Have config
                 for (String key : storageConfig.keySet()) { // Create new instances
@@ -415,5 +423,30 @@ public class TegmineController {
             cursor = buffer.length();
         }
         return new TemplateApplyResult(buffer.toString(), cursor);
+    }
+
+    public void addIndent(StringBuilder sb, int indent) {
+        for (int i = 0; i < indent * spacesInTab(); i++) { // Add spaces
+            sb.append(' ');
+        }
+    }
+
+    public String part(List<String> lines, int from) {
+        StringBuilder sb = new StringBuilder();
+        int topIndent = indent(lines.get(from));
+        sb.append(lines.get(from).trim()); // Top line
+        for (int i = from+1; i < lines.size(); i++) { // Add sub-lines
+            String line = lines.get(i);
+            int indent = indent(line);
+            if (indent <= topIndent) { // Out of block
+                break;
+            }
+            sb.append('\n');
+            if (indent>0) { // Indent relative
+                addIndent(sb, indent - topIndent);
+            }
+            sb.append(line.trim());
+        }
+        return sb.toString();
     }
 }

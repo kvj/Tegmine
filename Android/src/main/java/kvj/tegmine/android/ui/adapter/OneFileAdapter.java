@@ -137,4 +137,11 @@ public class OneFileAdapter extends BaseAdapter {
         lineno.setText(String.format("% 4d", position+1));
         return convertView;
     }
+
+    public String partString(int position) {
+        if (position >= lines.size()) { // Invalid position
+            return null;
+        }
+        return controller.part(lines, position).toString();
+    }
 }

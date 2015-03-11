@@ -24,6 +24,7 @@ import kvj.tegmine.android.Tegmine;
 import kvj.tegmine.android.data.TegmineController;
 import kvj.tegmine.android.data.def.FileSystemException;
 import kvj.tegmine.android.data.def.FileSystemItem;
+import kvj.tegmine.android.data.model.LineMeta;
 import kvj.tegmine.android.ui.adapter.OneFileAdapter;
 import kvj.tegmine.android.ui.form.FileSystemItemWidgetAdapter;
 
@@ -40,7 +41,7 @@ public class OneFileViewer extends ListFragment {
     private TegmineController controller = null;
     private TextView titleText = null;
     private OneFileAdapter adapter = null;
-    private List<Long> offsets = null;
+    private List<LineMeta> offsets = null;
     private FormController form = new FormController(null);
     private FileSystemItem item = null;
     private FileViewerListener listener = null;
@@ -100,6 +101,13 @@ public class OneFileViewer extends ListFragment {
         return view;
     }
 
+    @Override
+    public void onListItemClick(ListView l, View v, int position, long id) {
+        if (null != adapter) { // Toggle folding
+            adapter.toggle(position);
+        }
+    }
+
     private void onLongItemClick(int position) {
         if (null != adapter) { // OK
             String contents = adapter.partString(position);
@@ -116,9 +124,9 @@ public class OneFileViewer extends ListFragment {
     }
 
     private void loadFileLayout() {
-        Tasks.SimpleTask<List<Long>> task = new Tasks.SimpleTask<List<Long>>() {
+        Tasks.SimpleTask<List<LineMeta>> task = new Tasks.SimpleTask<List<LineMeta>>() {
             @Override
-            protected List<Long> doInBackground() {
+            protected List<LineMeta> doInBackground() {
                 try {
                     return controller.makeFileLayout(item);
                 } catch (FileSystemException e) {
@@ -128,7 +136,7 @@ public class OneFileViewer extends ListFragment {
             }
 
             @Override
-            protected void onPostExecute(List<Long> longs) {
+            protected void onPostExecute(List<LineMeta> longs) {
                 offsets = longs;
                 logger.d("Will have lines:", offsets.size());
             }

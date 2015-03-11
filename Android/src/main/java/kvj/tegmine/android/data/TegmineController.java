@@ -9,6 +9,7 @@ import org.kvj.bravo7.log.Logger;
 
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -29,6 +30,7 @@ import kvj.tegmine.android.data.def.FileSystemException;
 import kvj.tegmine.android.data.def.FileSystemItem;
 import kvj.tegmine.android.data.def.FileSystemProvider;
 import kvj.tegmine.android.data.impl.provider.local.LocalFileSystemProvider;
+import kvj.tegmine.android.data.model.LineMeta;
 import kvj.tegmine.android.data.model.TemplateDef;
 import kvj.tegmine.android.ui.theme.LightTheme;
 
@@ -76,23 +78,29 @@ public class TegmineController {
         return theme;
     }
 
-    public List<Long> makeFileLayout(FileSystemItem item) throws FileSystemException {
+    public List<LineMeta> makeFileLayout(FileSystemItem item) throws FileSystemException {
         // Read file and make list with line offsets
-        List<Long> offsets = new ArrayList<>();
+        List<LineMeta> offsets = new ArrayList<>();
         InputStream stream = fileSystemProvider().read(item);
         long offset = 0;
         long from = 0;
         int data;
         try {
+            ByteArrayOutputStream oneLine = new ByteArrayOutputStream();
             while ((data = stream.read()) >= 0) { // Read until end
                 offset++;
                 if (data == '\n') { // New line
-                    offsets.add(from);
+                    LineMeta meta = new LineMeta(indent(oneLine.toString("utf-8")), from);
+                    oneLine.reset();
+                    offsets.add(meta);
                     from = offset;
+                } else {
+                    oneLine.write(data);
                 }
             }
             if (from<offset) { // Add last
-                offsets.add(from);
+                LineMeta meta = new LineMeta(indent(oneLine.toString("utf-8")), from);
+                offsets.add(meta);
             }
             stream.close();
             return offsets;
@@ -102,7 +110,7 @@ public class TegmineController {
         }
     }
 
-    public void loadFilePart(List<String> buffer, FileSystemItem item, long from, int lines) throws FileSystemException {
+    public void loadFilePart(List<LineMeta> buffer, FileSystemItem item, long from, int lines) throws FileSystemException {
         try {
             InputStream stream = fileSystemProvider().read(item);
             long skipped = stream.skip(from);
@@ -114,7 +122,9 @@ public class TegmineController {
             String line;
             int linesRead = 0;
             while ((line = reader.readLine()) != null) { // Read lines one by one
-                buffer.add(line);
+                LineMeta meta = new LineMeta(indent(line), -1);
+                meta.data(line.trim());
+                buffer.add(meta);
                 linesRead++;
                 if ((lines > 0) && (linesRead >= lines)) { // Enough
                     break;
@@ -150,17 +160,17 @@ public class TegmineController {
         return SPACES_IN_TAB;
     }
 
-    public void linesForEditor(List<String> lines, StringBuilder buffer) {
+    public void linesForEditor(List<LineMeta> lines, StringBuilder buffer) {
         for (int i = 0; i < lines.size(); i++) { // Iterate over lines
-            String line = lines.get(i);
-            String trimmed = line.trim();
+            LineMeta line = lines.get(i);
+            String trimmed = line.data();
             if (i>0) { // Add new line
                 buffer.append('\n');
             }
             if (trimmed.length() == 0) { // Empty
                 continue;
             }
-            for (int j = 0; j < indent(line) * spacesInTab(); j++) { // Add spaces
+            for (int j = 0; j < line.indent() * spacesInTab(); j++) { // Add spaces
                 buffer.append(' ');
             }
             buffer.append(trimmed);
@@ -226,11 +236,11 @@ public class TegmineController {
         }
     }
 
-    private int readObject(List<String> lines, int from, Map<String, Object> to, int indent) {
+    private int readObject(List<LineMeta> lines, int from, Map<String, Object> to, int indent) {
         int i = from;
         for (; i<lines.size(); i++) {
-            String line = lines.get(i);
-            int ind = indent(line);
+            LineMeta line = lines.get(i);
+            int ind = line.indent();
             if (ind == -1) { // Empty line
                 continue;
             }
@@ -242,27 +252,27 @@ public class TegmineController {
                 continue;
             }
             // Requested indent
-            line = line.trim();
             boolean objStart = false;
-            if (line.trim().startsWith("#")) { // Comment
+            String lineStr = line.data();
+            if (lineStr.startsWith("#")) { // Comment
                 continue;
             }
-            if ((line.startsWith("[") && line.endsWith("]"))) { // Remove brackets
-                line = line.substring(1, line.length()-1);
+            if ((lineStr.startsWith("[") && lineStr.endsWith("]"))) { // Remove brackets
+                lineStr = lineStr.substring(1, lineStr.length()-1);
                 objStart = true;
             }
-            int spacePos = line.indexOf(' ');
+            int spacePos = lineStr.indexOf(' ');
             if (spacePos == -1) { // No space inside
                 objStart = true;
             }
             if (objStart) { // Object will start from here
                 Map<String, Object> values = new LinkedHashMap<>();
                 i = readObject(lines, i+1, values, indent+1);
-                to.put(line, values);
+                to.put(lineStr, values);
                 continue;
             }
             // Value mode
-            to.put(line.substring(0, spacePos).trim(), line.substring(spacePos).trim());
+            to.put(lineStr.substring(0, spacePos).trim(), lineStr.substring(spacePos).trim());
         }
         return i;
     }
@@ -288,7 +298,7 @@ public class TegmineController {
             if (null == configItem) { // Invalid
                 throw new FileSystemException("Failed to read config file");
             }
-            List<String> lines = new ArrayList<>();
+            List<LineMeta> lines = new ArrayList<>();
             loadFilePart(lines, configItem, 0, -1);
             config = new HashMap<>();
             readObject(lines, 0, config, 0);
@@ -431,13 +441,13 @@ public class TegmineController {
         }
     }
 
-    public String part(List<String> lines, int from) {
+    public String part(List<LineMeta> lines, int from) {
         StringBuilder sb = new StringBuilder();
-        int topIndent = indent(lines.get(from));
-        sb.append(lines.get(from).trim()); // Top line
+        int topIndent = lines.get(from).indent();
+        sb.append(lines.get(from).data()); // Top line
         for (int i = from+1; i < lines.size(); i++) { // Add sub-lines
-            String line = lines.get(i);
-            int indent = indent(line);
+            LineMeta line = lines.get(i);
+            int indent = line.indent();
             if (indent <= topIndent) { // Out of block
                 break;
             }
@@ -445,7 +455,7 @@ public class TegmineController {
             if (indent>0) { // Indent relative
                 addIndent(sb, indent - topIndent);
             }
-            sb.append(line.trim());
+            sb.append(line.data());
         }
         return sb.toString();
     }

@@ -19,6 +19,7 @@ import kvj.tegmine.android.Tegmine;
 import kvj.tegmine.android.data.TegmineController;
 import kvj.tegmine.android.data.def.FileSystemException;
 import kvj.tegmine.android.data.def.FileSystemItem;
+import kvj.tegmine.android.data.model.LineMeta;
 
 /**
  * Created by kvorobyev on 2/17/15.
@@ -36,7 +37,8 @@ public class OneFileAdapter extends BaseAdapter {
     private final TegmineController controller;
     private final FileSystemItem item;
 
-    private final List<String> lines = new ArrayList<>(MAX_LINES);
+    private final List<LineMeta> lines = new ArrayList<>(MAX_LINES);
+    private final List<Integer> visibleLines = new ArrayList<>();
     private int fromLine = 0;
 
     public OneFileAdapter(TegmineController controller, FileSystemItem item) {
@@ -69,7 +71,7 @@ public class OneFileAdapter extends BaseAdapter {
                     synchronized (lock) {
                         logger.d("Loaded:", offset, lines.size());
                         state = DataState.FrameLoaded;
-                        notifyDataSetChanged();
+                        updateVisible();
                     }
                 }
             };
@@ -80,14 +82,12 @@ public class OneFileAdapter extends BaseAdapter {
 
     @Override
     public int getCount() {
-        synchronized (lock) {
-            return lines.size();
-        }
+        return visibleLines.size();
     }
 
     @Override
     public String getItem(int position) {
-        return lines.get(position);
+        return line(position).data();
     }
 
     @Override
@@ -95,10 +95,10 @@ public class OneFileAdapter extends BaseAdapter {
         return position;
     }
 
-    String line(final int position) {
+    LineMeta line(final int position) {
         synchronized (lock) {
             if (state == DataState.FrameLoaded) { // Only in this case we can get it
-                return lines.get(position);
+                return lines.get(visibleLines.get(position));
             } else {
                 return null; // No line yet
             }
@@ -125,12 +125,12 @@ public class OneFileAdapter extends BaseAdapter {
             text = (TextView) convertView.findViewById(R.id.one_file_item_text);
             lineno = (TextView) convertView.findViewById(R.id.one_file_item_lineno);
         }
-        String line = line(position);
+        LineMeta line = line(position);
         if (null == line) { // Invalid line
             text.setText("");
         } else {
-            int indent = controller.indent(line);
-            text.setText(line.trim());
+            int indent = line.indent();
+            text.setText(line.data());
             int leftIndent = (int) Tegmine.getInstance().sp2px(indent * controller.theme().fileIndentSp());
             text.setPadding(leftIndent, 0, 0, 0);
         }
@@ -139,9 +139,43 @@ public class OneFileAdapter extends BaseAdapter {
     }
 
     public String partString(int position) {
-        if (position >= lines.size()) { // Invalid position
+        if (position >= visibleLines.size()) { // Invalid position
             return null;
         }
-        return controller.part(lines, position).toString();
+        return controller.part(lines, visibleLines.get(position)).toString();
     }
+
+    public void toggle(int position) {
+        synchronized (lock) {
+            LineMeta startLine = line(position);
+            if (-1 == startLine.indent()) { // No toggle possible
+                return;
+            }
+            startLine.folded(!startLine.folded());
+            int index = visibleLines.get(position)+1;
+            while (index < lines.size()) {
+                LineMeta line = lines.get(index);
+                if (line.indent()>startLine.indent() || line.indent() == -1) { // Fold
+                    line.visible(!startLine.folded());
+                } else {
+                    break;
+                }
+                index++;
+            }
+            updateVisible();
+        }
+    }
+
+    private void updateVisible() {
+        synchronized (lock) {
+            visibleLines.clear();
+            for (int i = 0; i < lines.size(); i++) { // $COMMENT
+                if (lines.get(i).visible()) { // Visible line
+                    visibleLines.add(i);
+                }
+            }
+            notifyDataSetChanged();
+        }
+    }
+
 }

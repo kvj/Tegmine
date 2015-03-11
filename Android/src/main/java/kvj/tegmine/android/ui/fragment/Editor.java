@@ -31,6 +31,7 @@ import kvj.tegmine.android.Tegmine;
 import kvj.tegmine.android.data.TegmineController;
 import kvj.tegmine.android.data.def.FileSystemException;
 import kvj.tegmine.android.data.def.FileSystemItem;
+import kvj.tegmine.android.data.model.LineMeta;
 import kvj.tegmine.android.data.model.TemplateDef;
 import kvj.tegmine.android.ui.form.FileSystemItemWidgetAdapter;
 
@@ -116,7 +117,7 @@ public class Editor extends Fragment {
                     return null;
                 }
                 try {
-                    List<String> lines = new ArrayList<>();
+                    List<LineMeta> lines = new ArrayList<>();
                     controller.loadFilePart(lines, item, 0, -1);
                     controller.linesForEditor(lines, buffer);
                     return null;

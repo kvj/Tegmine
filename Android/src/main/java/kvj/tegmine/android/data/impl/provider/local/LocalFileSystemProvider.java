@@ -67,8 +67,9 @@ public class LocalFileSystemProvider extends FileSystemProvider<LocalFileSystemI
         if (TextUtils.isEmpty(path)) { // Not defined
             return null;
         }
-        File file = new File(path);
+        File file = path.startsWith("/") ? new File(path): new File(parent, path);
         if (!file.exists()) { // Invalid file
+            logger.w("Non existing file:", path, file.getAbsolutePath(), parent.getAbsolutePath());
             return null;
         }
         LocalFileSystemItem item = new LocalFileSystemItem(this, file, null);
@@ -76,6 +77,7 @@ public class LocalFileSystemProvider extends FileSystemProvider<LocalFileSystemI
         file = file.getParentFile();
         while (!this.parent.equals(file)) {
             if (file.getParentFile() == null) { // Different tree
+                logger.w("File from different tree:", file.getAbsolutePath(), parent.getAbsolutePath());
                 return null;
             }
             parents.add(file);
@@ -140,7 +142,7 @@ public class LocalFileSystemProvider extends FileSystemProvider<LocalFileSystemI
     public LocalFileSystemItem fromURL(String url) throws FileSystemException {
         LocalFileSystemItem item = fromPath(url);
         if (null == item) { // Failed to read
-            throw new FileSystemException("Invalud URL");
+            throw new FileSystemException("Invalid URL");
         }
         return item;
     }

@@ -2,6 +2,9 @@ package kvj.tegmine.android.ui.theme;
 
 import android.graphics.Color;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import kvj.tegmine.android.R;
 
 /**
@@ -9,12 +12,37 @@ import kvj.tegmine.android.R;
  */
 public class LightTheme {
 
+    public static enum Colors {Base0("base0"), Base1("base1"), Base2("base2"), Base3("base3"),
+        Yellow("yellow"), Orange("orange"), Red("red"), Magenta("magenta"),
+        Violet("violet"), Blue("blue"), Cyan("cyan"), Green("green");
+        private final String code;
+
+        Colors(String code) {
+            this.code = code;
+        }
+
+        public String code() {
+            return code;
+        }
+    };
+
+    protected Map<Colors, Integer> mapping = new HashMap<>();
+
+    protected int color(Colors color, int defaultColor) {
+        Integer colorInt = mapping.get(color);
+        if (null == colorInt) {
+            // No mapping
+            return defaultColor;
+        }
+        return colorInt;
+    }
+
     public int textColor() {
-        return Color.BLACK;
+        return color(Colors.Base0, Color.BLACK);
     }
 
     public int backgroundColor() {
-        return Color.WHITE;
+        return color(Colors.Base3, Color.WHITE);
     }
 
     public int headerTextSp() {
@@ -47,5 +75,15 @@ public class LightTheme {
 
     public int fileIcon() {
         return R.drawable.icn_file_light;
+    }
+
+    public boolean loadColor(String code, String color) {
+        for (Colors col : Colors.values()) {
+            if (col.code().equals(code)) {
+                mapping.put(col, Color.parseColor(color));
+                return true;
+            }
+        }
+        return false;
     }
 }

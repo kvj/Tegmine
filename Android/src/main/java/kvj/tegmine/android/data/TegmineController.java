@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -46,9 +47,11 @@ public class TegmineController {
     private LightTheme theme = new LightTheme();
     private Logger logger = Logger.forInstance(this);
     private Map<String, Object> config = new HashMap<>();
+    private Map<String, LightTheme> colorSchemes = new HashMap<>();
 
     private boolean newLineBefore = true;
     private boolean newLineAfter = false;
+    private String selectedTheme = "default";
 
     public TegmineController() {
         setupFailsave();
@@ -75,7 +78,7 @@ public class TegmineController {
     }
 
     public LightTheme theme() {
-        return theme;
+        return colorSchemes.get(selectedTheme);
     }
 
     public List<LineMeta> makeFileLayout(FileSystemItem item) throws FileSystemException {
@@ -229,7 +232,8 @@ public class TegmineController {
             return null;
         }
         try {
-            return fileSystemProvider().fromURL(m.group(2));
+            logger.d("fromURL", m.group(1), m.group(2), fileSystemProviders.containsKey(m.group(1)));
+            return fileSystemProvider(m.group(1)).fromURL(m.group(2));
         } catch (FileSystemException e) {
             e.printStackTrace();
             return null;
@@ -278,6 +282,9 @@ public class TegmineController {
     }
 
     private void setupFailsave() {
+        templates.clear();
+        fileSystemProviders.clear();
+        colorSchemes.clear();
         if (!fileSystemProviders.containsKey("sdcard")) { // Failsafe - should always be there
             FileSystemProvider provider = new LocalFileSystemProvider(Environment.getExternalStorageDirectory(), "sdcard");
             fileSystemProviders.put("sdcard", provider);
@@ -285,10 +292,21 @@ public class TegmineController {
         if (null == defaultProvider) { // No default provider
             defaultProvider = fileSystemProviders.get("sdcard");
         }
+        colorSchemes.put("default", new LightTheme());
+        selectedTheme = "default";
+    }
+
+    private Map<String, Object> file2Object(FileSystemItem item) throws FileSystemException {
+        List<LineMeta> lines = new ArrayList<>();
+        loadFilePart(lines, item, 0, -1);
+        Map<String, Object> object = new HashMap<>();
+        readObject(lines, 0, object, 0);
+        return object;
     }
 
     public void reloadConfig() throws FileSystemException {
         FileSystemException ex = null;
+        setupFailsave();
         try {
             String path = Tegmine.getInstance().getStringPreference("p_config_file", "");
             if (TextUtils.isEmpty(path)) { // Not set
@@ -303,7 +321,6 @@ public class TegmineController {
             config = new HashMap<>();
             readObject(lines, 0, config, 0);
             // logger.d("New config:", config);
-            fileSystemProviders.clear();
             defaultProvider = null;
             newLineBefore = objectBoolean(config, "newLineBefore", newLineBefore);
             newLineAfter = objectBoolean(config, "newLineAfter", newLineAfter);
@@ -329,7 +346,6 @@ public class TegmineController {
                 }
             }
             Map<String, Object> templatesConfig = objectObject(config, "templates");
-            templates.clear();
             if (null != templatesConfig) {
                 for (String key : templatesConfig.keySet()) { // Create new instances
                     Map<String, Object> conf = objectObject(templatesConfig, key);
@@ -341,10 +357,34 @@ public class TegmineController {
                     templates.put(key, tmpl);
                 }
             }
+            Map<String, Object> colorsConfig = objectObject(config, "colorschemes");
+            for (Map.Entry<String, Object> oneLine : colorsConfig.entrySet()) {
+                FileSystemItem fileItem = fromURL(oneLine.getValue().toString());
+                if (null == fileItem) {
+                    logger.w("Failed to load color scheme:", oneLine.getKey(), oneLine.getValue());
+                    continue;
+                }
+                try {
+                    Map<String, Object> themeConfig = file2Object(fileItem);
+                    LightTheme newTheme = new LightTheme();
+                    for (Map.Entry<String, Object> oneThemeLine : themeConfig.entrySet()) {
+                        boolean loaded = newTheme.loadColor(oneThemeLine.getKey(), oneThemeLine.getValue().toString());
+                        if (!loaded) {
+                            logger.w("Theme line ignored:", oneThemeLine.getKey(), oneThemeLine.getValue());
+                        }
+                    }
+                    colorSchemes.put(oneLine.getKey(), newTheme);
+                } catch (FileSystemException e) {
+                    logger.w(e, "Failed to read theme file", fileItem.toURL());
+                }
+            }
+            String themeStr = objectString(config, "colorscheme", "default");
+            if (colorSchemes.containsKey(themeStr)) {
+                selectedTheme = themeStr;
+            }
         } catch (FileSystemException e) {
             ex = e;
         }
-        setupFailsave();
         if (null != ex) { // Report status
             throw ex;
         }

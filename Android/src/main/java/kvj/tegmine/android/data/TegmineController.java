@@ -6,6 +6,7 @@ import android.util.TypedValue;
 import android.widget.TextView;
 
 import org.kvj.bravo7.log.Logger;
+import org.kvj.bravo7.util.Listeners;
 
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
@@ -22,7 +23,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -32,6 +32,7 @@ import kvj.tegmine.android.data.def.FileSystemItem;
 import kvj.tegmine.android.data.def.FileSystemProvider;
 import kvj.tegmine.android.data.impl.provider.local.LocalFileSystemProvider;
 import kvj.tegmine.android.data.model.LineMeta;
+import kvj.tegmine.android.data.model.ProgressListener;
 import kvj.tegmine.android.data.model.TemplateDef;
 import kvj.tegmine.android.ui.theme.LightTheme;
 
@@ -54,8 +55,9 @@ public class TegmineController {
     private String selectedTheme = "default";
     private boolean scrollToBottom = true;
 
+    private Listeners<ProgressListener> progressListeners = new Listeners<>();
+
     public TegmineController() {
-        setupFailsave();
         try {
             reloadConfig();
         } catch (FileSystemException e) {
@@ -360,24 +362,26 @@ public class TegmineController {
                 }
             }
             Map<String, Object> colorsConfig = objectObject(config, "colorschemes");
-            for (Map.Entry<String, Object> oneLine : colorsConfig.entrySet()) {
-                FileSystemItem fileItem = fromURL(oneLine.getValue().toString());
-                if (null == fileItem) {
-                    logger.w("Failed to load color scheme:", oneLine.getKey(), oneLine.getValue());
-                    continue;
-                }
-                try {
-                    Map<String, Object> themeConfig = file2Object(fileItem);
-                    LightTheme newTheme = new LightTheme();
-                    for (Map.Entry<String, Object> oneThemeLine : themeConfig.entrySet()) {
-                        boolean loaded = newTheme.loadColor(oneThemeLine.getKey(), oneThemeLine.getValue().toString());
-                        if (!loaded) {
-                            logger.w("Theme line ignored:", oneThemeLine.getKey(), oneThemeLine.getValue());
-                        }
+            if (null != colorsConfig) {
+                for (Map.Entry<String, Object> oneLine : colorsConfig.entrySet()) {
+                    FileSystemItem fileItem = fromURL(oneLine.getValue().toString());
+                    if (null == fileItem) {
+                        logger.w("Failed to load color scheme:", oneLine.getKey(), oneLine.getValue());
+                        continue;
                     }
-                    colorSchemes.put(oneLine.getKey(), newTheme);
-                } catch (FileSystemException e) {
-                    logger.w(e, "Failed to read theme file", fileItem.toURL());
+                    try {
+                        Map<String, Object> themeConfig = file2Object(fileItem);
+                        LightTheme newTheme = new LightTheme();
+                        for (Map.Entry<String, Object> oneThemeLine : themeConfig.entrySet()) {
+                            boolean loaded = newTheme.loadColor(oneThemeLine.getKey(), oneThemeLine.getValue().toString());
+                            if (!loaded) {
+                                logger.w("Theme line ignored:", oneThemeLine.getKey(), oneThemeLine.getValue());
+                            }
+                        }
+                        colorSchemes.put(oneLine.getKey(), newTheme);
+                    } catch (FileSystemException e) {
+                        logger.w(e, "Failed to read theme file", fileItem.toURL());
+                    }
                 }
             }
             String themeStr = objectString(config, "colorscheme", "default");
@@ -504,5 +508,9 @@ public class TegmineController {
             sb.append(line.data());
         }
         return sb.toString();
+    }
+
+    public Listeners<ProgressListener> progressListeners() {
+        return progressListeners;
     }
 }

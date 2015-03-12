@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentTransaction;
+import android.support.v4.widget.ContentLoadingProgressBar;
 import android.support.v7.app.ActionBarActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
@@ -17,13 +18,18 @@ import kvj.tegmine.android.R;
 import kvj.tegmine.android.Tegmine;
 import kvj.tegmine.android.data.TegmineController;
 import kvj.tegmine.android.data.def.FileSystemItem;
+import kvj.tegmine.android.data.model.ProgressListener;
 import kvj.tegmine.android.infra.ControllerService;
 import kvj.tegmine.android.ui.fragment.Editor;
 import kvj.tegmine.android.ui.fragment.FileSystemBrowser;
 import kvj.tegmine.android.ui.fragment.OneFileViewer;
 
 
-public class Main extends ActionBarActivity implements ControllerConnector.ControllerReceiver<TegmineController>,FileSystemBrowser.BrowserListener, Editor.EditorListener, OneFileViewer.FileViewerListener {
+public class Main extends ActionBarActivity implements ControllerConnector.ControllerReceiver<TegmineController>,
+        FileSystemBrowser.BrowserListener,
+        Editor.EditorListener,
+        OneFileViewer.FileViewerListener,
+        ProgressListener {
 
     private static final int REQUEST_EDITOR = 21;
     private static final int REQUEST_BROWSER = 22;
@@ -37,6 +43,7 @@ public class Main extends ActionBarActivity implements ControllerConnector.Contr
     private FileSystemBrowser browser = null;
     private OneFileViewer viewer = null;
     private Editor editor = null;
+    private ContentLoadingProgressBar progressBar = null;
 
     protected void initBundle(Bundle savedInstanceState) {
         if (null != savedInstanceState) {
@@ -54,6 +61,7 @@ public class Main extends ActionBarActivity implements ControllerConnector.Contr
         initBundle(savedInstanceState);
         setContentView(R.layout.activity_main);
         toolbar = (Toolbar) findViewById(R.id.main_toolbar);
+        progressBar = (ContentLoadingProgressBar)findViewById(R.id.main_progress_bar);
         setupToolbar(toolbar);
         setSupportActionBar(toolbar);
     }
@@ -202,6 +210,20 @@ public class Main extends ActionBarActivity implements ControllerConnector.Contr
         super.onActivityResult(requestCode, resultCode, data);
         if (null != viewer) {
             viewer.refresh();
+        }
+    }
+
+    @Override
+    public void activityStarted() {
+        if (null != progressBar) {
+            progressBar.show();
+        }
+    }
+
+    @Override
+    public void activityStopped() {
+        if (null != progressBar) {
+            progressBar.hide();
         }
     }
 }

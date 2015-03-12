@@ -12,6 +12,13 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_weight="0"/>
+        <android.support.v4.widget.ContentLoadingProgressBar
+            android:id="@+id/main_progress_bar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:indeterminate="true"
+            android:visibility="invisible"
+            android:indeterminateBehavior="repeat"/>
         <FrameLayout
             android:id="@+id/main_single_view"
             android:layout_width="match_parent"

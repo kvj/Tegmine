@@ -28,7 +28,7 @@ public class LightTheme {
 
     protected Map<Colors, Integer> mapping = new HashMap<>();
 
-    protected int color(Colors color, int defaultColor) {
+    public int color(Colors color, int defaultColor) {
         Integer colorInt = mapping.get(color);
         if (null == colorInt) {
             // No mapping
@@ -39,6 +39,10 @@ public class LightTheme {
 
     public int textColor() {
         return color(Colors.Base0, Color.BLACK);
+    }
+
+    public int markColor() {
+        return color(Colors.Base2, Color.BLACK);
     }
 
     public int backgroundColor() {

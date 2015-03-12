@@ -110,10 +110,13 @@ public class OneFileAdapter extends BaseAdapter {
 //        logger.d("Render line:", position);
         TextView text = null;
         TextView lineno = null;
+        View border = null;
         if (null == convertView) { // inflate
             LayoutInflater inflater = (LayoutInflater) parent.getContext()
                     .getSystemService(Context.LAYOUT_INFLATER_SERVICE);
             convertView = inflater.inflate(R.layout.item_one_file, parent, false);
+            border = convertView.findViewById(R.id.one_file_item_border);
+            border.setBackgroundColor(controller.theme().markColor());
             text = (TextView) convertView.findViewById(R.id.one_file_item_text);
             lineno = (TextView) convertView.findViewById(R.id.one_file_item_lineno);
             text.setTextSize(TypedValue.COMPLEX_UNIT_SP, controller.theme().fileTextSp());
@@ -122,6 +125,7 @@ public class OneFileAdapter extends BaseAdapter {
             lineno.setVisibility(View.GONE);
             text.setSingleLine(false);
         } else {
+            border = convertView.findViewById(R.id.one_file_item_border);
             text = (TextView) convertView.findViewById(R.id.one_file_item_text);
             lineno = (TextView) convertView.findViewById(R.id.one_file_item_lineno);
         }
@@ -129,6 +133,7 @@ public class OneFileAdapter extends BaseAdapter {
         if (null == line) { // Invalid line
             text.setText("");
         } else {
+            border.setVisibility(line.folded()? View.VISIBLE: View.GONE);
             int indent = line.indent();
             text.setText(line.data());
             int leftIndent = (int) Tegmine.getInstance().sp2px(indent * controller.theme().fileIndentSp());

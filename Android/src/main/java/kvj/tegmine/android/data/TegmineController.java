@@ -52,6 +52,7 @@ public class TegmineController {
     private boolean newLineBefore = true;
     private boolean newLineAfter = false;
     private String selectedTheme = "default";
+    private boolean scrollToBottom = true;
 
     public TegmineController() {
         setupFailsave();
@@ -324,6 +325,7 @@ public class TegmineController {
             defaultProvider = null;
             newLineBefore = objectBoolean(config, "newLineBefore", newLineBefore);
             newLineAfter = objectBoolean(config, "newLineAfter", newLineAfter);
+            scrollToBottom = objectBoolean(config, "scrollToBottom", true);
             Map<String, Object> storageConfig = objectObject(config, "storage");
             if (null != storageConfig) { // Have config
                 for (String key : storageConfig.keySet()) { // Create new instances
@@ -417,6 +419,10 @@ public class TegmineController {
 
     public Map<String, TemplateDef> templates() {
         return templates;
+    }
+
+    public boolean scrollToBottom() {
+        return scrollToBottom;
     }
 
     public static class TemplateApplyResult {

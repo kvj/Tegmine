@@ -46,7 +46,7 @@ public class OneFileAdapter extends BaseAdapter {
         this.item = item;
     }
 
-    public void setBounds(final int offset, final int linesCount) {
+    public void setBounds(final int offset, final int linesCount, final Runnable afterDone) {
         synchronized (lock) {
             state = DataState.FrameRequested;
             Tasks.SimpleTask<Boolean> task = new Tasks.SimpleTask<Boolean>() {
@@ -72,6 +72,9 @@ public class OneFileAdapter extends BaseAdapter {
                         logger.d("Loaded:", offset, lines.size());
                         state = DataState.FrameLoaded;
                         updateVisible();
+                    }
+                    if (null != afterDone) {
+                        afterDone.run();
                     }
                 }
             };
@@ -158,14 +161,20 @@ public class OneFileAdapter extends BaseAdapter {
             }
             startLine.folded(!startLine.folded());
             int index = visibleLines.get(position)+1;
+            int folded = 0;
             while (index < lines.size()) {
                 LineMeta line = lines.get(index);
                 if (line.indent()>startLine.indent() || line.indent() == -1) { // Fold
+                    folded++;
                     line.visible(!startLine.folded());
                 } else {
                     break;
                 }
                 index++;
+            }
+            if (folded == 0) {
+                // Nothing to fold
+                startLine.folded(false);
             }
             updateVisible();
         }

@@ -55,7 +55,7 @@ public class OneFileViewer extends ListFragment {
         return this;
     }
 
-    public OneFileViewer create(TegmineController controller, Bundle bundle) {
+    public OneFileViewer create(final TegmineController controller, Bundle bundle) {
         this.controller = controller;
         form.add(new FileSystemItemWidgetAdapter(controller, null), "select");
         form.add(new FileSystemItemWidgetAdapter(controller, null), "root");
@@ -63,7 +63,14 @@ public class OneFileViewer extends ListFragment {
         item = form.getValue("select", FileSystemItem.class);
         adapter = new OneFileAdapter(controller, item);
         setListAdapter(adapter);
-        adapter.setBounds(0, -1);
+        adapter.setBounds(0, -1, new Runnable() {
+            @Override
+            public void run() {
+                if (controller.scrollToBottom()) {
+                    getListView().setSelection(adapter.getCount()-1);
+                }
+            }
+        });
         return this;
     }
 
@@ -160,7 +167,7 @@ public class OneFileViewer extends ListFragment {
 
     public void refresh() {
         if (null != adapter) { // Reload contents
-            adapter.setBounds(0, -1);
+            adapter.setBounds(0, -1, null);
         }
     }
 

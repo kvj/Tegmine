@@ -1,6 +1,7 @@
 package kvj.tegmine.android.data;
 
 import android.os.Environment;
+import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.widget.TextView;
@@ -33,6 +34,7 @@ import kvj.tegmine.android.data.def.FileSystemProvider;
 import kvj.tegmine.android.data.impl.provider.local.LocalFileSystemProvider;
 import kvj.tegmine.android.data.model.LineMeta;
 import kvj.tegmine.android.data.model.ProgressListener;
+import kvj.tegmine.android.data.model.SyntaxDef;
 import kvj.tegmine.android.data.model.TemplateDef;
 import kvj.tegmine.android.ui.theme.LightTheme;
 
@@ -49,6 +51,7 @@ public class TegmineController {
     private Logger logger = Logger.forInstance(this);
     private Map<String, Object> config = new HashMap<>();
     private Map<String, LightTheme> colorSchemes = new HashMap<>();
+    private Map<String, SyntaxDef> syntaxes = new HashMap<>();
 
     private boolean newLineBefore = true;
     private boolean newLineAfter = false;
@@ -272,10 +275,21 @@ public class TegmineController {
             if (spacePos == -1) { // No space inside
                 objStart = true;
             }
+            boolean arrayMode = false;
+            if (lineStr.endsWith("[]")) {
+                arrayMode = true;
+                lineStr = lineStr.substring(0, lineStr.length()-2);
+            }
             if (objStart) { // Object will start from here
                 Map<String, Object> values = new LinkedHashMap<>();
                 i = readObject(lines, i+1, values, indent+1);
-                to.put(lineStr, values);
+                if (arrayMode) {
+                    List<String> valuesList = new ArrayList<>();
+                    valuesList.addAll(values.keySet());
+                    to.put(lineStr, valuesList);
+                } else {
+                    to.put(lineStr, values);
+                }
                 continue;
             }
             // Value mode
@@ -288,6 +302,7 @@ public class TegmineController {
         templates.clear();
         fileSystemProviders.clear();
         colorSchemes.clear();
+        syntaxes.clear();
         if (!fileSystemProviders.containsKey("sdcard")) { // Failsafe - should always be there
             FileSystemProvider provider = new LocalFileSystemProvider(Environment.getExternalStorageDirectory(), "sdcard");
             fileSystemProviders.put("sdcard", provider);
@@ -305,6 +320,73 @@ public class TegmineController {
         Map<String, Object> object = new HashMap<>();
         readObject(lines, 0, object, 0);
         return object;
+    }
+
+    private void reloadSyntaxes() {
+        Map<String, Object> items = objectObject(config, "syntax");
+        if (null == items) {
+            return;
+        }
+        for (Map.Entry<String, Object> oneBlock : items.entrySet()) {
+            String key = oneBlock.getKey();
+            Map<String, Object> keyConfig = objectObject(items, key);
+            try {
+                Pattern pattern = Pattern.compile(String.format("^%s$", objectString(keyConfig, "pattern", "")));
+                SyntaxDef sy = new SyntaxDef(pattern, key);
+                FileSystemItem syntaxFile = fromURL(objectString(keyConfig, "file", null));
+                if (null == syntaxFile) {
+                    logger.w("Failed to load color scheme:", key, keyConfig);
+                    continue;
+                }
+                Map<String, Object> oneSyntaxData = file2Object(syntaxFile);
+                sy.read(oneSyntaxData);
+                syntaxes.put(key, sy);
+            } catch (Exception e) {
+                logger.w(e, "Failed to read syntax file");
+                continue;
+            }
+        }
+    }
+
+    public SyntaxDef findSyntax(FileSystemItem item) {
+        for (SyntaxDef sy : syntaxes.values()) {
+            if (sy.filePattern().matcher(item.name).find()) {
+                logger.d("Find syntax for:", item.name, sy.filePattern());
+                return sy;
+            }
+        }
+        logger.w("No syntax found:", item.name);
+        return null;
+    }
+
+    private void reloadColorSchemes() {
+        Map<String, Object> colorsConfig = objectObject(config, "colorschemes");
+        if (null != colorsConfig) {
+            for (Map.Entry<String, Object> oneLine : colorsConfig.entrySet()) {
+                FileSystemItem fileItem = fromURL(oneLine.getValue().toString());
+                if (null == fileItem) {
+                    logger.w("Failed to load color scheme:", oneLine.getKey(), oneLine.getValue());
+                    continue;
+                }
+                try {
+                    Map<String, Object> themeConfig = file2Object(fileItem);
+                    LightTheme newTheme = new LightTheme();
+                    for (Map.Entry<String, Object> oneThemeLine : themeConfig.entrySet()) {
+                        boolean loaded = newTheme.loadColor(oneThemeLine.getKey(), oneThemeLine.getValue().toString());
+                        if (!loaded) {
+                            logger.w("Theme line ignored:", oneThemeLine.getKey(), oneThemeLine.getValue());
+                        }
+                    }
+                    colorSchemes.put(oneLine.getKey(), newTheme);
+                } catch (FileSystemException e) {
+                    logger.w(e, "Failed to read theme file", fileItem.toURL());
+                }
+            }
+        }
+        String themeStr = objectString(config, "colorscheme", "default");
+        if (colorSchemes.containsKey(themeStr)) {
+            selectedTheme = themeStr;
+        }
     }
 
     public void reloadConfig() throws FileSystemException {
@@ -361,33 +443,8 @@ public class TegmineController {
                     templates.put(key, tmpl);
                 }
             }
-            Map<String, Object> colorsConfig = objectObject(config, "colorschemes");
-            if (null != colorsConfig) {
-                for (Map.Entry<String, Object> oneLine : colorsConfig.entrySet()) {
-                    FileSystemItem fileItem = fromURL(oneLine.getValue().toString());
-                    if (null == fileItem) {
-                        logger.w("Failed to load color scheme:", oneLine.getKey(), oneLine.getValue());
-                        continue;
-                    }
-                    try {
-                        Map<String, Object> themeConfig = file2Object(fileItem);
-                        LightTheme newTheme = new LightTheme();
-                        for (Map.Entry<String, Object> oneThemeLine : themeConfig.entrySet()) {
-                            boolean loaded = newTheme.loadColor(oneThemeLine.getKey(), oneThemeLine.getValue().toString());
-                            if (!loaded) {
-                                logger.w("Theme line ignored:", oneThemeLine.getKey(), oneThemeLine.getValue());
-                            }
-                        }
-                        colorSchemes.put(oneLine.getKey(), newTheme);
-                    } catch (FileSystemException e) {
-                        logger.w(e, "Failed to read theme file", fileItem.toURL());
-                    }
-                }
-            }
-            String themeStr = objectString(config, "colorscheme", "default");
-            if (colorSchemes.containsKey(themeStr)) {
-                selectedTheme = themeStr;
-            }
+            reloadColorSchemes();
+            reloadSyntaxes();
         } catch (FileSystemException e) {
             ex = e;
         }
@@ -416,9 +473,27 @@ public class TegmineController {
         return (Map) value;
     }
 
+    public static <T> List<T> objectList(Map<String, Object> obj, Class<T> cls, String name) {
+        Object value = obj.get(name);
+        if (null == value || !(value instanceof List)) {
+            return null;
+        }
+        return (List) value;
+    }
+
     public static boolean objectBoolean(Map<String, Object> obj, String name, boolean def) {
         String value = objectString(obj, name, "y");
         return (value.equalsIgnoreCase("y") || value.equalsIgnoreCase("yes") || value.equals("1") || value.equalsIgnoreCase("true"));
+    }
+
+    public static int objectInteger(Map<String, Object> obj, String name, int def) {
+        String value = objectString(obj, name, "");
+        if (TextUtils.isEmpty(value)) return def;
+        try {
+            return Integer.parseInt(value, 10);
+        } catch (NumberFormatException e) {
+            return def;
+        }
     }
 
     public Map<String, TemplateDef> templates() {
@@ -513,4 +588,13 @@ public class TegmineController {
     public Listeners<ProgressListener> progressListeners() {
         return progressListeners;
     }
+
+    public void applyTheme(SyntaxDef syntax, LineMeta line, SpannableStringBuilder builder) {
+        if (null == syntax) {
+            builder.append(line.data());
+            return;
+        }
+        syntax.apply(line.data(), builder);
+    }
+
 }

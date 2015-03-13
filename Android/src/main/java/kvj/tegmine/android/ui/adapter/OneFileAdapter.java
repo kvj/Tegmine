@@ -20,6 +20,7 @@ import kvj.tegmine.android.data.TegmineController;
 import kvj.tegmine.android.data.def.FileSystemException;
 import kvj.tegmine.android.data.def.FileSystemItem;
 import kvj.tegmine.android.data.model.LineMeta;
+import kvj.tegmine.android.data.model.SyntaxDef;
 
 /**
  * Created by kvorobyev on 2/17/15.
@@ -27,6 +28,7 @@ import kvj.tegmine.android.data.model.LineMeta;
 public class OneFileAdapter extends BaseAdapter {
 
     private static final int MAX_LINES = 30;
+    private final SyntaxDef syntax;
 
     private enum DataState {FrameLoaded, FrameRequested};
 
@@ -44,6 +46,7 @@ public class OneFileAdapter extends BaseAdapter {
     public OneFileAdapter(TegmineController controller, FileSystemItem item) {
         this.controller = controller;
         this.item = item;
+        this.syntax = controller.findSyntax(item);
     }
 
     public void setBounds(final int offset, final int linesCount, final Runnable afterDone) {

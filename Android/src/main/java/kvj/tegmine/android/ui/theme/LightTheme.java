@@ -24,6 +24,15 @@ public class LightTheme {
         public String code() {
             return code;
         }
+
+        public static Colors findColor(String code) {
+            for (Colors col : Colors.values()) {
+                if (col.code().equals(code)) {
+                    return col;
+                }
+            }
+            return null;
+        }
     };
 
     protected Map<Colors, Integer> mapping = new HashMap<>();
@@ -82,11 +91,10 @@ public class LightTheme {
     }
 
     public boolean loadColor(String code, String color) {
-        for (Colors col : Colors.values()) {
-            if (col.code().equals(code)) {
-                mapping.put(col, Color.parseColor(color));
-                return true;
-            }
+        Colors col = Colors.findColor(code);
+        if (null != col) {
+            mapping.put(col, Color.parseColor(color));
+            return true;
         }
         return false;
     }

@@ -1,6 +1,7 @@
 package kvj.tegmine.android.ui.adapter;
 
 import android.content.Context;
+import android.text.SpannableStringBuilder;
 import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -141,7 +142,9 @@ public class OneFileAdapter extends BaseAdapter {
         } else {
             border.setVisibility(line.folded()? View.VISIBLE: View.GONE);
             int indent = line.indent();
-            text.setText(line.data());
+            SpannableStringBuilder builder = new SpannableStringBuilder();
+            controller.applyTheme(syntax, line, builder);
+            text.setText(builder);
             int leftIndent = (int) Tegmine.getInstance().sp2px(indent * controller.theme().fileIndentSp());
             text.setPadding(leftIndent, 0, 0, 0);
         }
@@ -170,6 +173,9 @@ public class OneFileAdapter extends BaseAdapter {
                 if (line.indent()>startLine.indent() || line.indent() == -1) { // Fold
                     folded++;
                     line.visible(!startLine.folded());
+                    if (line.visible() && line.folded()) { // Has been folded before
+                        line.folded(false); // Unfold - too hard to skip at this moment
+                    }
                 } else {
                     break;
                 }

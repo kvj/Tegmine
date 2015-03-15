@@ -51,7 +51,7 @@ public class LightTheme {
     }
 
     public int markColor() {
-        return color(Colors.Base2, Color.BLACK);
+        return color(Colors.Base1, Color.BLACK);
     }
 
     public int backgroundColor() {

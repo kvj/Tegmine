@@ -594,7 +594,7 @@ public class TegmineController {
             builder.append(line.data());
             return;
         }
-        syntax.apply(line.data(), builder);
+        syntax.apply(theme(), line.data(), builder);
     }
 
 }

@@ -12,6 +12,7 @@ import android.widget.AdapterView;
 import android.widget.ListView;
 import android.widget.TextView;
 
+import org.kvj.bravo7.SuperActivity;
 import org.kvj.bravo7.form.FormController;
 import org.kvj.bravo7.log.Logger;
 import org.kvj.bravo7.util.Tasks;
@@ -61,16 +62,13 @@ public class OneFileViewer extends ListFragment {
         form.add(new FileSystemItemWidgetAdapter(controller, null), "root");
         form.load(bundle);
         item = form.getValue("select", FileSystemItem.class);
+        logger.d("new FileViewer:", item, bundle);
+        if (null == item) {
+            SuperActivity.notifyUser(Tegmine.getInstance(), "File not found");
+            return null;
+        }
         adapter = new OneFileAdapter(controller, item);
         setListAdapter(adapter);
-        adapter.setBounds(0, -1, new Runnable() {
-            @Override
-            public void run() {
-                if (controller.scrollToBottom()) {
-                    getListView().setSelection(adapter.getCount()-1);
-                }
-            }
-        });
         return this;
     }
 
@@ -103,6 +101,14 @@ public class OneFileViewer extends ListFragment {
             public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
                 onLongItemClick(position);
                 return true;
+            }
+        });
+        adapter.setBounds(0, -1, new Runnable() {
+            @Override
+            public void run() {
+                if (controller.scrollToBottom() && null != getListView()) {
+                    getListView().setSelection(adapter.getCount()-1);
+                }
             }
         });
         return view;

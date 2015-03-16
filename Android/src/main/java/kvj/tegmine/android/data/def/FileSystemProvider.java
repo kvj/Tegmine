@@ -13,6 +13,16 @@ import java.util.List;
  */
 abstract public class FileSystemProvider<T extends FileSystemItem> {
 
+    protected final String name;
+
+    protected FileSystemProvider(String name) {
+        this.name = name;
+    }
+
+    public String name() {
+        return name;
+    }
+
     protected Logger logger = Logger.forInstance(this);
 
     public final List<? extends FileSystemItem> children(FileSystemItem parent) throws FileSystemException {

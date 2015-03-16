@@ -1,5 +1,6 @@
 package kvj.tegmine.android.ui.fragment;
 
+import android.content.Context;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.text.TextUtils;
@@ -11,6 +12,7 @@ import android.view.MenuItem;
 import android.view.SubMenu;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -85,6 +87,7 @@ public class Editor extends Fragment {
         form.add(new FileSystemItemWidgetAdapter(controller, null), "select");
         form.add(new FileSystemItemWidgetAdapter(controller, null), "root");
         form.add(new TransientAdapter<String>(new StringBundleAdapter(), Tegmine.EDIT_TYPE_ADD), Tegmine.BUNDLE_EDIT_TYPE);
+        form.add(new TransientAdapter<String>(new StringBundleAdapter(), null), Tegmine.BUNDLE_EDIT_TEMPLATE);
         form.add(new TextViewStringAdapter(R.id.editor_text, null), "contents");
         form.load(bundle);
         form.setAsOriginal();
@@ -106,16 +109,36 @@ public class Editor extends Fragment {
         return view;
     }
 
+    private void requestFocusFor(View view) {
+        view.requestFocus();
+        InputMethodManager imm = (InputMethodManager) Tegmine.getInstance().getSystemService(
+            Context.INPUT_METHOD_SERVICE);
+        if (null != imm) {
+            imm.showSoftInput(view, InputMethodManager.SHOW_IMPLICIT);
+        }
+    }
+
     private void loadContents(final EditText editor) {
         logger.d("loadContents", form.getValue("contents", String.class), form.getValue(Tegmine.BUNDLE_EDIT_TYPE, String.class));
         final boolean needValue = null == form.getValue("contents", String.class); // Value is not yet loaded
         final StringBuilder buffer = new StringBuilder();
+        if (Tegmine.EDIT_TYPE_ADD.equals(form.getValue(Tegmine.BUNDLE_EDIT_TYPE, String.class))) { // No contents in add mode
+            if (needValue) {
+                String template = form.getValue(Tegmine.BUNDLE_EDIT_TEMPLATE, String.class);
+                // Try to get template
+                TemplateDef tmpl = controller.templates().get(template);
+                if (null != tmpl) {
+                    applyTemplate(tmpl);
+                } else {
+                    form.setValue("contents", "");
+                }
+            }
+            requestFocusFor(editor);
+            return;
+        }
         Tasks.SimpleTask<FileSystemException> task = new Tasks.SimpleTask<FileSystemException>() {
             @Override
             protected FileSystemException doInBackground() {
-                if (Tegmine.EDIT_TYPE_ADD.equals(form.getValue(Tegmine.BUNDLE_EDIT_TYPE, String.class))) { // No contents in add mode
-                    return null;
-                }
                 try {
                     List<LineMeta> lines = new ArrayList<>();
                     controller.loadFilePart(lines, item, 0, -1);
@@ -134,7 +157,7 @@ public class Editor extends Fragment {
                         form.setValue("contents", buffer.toString());
                     }
                     form.setOriginalValue("contents", buffer.toString()); // Always
-                    editor.requestFocus();
+                    requestFocusFor(editor);
                 } else {
                     logger.e(e, "Failed to load file contents");
                 }
@@ -181,6 +204,7 @@ public class Editor extends Fragment {
 
             @Override
             protected void onPostExecute(FileSystemException e) {
+                logger.d("Save result:", e);
                 if (null == e) { // Saved
                     onAfterSave();
                 } else {
@@ -203,13 +227,17 @@ public class Editor extends Fragment {
         listener = null;
     }
 
+    private void applyTemplate(TemplateDef tmpl) {
+        TegmineController.TemplateApplyResult applyResult = controller.applyTemlate(tmpl);
+        form.setValue("contents", applyResult.value());
+        editor.setSelection(applyResult.cursor());
+    }
+
     private MenuItem.OnMenuItemClickListener templateListener(final TemplateDef tmpl) {
         return new MenuItem.OnMenuItemClickListener() {
             @Override
             public boolean onMenuItemClick(MenuItem item) {
-                TegmineController.TemplateApplyResult applyResult = controller.applyTemlate(tmpl);
-                editor.setText(applyResult.value());
-                editor.setSelection(applyResult.cursor());
+                applyTemplate(tmpl);
                 return true;
             }
         };

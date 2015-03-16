@@ -19,6 +19,7 @@ public class Tegmine extends ApplicationContext {
     public static final String VIEW_TYPE_FILE = "file";
     public static final String VIEW_TYPE_EDITOR = "editor";
     public static final String BUNDLE_EDIT_TYPE = "edit_type";
+    public static final String BUNDLE_EDIT_TEMPLATE = "edit_template";
     public static final String EDIT_TYPE_ADD = "edit_add";
     public static final String EDIT_TYPE_EDIT = "edit_edit";
     public static final String BUNDLE_PROVIDER = "provider";

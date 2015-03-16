@@ -37,7 +37,7 @@ public class LocalFileSystemItem extends FileSystemItem<LocalFileSystemItem> {
 
     @Override
     public String toURL() {
-        return String.format("tegmine+%s://%s", provider.name, file.getAbsolutePath());
+        return String.format("tegmine+%s://%s", provider.name(), file.getAbsolutePath());
     }
 
     @Override

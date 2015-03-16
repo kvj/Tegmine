@@ -130,12 +130,17 @@ public class Main extends ActionBarActivity implements ControllerConnector.Contr
         }
     }
 
-    private void openIn(Fragment fragment, int id, String tag) {
+    private boolean openIn(Fragment fragment, int id, String tag) {
+        if (null == fragment) {
+            // Nothing to add
+            return false;
+        }
 //        fragment.setRetainInstance(true);
         FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
         fragmentTransaction.replace(id, fragment, tag);
 //        fragmentTransaction.addToBackStack(null);
         fragmentTransaction.commit();
+        return true;
     }
 
     @Override

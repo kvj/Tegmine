@@ -25,11 +25,10 @@ import kvj.tegmine.android.data.def.FileSystemProvider;
 public class LocalFileSystemProvider extends FileSystemProvider<LocalFileSystemItem> {
 
     private final File parent;
-    final String name;
 
     public LocalFileSystemProvider(File parent, String name) {
+        super(name);
         this.parent = parent;
-        this.name = name;
     }
 
     @Override

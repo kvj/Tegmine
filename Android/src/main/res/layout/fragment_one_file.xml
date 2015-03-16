@@ -36,12 +36,18 @@
             android:layout_weight="1"
             android:drawSelectorOnTop="false"/>
     </LinearLayout>
-    <ImageButton
-        android:id="@+id/one_file_do_add"
-        android:src="@drawable/icn_file_add_light"
-        style="@style/CircleButton.BottomRight"/>
-    <ImageButton
-        android:id="@+id/one_file_do_edit"
-        android:src="@drawable/icn_file_edit_light"
-        style="@style/CircleButton.BottomLeft"/>
+    <RelativeLayout
+            android:id="@+id/one_file_buttons"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_alignParentBottom="true">
+        <ImageButton
+                android:id="@+id/one_file_do_add"
+                android:src="@drawable/icn_file_add_light"
+                style="@style/CircleButton.BottomRight"/>
+        <ImageButton
+                android:id="@+id/one_file_do_edit"
+                android:src="@drawable/icn_file_edit_light"
+                style="@style/CircleButton.BottomLeft"/>
+    </RelativeLayout>
 </RelativeLayout>

@@ -1,5 +1,6 @@
 package kvj.tegmine.android.ui.fragment;
 
+import android.animation.ObjectAnimator;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.app.ListFragment;
@@ -8,6 +9,7 @@ import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -95,7 +97,7 @@ public class OneFileViewer extends ListFragment {
                 startEditor(Tegmine.EDIT_TYPE_EDIT);
             }
         });
-        ListView listView = (ListView) view.findViewById(android.R.id.list);
+        final ListView listView = (ListView) view.findViewById(android.R.id.list);
         listView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
             @Override
             public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
@@ -103,15 +105,43 @@ public class OneFileViewer extends ListFragment {
                 return true;
             }
         });
+        final View buttonsPane = view.findViewById(R.id.one_file_buttons);
+        listView.setOnScrollListener(new AbsListView.OnScrollListener() {
+            @Override
+            public void onScrollStateChanged(AbsListView absListView, int state) {
+                if (state == SCROLL_STATE_IDLE) {
+                    // Stopped
+                    changeButtonsDim(buttonsPane, listView);
+                }
+            }
+
+            @Override
+            public void onScroll(AbsListView absListView, int i, int i2, int i3) {
+            }
+        });
         adapter.setBounds(0, -1, new Runnable() {
             @Override
             public void run() {
-                if (controller.scrollToBottom() && null != getListView()) {
-                    getListView().setSelection(adapter.getCount()-1);
+                if (controller.scrollToBottom()) {
+                    listView.setSelection(adapter.getCount() - 1);
+                    listView.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            changeButtonsDim(buttonsPane, listView);
+                        }
+                    });
                 }
             }
         });
         return view;
+    }
+
+    private void changeButtonsDim(View buttonsPane, ListView listView) {
+        boolean dimButtons = listView.getCount() == listView.getLastVisiblePosition()+1;
+//        logger.d("Scroll state:", listView.getCount(), listView.getFirstVisiblePosition(), listView.getLastVisiblePosition(), dimButtons);
+        ObjectAnimator anim = ObjectAnimator.ofFloat(buttonsPane, "alpha", dimButtons? 1f: 0.4f, dimButtons? 0.4f: 1f);
+        anim.setDuration(300);
+        anim.start();
     }
 
     @Override

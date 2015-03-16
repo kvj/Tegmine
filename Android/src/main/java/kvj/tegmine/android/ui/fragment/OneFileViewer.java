@@ -3,10 +3,12 @@ package kvj.tegmine.android.ui.fragment;
 import android.animation.ObjectAnimator;
 import android.content.Intent;
 import android.os.Bundle;
-import android.support.v4.app.ListFragment;
+import android.support.v4.app.Fragment;
 import android.text.TextUtils;
 import android.util.TypedValue;
+import android.view.ContextMenu;
 import android.view.LayoutInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AbsListView;
@@ -34,7 +36,9 @@ import kvj.tegmine.android.ui.form.FileSystemItemWidgetAdapter;
 /**
  * Created by kvorobyev on 2/16/15.
  */
-public class OneFileViewer extends ListFragment {
+public class OneFileViewer extends Fragment {
+
+    private ListView listView = null;
 
     public static interface FileViewerListener {
         public void openEditor(Bundle data);
@@ -69,8 +73,6 @@ public class OneFileViewer extends ListFragment {
             SuperActivity.notifyUser(Tegmine.getInstance(), "File not found");
             return null;
         }
-        adapter = new OneFileAdapter(controller, item);
-        setListAdapter(adapter);
         return this;
     }
 
@@ -97,12 +99,21 @@ public class OneFileViewer extends ListFragment {
                 startEditor(Tegmine.EDIT_TYPE_EDIT);
             }
         });
-        final ListView listView = (ListView) view.findViewById(android.R.id.list);
+        listView = (ListView) view.findViewById(android.R.id.list);
+        registerForContextMenu(listView);
+        adapter = new OneFileAdapter(controller, item);
+        listView.setAdapter(adapter);
         listView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
             @Override
             public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
                 onLongItemClick(position);
                 return true;
+            }
+        });
+        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                onListItemClick(position);
             }
         });
         final View buttonsPane = view.findViewById(R.id.one_file_buttons);
@@ -136,34 +147,59 @@ public class OneFileViewer extends ListFragment {
         return view;
     }
 
+    private boolean buttonsDimmed = false;
+
     private void changeButtonsDim(View buttonsPane, ListView listView) {
         boolean dimButtons = listView.getCount() == listView.getLastVisiblePosition()+1;
 //        logger.d("Scroll state:", listView.getCount(), listView.getFirstVisiblePosition(), listView.getLastVisiblePosition(), dimButtons);
-        ObjectAnimator anim = ObjectAnimator.ofFloat(buttonsPane, "alpha", dimButtons? 1f: 0.4f, dimButtons? 0.4f: 1f);
-        anim.setDuration(300);
-        anim.start();
+        if (dimButtons != buttonsDimmed) { // State changed
+            ObjectAnimator anim = ObjectAnimator.ofFloat(buttonsPane, "alpha", dimButtons ? 1f : 0.4f, dimButtons ? 0.4f : 1f);
+            anim.setDuration(300);
+            anim.start();
+            buttonsDimmed = dimButtons;
+        }
     }
 
-    @Override
-    public void onListItemClick(ListView l, View v, int position, long id) {
+    public void onListItemClick(int position) {
         if (null != adapter) { // Toggle folding
             adapter.toggle(position);
         }
     }
 
-    private void onLongItemClick(int position) {
-        if (null != adapter) { // OK
-            String contents = adapter.partString(position);
+    @Override
+    public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
+        if (null != adapter && v == listView) { // OK to show
+            logger.d("Listview menu:", menuInfo);
+            menu.clear();
+            getActivity().getMenuInflater().inflate(R.menu.context_one_file, menu);
+            final String contents = adapter.partString(listView.getSelectedItemPosition());
+            logger.d("Show menu for:", listView.getSelectedItemPosition(), contents);
             if (TextUtils.isEmpty(contents)) { // No data
                 return;
             }
-            Intent sendIntent = new Intent();
-            sendIntent.setAction(Intent.ACTION_SEND);
-            sendIntent.putExtra(Intent.EXTRA_TEXT, contents);
-            sendIntent.setType("text/plain");
-            startActivity(sendIntent);
-            logger.d("Sharing text:", contents);
+            menu.findItem(R.id.context_copy_cboard).setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
+                @Override
+                public boolean onMenuItemClick(MenuItem item) {
+                    // Copy here
+                    return true;
+                }
+            });
+            menu.findItem(R.id.context_share).setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
+                @Override
+                public boolean onMenuItemClick(MenuItem item) {
+                    Intent sendIntent = new Intent();
+                    sendIntent.setAction(Intent.ACTION_SEND);
+                    sendIntent.putExtra(Intent.EXTRA_TEXT, contents);
+                    sendIntent.setType("text/plain");
+                    startActivity(sendIntent);
+                    return true;
+                }
+            });
         }
+    }
+
+    private void onLongItemClick(int position) {
+//        listView.showContextMenu();
     }
 
     private void loadFileLayout() {

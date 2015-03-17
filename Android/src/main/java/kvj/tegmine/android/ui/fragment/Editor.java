@@ -17,6 +17,7 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import org.kvj.bravo7.SuperActivity;
 import org.kvj.bravo7.form.FormController;
 import org.kvj.bravo7.form.impl.bundle.StringBundleAdapter;
 import org.kvj.bravo7.form.impl.widget.TextViewStringAdapter;
@@ -33,6 +34,7 @@ import kvj.tegmine.android.Tegmine;
 import kvj.tegmine.android.data.TegmineController;
 import kvj.tegmine.android.data.def.FileSystemException;
 import kvj.tegmine.android.data.def.FileSystemItem;
+import kvj.tegmine.android.data.model.FileItemWatcher;
 import kvj.tegmine.android.data.model.LineMeta;
 import kvj.tegmine.android.data.model.TemplateDef;
 import kvj.tegmine.android.ui.form.FileSystemItemWidgetAdapter;
@@ -58,6 +60,7 @@ public class Editor extends Fragment {
     private FileSystemItem item = null;
     private EditorListener listener = null;
     private EditText editor = null;
+    private FileItemWatcher watcher = null;
 
     public Editor create(TegmineController controller, Bundle bundle) {
         this.controller = controller;
@@ -95,6 +98,30 @@ public class Editor extends Fragment {
         if (null == item) { // Invalid
             return null;
         }
+        watcher = new FileItemWatcher(controller, item) {
+            @Override
+            public void itemChanged(FileSystemItem item) {
+                // File has been changed - ask for reload
+                item.commit(); // Change detected
+                final boolean doEdit = Tegmine.EDIT_TYPE_EDIT.equals(form.getValue(Tegmine.BUNDLE_EDIT_TYPE, String.class));
+                if (doEdit) {
+                    // Makes sense - can ask for refresh
+                    SuperActivity
+                        .showQuestionDialog(getActivity(), "Reload editor?",
+                                            "File has been changed. Reload?",
+                        new Runnable() {
+                            @Override
+                            public void run() {
+                                loadContents(editor);
+                            }
+                        }, new Runnable() {
+                            @Override
+                            public void run() {
+                            }
+                        });
+                }
+            }
+        };
         title.setText(item.details());
         ImageView icon = (ImageView) view.findViewById(R.id.editor_title_icon);
         boolean doEdit = Tegmine.EDIT_TYPE_EDIT.equals(form.getValue(Tegmine.BUNDLE_EDIT_TYPE, String.class));
@@ -196,6 +223,7 @@ public class Editor extends Fragment {
                         stream = controller.fileSystemProvider().append(item);
                     }
                     controller.writeEdited(stream, contents, doEdit);
+                    item.commit();
                 } catch (FileSystemException e) {
                     return e;
                 }
@@ -254,5 +282,17 @@ public class Editor extends Fragment {
                 menuItem.setOnMenuItemClickListener(templateListener(template));
             }
         }
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        if (null != watcher) watcher.active(true);
+    }
+
+    @Override
+    public void onPause() {
+        if (null != watcher) watcher.active(false);
+        super.onPause();
     }
 }

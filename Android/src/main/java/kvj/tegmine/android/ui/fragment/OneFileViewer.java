@@ -36,6 +36,7 @@ import kvj.tegmine.android.Tegmine;
 import kvj.tegmine.android.data.TegmineController;
 import kvj.tegmine.android.data.def.FileSystemException;
 import kvj.tegmine.android.data.def.FileSystemItem;
+import kvj.tegmine.android.data.model.FileItemWatcher;
 import kvj.tegmine.android.data.model.LineMeta;
 import kvj.tegmine.android.ui.adapter.OneFileAdapter;
 import kvj.tegmine.android.ui.form.FileSystemItemWidgetAdapter;
@@ -59,6 +60,7 @@ public class OneFileViewer extends Fragment {
     private FormController form = new FormController(null);
     private FileSystemItem item = null;
     private FileViewerListener listener = null;
+    private FileItemWatcher watcher = null;
 
     public OneFileViewer() {
         super();
@@ -80,6 +82,13 @@ public class OneFileViewer extends Fragment {
             SuperActivity.notifyUser(Tegmine.getInstance(), "File not found");
             return null;
         }
+        watcher = new FileItemWatcher(controller, item) {
+            @Override
+            public void itemChanged(FileSystemItem item) {
+                refresh();
+                item.commit(); // Change detected
+            }
+        };
         return this;
     }
 
@@ -177,6 +186,7 @@ public class OneFileViewer extends Fragment {
                 try {
                     stream = controller.fileSystemProvider().append(item);
                     controller.writeEdited(stream, text.toString().trim(), false);
+                    item.commit();
                 } catch (FileSystemException e) {
                     return e;
                 }
@@ -301,5 +311,19 @@ public class OneFileViewer extends Fragment {
     public void onDestroyView() {
         super.onDestroyView();
         listener = null;
+    }
+
+    @Override
+    public void onResume() {
+        logger.d("Viewer resumed");
+        super.onResume();
+        if (null != watcher) watcher.active(true);
+    }
+
+    @Override
+    public void onPause() {
+        logger.d("Viewer paused");
+        if (null != watcher) watcher.active(false);
+        super.onPause();
     }
 }

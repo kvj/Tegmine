@@ -19,4 +19,12 @@ abstract public class FileSystemItem<T> {
     }
 
     abstract public String toURL();
+
+    public boolean hasBeenChanged() {
+        return false; // Override it in order to detect
+    }
+
+    public void commit() {
+        // Called when IO operation is done
+    }
 }

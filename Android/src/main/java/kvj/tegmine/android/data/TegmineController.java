@@ -52,6 +52,7 @@ public class TegmineController {
     private Map<String, Object> config = new HashMap<>();
     private Map<String, LightTheme> colorSchemes = new HashMap<>();
     private Map<String, SyntaxDef> syntaxes = new HashMap<>();
+    private int watchSeconds = 60;
 
     private boolean newLineBefore = true;
     private boolean newLineAfter = false;
@@ -223,7 +224,7 @@ public class TegmineController {
                 try {
                     bufferedStream.close();
                 } catch (Throwable t) {
-                    logger.e(t, "Failed to close stream");
+                    logger.e(t, "Failed to commit stream");
                 }
             }
         }
@@ -410,6 +411,7 @@ public class TegmineController {
             newLineBefore = objectBoolean(config, "newLineBefore", newLineBefore);
             newLineAfter = objectBoolean(config, "newLineAfter", newLineAfter);
             scrollToBottom = objectBoolean(config, "scrollToBottom", true);
+            watchSeconds = objectInteger(config, "watchSeconds", watchSeconds);
             Map<String, Object> storageConfig = objectObject(config, "storage");
             if (null != storageConfig) { // Have config
                 for (String key : storageConfig.keySet()) { // Create new instances
@@ -597,4 +599,7 @@ public class TegmineController {
         syntax.apply(theme(), line.data(), builder);
     }
 
+    public int watchSeconds() {
+        return watchSeconds;
+    }
 }

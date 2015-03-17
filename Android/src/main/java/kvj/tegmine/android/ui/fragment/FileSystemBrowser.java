@@ -1,6 +1,7 @@
 package kvj.tegmine.android.ui.fragment;
 
 import android.os.Bundle;
+import android.support.v4.app.Fragment;
 import android.support.v4.app.ListFragment;
 import android.util.TypedValue;
 import android.view.LayoutInflater;
@@ -25,7 +26,10 @@ import kvj.tegmine.android.ui.form.FileSystemItemWidgetAdapter;
 /**
  * Created by kvorobyev on 2/14/15.
  */
-public class FileSystemBrowser extends ListFragment {
+public class FileSystemBrowser extends Fragment {
+
+    private ListView listView = null;
+    private String providerName = null;
 
     public static interface BrowserListener {
 
@@ -59,14 +63,10 @@ public class FileSystemBrowser extends ListFragment {
 
     public FileSystemBrowser create(TegmineController controller, Bundle bundle) {
         this.controller = controller;
-        String providerName = bundle.getString(Tegmine.BUNDLE_PROVIDER, null);
+        providerName = bundle.getString(Tegmine.BUNDLE_PROVIDER, null);
         form.add(new FileSystemItemWidgetAdapter(controller, providerName), "select");
         form.add(new FileSystemItemWidgetAdapter(controller, providerName), "root");
         form.load(bundle);
-//        logger.d("New browser", , rootItem);
-        this.adapter = new FileBrowserAdapter(controller, providerName, form.getValue("root", FileSystemItem.class));
-        setListAdapter(adapter);
-        adapter.expandTo(form.getValue("select", FileSystemItem.class));
         return this;
     }
 
@@ -81,12 +81,10 @@ public class FileSystemBrowser extends ListFragment {
         titleText = (TextView) view.findViewById(R.id.file_browser_title_text);
         titleText.setTextSize(TypedValue.COMPLEX_UNIT_SP, controller.theme().headerTextSp());
         titleText.setTextColor(controller.theme().textColor());
-        if (null != adapter.root()) { // Have root defined
-            titleText.setText(adapter.root().details());
-        } else {
-            titleText.setText("Root");
-        }
-        ListView listView = (ListView) view.findViewById(android.R.id.list);
+        listView = (ListView) view.findViewById(android.R.id.list);
+        this.adapter = new FileBrowserAdapter(controller, providerName, form.getValue("root", FileSystemItem.class));
+        listView.setAdapter(adapter);
+        adapter.expandTo(form.getValue("select", FileSystemItem.class));
         listView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
             @Override
             public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
@@ -94,6 +92,17 @@ public class FileSystemBrowser extends ListFragment {
                 return true;
             }
         });
+        listView.setOnItemClickListener( new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int pos, long l) {
+                onListItemClick(pos);
+            }
+        });
+        if (null != adapter.root()) { // Have root defined
+            titleText.setText(adapter.root().details());
+        } else {
+            titleText.setText("Root");
+        }
         return view;
     }
 
@@ -112,8 +121,7 @@ public class FileSystemBrowser extends ListFragment {
         }
     }
 
-    @Override
-    public void onListItemClick(ListView l, View v, int position, long id) {
+    public void onListItemClick(int position) {
         FileSystemItem item = adapter.getFileSystemItem(position);
         form.setValue("select", item);
         if (item.type == FileSystemItemType.Folder) { // Collapse/expand

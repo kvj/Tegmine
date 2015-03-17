@@ -58,6 +58,7 @@ public class TegmineController {
     private boolean newLineAfter = false;
     private String selectedTheme = "default";
     private boolean scrollToBottom = true;
+    private String clientName = "Undefined";
 
     private Listeners<ProgressListener> progressListeners = new Listeners<>();
 
@@ -412,6 +413,7 @@ public class TegmineController {
             newLineAfter = objectBoolean(config, "newLineAfter", newLineAfter);
             scrollToBottom = objectBoolean(config, "scrollToBottom", true);
             watchSeconds = objectInteger(config, "watchSeconds", watchSeconds);
+            clientName = objectString(config, "client", clientName);
             Map<String, Object> storageConfig = objectObject(config, "storage");
             if (null != storageConfig) { // Have config
                 for (String key : storageConfig.keySet()) { // Create new instances
@@ -541,6 +543,10 @@ public class TegmineController {
             if ("n".equals(value)) { // New line
                 repl.setLength(0);
                 repl.append('\n');
+            }
+            if ("client".equals(value)) { // Client name
+                repl.setLength(0);
+                repl.append(clientName);
             }
             if ("c".equals(value)) { // Cursor - remove
                 repl.setLength(0);

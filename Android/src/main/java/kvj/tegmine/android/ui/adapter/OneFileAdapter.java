@@ -102,7 +102,7 @@ public class OneFileAdapter extends BaseAdapter {
         return position;
     }
 
-    LineMeta line(final int position) {
+    public LineMeta line(final int position) {
         synchronized (lock) {
             if (state == DataState.FrameLoaded) { // Only in this case we can get it
                 return lines.get(visibleLines.get(position));
@@ -153,7 +153,7 @@ public class OneFileAdapter extends BaseAdapter {
     }
 
     public String partString(int position) {
-        if (position >= visibleLines.size()) { // Invalid position
+        if (position >= visibleLines.size() || position<0) { // Invalid position
             return null;
         }
         return controller.part(lines, visibleLines.get(position)).toString();

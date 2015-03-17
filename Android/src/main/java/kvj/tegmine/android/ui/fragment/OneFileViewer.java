@@ -11,6 +11,7 @@ import android.support.v4.app.Fragment;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.ContextMenu;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -139,6 +140,13 @@ public class OneFileViewer extends Fragment {
             public void onScroll(AbsListView absListView, int i, int i2, int i3) {
             }
         });
+        listView.setOnKeyListener(new View.OnKeyListener() {
+            @Override
+            public boolean onKey(View view, int key, KeyEvent keyEvent) {
+                if (controller != null) return keyHandler(key, keyEvent);
+                return false;
+            }
+        });
         adapter.setBounds(0, -1, new Runnable() {
             @Override
             public void run() {
@@ -154,6 +162,31 @@ public class OneFileViewer extends Fragment {
             }
         });
         return view;
+    }
+
+    private boolean keyHandler(int key, KeyEvent keyEvent) {
+        if (keyEvent.getAction() != KeyEvent.ACTION_UP) {
+            return false;
+        }
+        switch (key) {
+            case KeyEvent.KEYCODE_R:
+                SuperActivity.notifyUser(getActivity(), "Refreshed");
+                refresh();
+                return true;
+            case KeyEvent.KEYCODE_A:
+                startEditor(Tegmine.EDIT_TYPE_ADD);
+                return true;
+            case KeyEvent.KEYCODE_E:
+                startEditor(Tegmine.EDIT_TYPE_EDIT);
+                return true;
+            case KeyEvent.KEYCODE_C:
+                copyAt(listView.getSelectedItemPosition());
+                return true;
+            case KeyEvent.KEYCODE_P:
+                paste();
+                return true;
+        }
+        return false;
     }
 
     private boolean buttonsDimmed = false;
@@ -207,23 +240,28 @@ public class OneFileViewer extends Fragment {
         task.exec();
     }
 
+    private boolean paste() {
+        if (!getClipboard().hasPrimaryClip() || !getClipboard().getPrimaryClipDescription().hasMimeType(
+            ClipDescription.MIMETYPE_TEXT_PLAIN)) {
+            SuperActivity.notifyUser(getActivity(), "No text to paste");
+            return false;
+        }
+        CharSequence text = getClipboard().getPrimaryClip().getItemAt(0).getText();
+        appendText(text, new Runnable() {
+            @Override
+            public void run() {
+                SuperActivity.notifyUser(getActivity(), "Text pasted");
+            }
+        });
+        return true;
+    }
+
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         if (null == controller) return true; // Ignore
         switch (item.getItemId()) {
             case R.id.menu_paste_text:
-                if (!getClipboard().hasPrimaryClip() || !getClipboard().getPrimaryClipDescription().hasMimeType(
-                    ClipDescription.MIMETYPE_TEXT_PLAIN)) {
-                    SuperActivity.notifyUser(getActivity(), "No text to paste");
-                    return true;
-                }
-                CharSequence text = getClipboard().getPrimaryClip().getItemAt(0).getText();
-                appendText(text, new Runnable() {
-                    @Override
-                    public void run() {
-                        SuperActivity.notifyUser(getActivity(), "Text pasted");
-                    }
-                });
+                paste();
                 return true;
         }
         return super.onOptionsItemSelected(item);
@@ -235,25 +273,40 @@ public class OneFileViewer extends Fragment {
         }
     }
 
-    @Override
-    public boolean onContextItemSelected(MenuItem item) {
-        AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo)item.getMenuInfo();
-        final String contents = adapter.partString(info.position);
+    private boolean copyAt(int position) {
+        final String contents = adapter.partString(position);
+        if (TextUtils.isEmpty(contents)) { // No data
+            return false;
+        }
+        ClipData clip = ClipData.newPlainText(adapter.line(position).data(), contents);
+        getClipboard().setPrimaryClip(clip);
+        SuperActivity.notifyUser(getActivity(), "Copied to clipboard");
+        return true;
+    }
+
+    private boolean shareAt(int position) {
+        final String contents = adapter.partString(position);
         if (TextUtils.isEmpty(contents)) { // No data
             return true;
         }
+        Intent sendIntent = new Intent();
+        sendIntent.setAction(Intent.ACTION_SEND);
+        sendIntent.putExtra(Intent.EXTRA_TEXT, contents);
+        sendIntent.setType("text/plain");
+        startActivity(sendIntent);
+        return true;
+    }
+
+    @Override
+    public boolean onContextItemSelected(MenuItem item) {
+        AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo)item.getMenuInfo();
         switch (item.getItemId()) {
             case R.id.context_share:
-                Intent sendIntent = new Intent();
-                sendIntent.setAction(Intent.ACTION_SEND);
-                sendIntent.putExtra(Intent.EXTRA_TEXT, contents);
-                sendIntent.setType("text/plain");
-                startActivity(sendIntent);
+                shareAt(info.position);
                 return true;
             case R.id.context_copy_cboard:
-                ClipData clip = ClipData.newPlainText(contents, contents);
-                getClipboard().setPrimaryClip(clip);
-                SuperActivity.notifyUser(getActivity(), "Copied to clipboard");
+                copyAt(info.position);
+                return true;
         }
         return false;
     }

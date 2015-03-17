@@ -3,6 +3,9 @@
 
     <string name="action_settings">Settings</string>
     <string name="action_check_updates">Check for updates</string>
+    <string name="menu_paste_text">Append from Clipboard</string>
+    <string name="menu_share">Share...</string>
+    <string name="menu_copy_clipboard">Copy to Clipboard</string>
     <string-array name="shortcut_types">
         <item>Display file</item>
         <item>Append to</item>

@@ -2,8 +2,8 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item
         android:id="@+id/context_share"
-        android:title="Share..."/>
+        android:title="@string/menu_share"/>
     <item
         android:id="@+id/context_copy_cboard"
-        android:title="Copy to clipboard"/>
+        android:title="@string/menu_copy_clipboard"/>
 </menu>

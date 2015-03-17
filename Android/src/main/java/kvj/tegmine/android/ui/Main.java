@@ -12,6 +12,9 @@ import android.view.MenuItem;
 
 import org.kvj.bravo7.ControllerConnector;
 import org.kvj.bravo7.SuperActivity;
+import org.kvj.bravo7.form.FormController;
+import org.kvj.bravo7.form.impl.bundle.StringBundleAdapter;
+import org.kvj.bravo7.form.impl.widget.TransientAdapter;
 import org.kvj.bravo7.log.Logger;
 
 import kvj.tegmine.android.R;
@@ -39,6 +42,8 @@ public class Main extends ActionBarActivity implements ControllerConnector.Contr
     private Toolbar toolbar;
     private Logger logger = Logger.forInstance(this);
     private Bundle bundle = new Bundle();
+    private FormController form = null;
+    private boolean multiView = false;
 
     private FileSystemBrowser browser = null;
     private OneFileViewer viewer = null;
@@ -64,6 +69,9 @@ public class Main extends ActionBarActivity implements ControllerConnector.Contr
         progressBar = (ContentLoadingProgressBar)findViewById(R.id.main_progress_bar);
         setupToolbar(toolbar);
         setSupportActionBar(toolbar);
+        form = new FormController(null);
+        form.add(new TransientAdapter<String>(new StringBundleAdapter(), Tegmine.VIEW_TYPE_BROWSER), Tegmine.BUNDLE_VIEW_TYPE);
+        multiView = findViewById(R.id.main_single_view) == null;
     }
 
     private void setupToolbar(Toolbar toolbar) {
@@ -104,29 +112,60 @@ public class Main extends ActionBarActivity implements ControllerConnector.Contr
         super.onStop();
     }
 
+    private void showBrowser() {
+        browser = new FileSystemBrowser().setListener(this).create(controller, bundle);
+        if (multiView) { // Load to first cell
+            openIn(browser, R.id.main_left_view, "file_browser");
+        } else {
+            openIn(browser, R.id.main_single_view, "file_browser");
+        }
+    }
+
+    private void showViewer(Bundle data) {
+        viewer = new OneFileViewer().setListener(this).create(controller, data);
+        if (multiView) {
+            openIn(viewer, R.id.main_center_view, "one_file");
+        } else {
+            openIn(viewer, R.id.main_single_view, "one_file");
+        }
+    }
+
+    private void showEditor(Bundle data) {
+        editor = new Editor().setListener(this).create(controller, data);
+        if (multiView) {
+            openIn(editor, R.id.main_right_view, "editor");
+        } else {
+            openIn(editor, R.id.main_single_view, "editor");
+        }
+
+    }
+
     @Override
     public void onController(TegmineController controller) {
         if (this.controller != null) { // Already set
             return;
         }
+        form.setView(findViewById(R.id.main_root));
+        form.load(bundle);
         findViewById(R.id.main_root).setBackgroundColor(controller.theme().backgroundColor());
         this.controller = controller;
-        String mode = getIntent().getStringExtra(Tegmine.BUNDLE_VIEW_TYPE);
-        if (null == mode) { // Not defined
-            mode = Tegmine.VIEW_TYPE_BROWSER;
-        }
-//        logger.d("View type", mode);
+        String mode = form.getValue(Tegmine.BUNDLE_VIEW_TYPE, String.class);
+
         if (Tegmine.VIEW_TYPE_BROWSER.equals(mode)) { // Open single browser
-            browser = new FileSystemBrowser().setListener(this).create(controller, bundle);
-            openIn(browser, R.id.main_single_view, "file_browser");
+            showBrowser();
         }
         if (Tegmine.VIEW_TYPE_FILE.equals(mode)) { // Open one file viewer
-            viewer = new OneFileViewer().setListener(this).create(controller, bundle);
-            openIn(viewer, R.id.main_single_view, "one_file");
+            if (multiView) {
+                showBrowser();
+            }
+            showViewer(bundle);
         }
         if (Tegmine.VIEW_TYPE_EDITOR.equals(mode)) { // Open editor
-            editor = new Editor().setListener(this).create(controller, bundle);
-            openIn(editor, R.id.main_single_view, "editor");
+            if (multiView) {
+                showBrowser();
+                showViewer(bundle);
+            }
+            showEditor(bundle);
         }
     }
 
@@ -146,6 +185,7 @@ public class Main extends ActionBarActivity implements ControllerConnector.Contr
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
+        form.save(outState);
         if (null != browser) {
             browser.saveState(outState);
         }
@@ -155,7 +195,21 @@ public class Main extends ActionBarActivity implements ControllerConnector.Contr
         if (null != editor) {
             editor.saveState(outState);
         }
-//        logger.d("saveState", outState, browser, viewer, editor);
+    }
+
+    private void setType(String type) {
+        form.setValue(Tegmine.BUNDLE_VIEW_TYPE, type);
+    }
+
+    private void hideEditor() {
+        if (multiView) { // Just remove from right view
+            getSupportFragmentManager().beginTransaction().remove(editor).commit();
+            editor = null;
+            setType(Tegmine.VIEW_TYPE_FILE);
+            viewer.refresh();
+        } else {
+            finish();
+        }
     }
 
     @Override
@@ -165,7 +219,7 @@ public class Main extends ActionBarActivity implements ControllerConnector.Contr
                 SuperActivity.showQuestionDialog(this, "Really exit?", "There are unsaved changes. Exit?", new Runnable() {
                     @Override
                     public void run() {
-                        Main.super.onBackPressed();
+                        hideEditor();
                     }
                 }, new Runnable() {
                     @Override
@@ -175,7 +229,7 @@ public class Main extends ActionBarActivity implements ControllerConnector.Contr
                 return;
             }
         }
-        super.onBackPressed();
+        hideEditor();
     }
 
     @Override
@@ -188,6 +242,13 @@ public class Main extends ActionBarActivity implements ControllerConnector.Contr
 
     @Override
     public void openFile(Bundle data, FileSystemItem item) {
+        if (multiView) { // Show viever here
+            showViewer(data);
+            if (null != editor) { // No editor now
+                setType(Tegmine.VIEW_TYPE_FILE);
+            }
+            return;
+        }
         Intent intent = new Intent(this, Main.class);
         intent.putExtra(Tegmine.BUNDLE_VIEW_TYPE, Tegmine.VIEW_TYPE_FILE);
         intent.putExtras(data);
@@ -198,20 +259,30 @@ public class Main extends ActionBarActivity implements ControllerConnector.Contr
     public void onAfterSave() {
         logger.d("After save");
         setResult(RESULT_OK);
-        finish();
+        hideEditor();
     }
 
     @Override
     public void openEditor(Bundle data) {
-        Intent intent = new Intent(this, Main.class);
-        intent.putExtra(Tegmine.BUNDLE_VIEW_TYPE, Tegmine.VIEW_TYPE_EDITOR);
-        intent.putExtras(data);
-        startActivityForResult(intent, REQUEST_EDITOR);
+        if (multiView) { // Show in center
+            if (null != editor) { // Have to check OK to replace or not and close
+                showEditor(data);
+                setType(Tegmine.VIEW_TYPE_EDITOR);
+            } else {
+                showEditor(data);
+                setType(Tegmine.VIEW_TYPE_EDITOR);
+            }
+        } else {
+            Intent intent = new Intent(this, Main.class);
+            intent.putExtra(Tegmine.BUNDLE_VIEW_TYPE, Tegmine.VIEW_TYPE_EDITOR);
+            intent.putExtras(data);
+            startActivityForResult(intent, REQUEST_EDITOR);
+        }
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        logger.d("Activity result:", resultCode, requestCode, viewer);
+//        logger.d("Activity result:", resultCode, requestCode, viewer);
         super.onActivityResult(requestCode, resultCode, data);
         if (null != viewer) {
             viewer.refresh();

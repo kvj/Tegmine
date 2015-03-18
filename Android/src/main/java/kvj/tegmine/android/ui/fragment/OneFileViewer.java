@@ -192,10 +192,10 @@ public class OneFileViewer extends Fragment {
     private boolean buttonsDimmed = false;
 
     private void changeButtonsDim(View buttonsPane, ListView listView) {
-        boolean dimButtons = listView.getCount() == listView.getLastVisiblePosition()+1;
-//        logger.d("Scroll state:", listView.getCount(), listView.getFirstVisiblePosition(), listView.getLastVisiblePosition(), dimButtons);
+        boolean dimButtons = listView.getCount() == listView.getLastVisiblePosition()+1 && listView.getFirstVisiblePosition()>0;
+        logger.d("Scroll state:", listView.getCount(), listView.getFirstVisiblePosition(), listView.getLastVisiblePosition(), dimButtons);
         if (dimButtons != buttonsDimmed) { // State changed
-            ObjectAnimator anim = ObjectAnimator.ofFloat(buttonsPane, "alpha", dimButtons ? 1f : 0.4f, dimButtons ? 0.4f : 1f);
+            ObjectAnimator anim = ObjectAnimator.ofFloat(buttonsPane, "alpha", dimButtons ? 1f : 0.3f, dimButtons ? 0.3f : 1f);
             anim.setDuration(300);
             anim.start();
             buttonsDimmed = dimButtons;

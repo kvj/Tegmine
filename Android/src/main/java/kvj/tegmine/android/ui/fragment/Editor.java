@@ -146,8 +146,8 @@ public class Editor extends Fragment {
     }
 
     private void loadContents(final EditText editor) {
-        logger.d("loadContents", form.getValue("contents", String.class), form.getValue(Tegmine.BUNDLE_EDIT_TYPE, String.class));
-        final boolean needValue = null == form.getValue("contents", String.class); // Value is not yet loaded
+        final boolean needValue = (null == form.getValue("contents", String.class)); // Value is not yet loaded
+        logger.d("loadContents", needValue);
         final StringBuilder buffer = new StringBuilder();
         if (Tegmine.EDIT_TYPE_ADD.equals(form.getValue(Tegmine.BUNDLE_EDIT_TYPE, String.class))) { // No contents in add mode
             if (needValue) {
@@ -159,6 +159,7 @@ public class Editor extends Fragment {
                 } else {
                     form.setValue("contents", "");
                 }
+                form.setOriginalValue("contents", form.getValue("contents", String.class));
             }
             requestFocusFor(editor);
             return;
@@ -185,6 +186,7 @@ public class Editor extends Fragment {
                     }
                     form.setOriginalValue("contents", buffer.toString()); // Always
                     requestFocusFor(editor);
+                    editor.setSelection(buffer.length());
                 } else {
                     logger.e(e, "Failed to load file contents");
                 }

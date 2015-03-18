@@ -39,8 +39,11 @@ public class LocalFileSystemProvider extends FileSystemProvider<LocalFileSystemI
         if (!from.exists() || !from.isDirectory()) { // Invalid file
             throw new FileSystemException("Invalid parent file: "+from.getAbsolutePath());
         }
-        for (File file : from.listFiles()) {
-            result.add(new LocalFileSystemItem(this, file, parent));
+        File[] files = from.listFiles();
+        if (null != files) {
+            for (File file : from.listFiles()) {
+                result.add(new LocalFileSystemItem(this, file, parent));
+            }
         }
         Collections.sort(result, new Comparator<LocalFileSystemItem>() {
             @Override

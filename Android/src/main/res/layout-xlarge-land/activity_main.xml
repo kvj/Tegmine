@@ -30,20 +30,18 @@
             android:orientation="horizontal"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:id="@+id/main_view"
             android:layout_weight="1">
             <FrameLayout
-                android:layout_weight="0.3"
                 android:id="@+id/main_left_view"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"/>
             <FrameLayout
                 android:id="@+id/main_center_view"
-                android:layout_weight="0.4"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"/>
             <FrameLayout
                 android:id="@+id/main_right_view"
-                android:layout_weight="0.3"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"/>
         </LinearLayout>

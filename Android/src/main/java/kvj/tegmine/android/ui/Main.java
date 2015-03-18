@@ -1,5 +1,6 @@
 package kvj.tegmine.android.ui;
 
+import android.animation.LayoutTransition;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
@@ -9,6 +10,8 @@ import android.support.v7.app.ActionBarActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.LinearLayout;
 
 import org.kvj.bravo7.ControllerConnector;
 import org.kvj.bravo7.SuperActivity;
@@ -44,6 +47,7 @@ public class Main extends ActionBarActivity implements ControllerConnector.Contr
     private Bundle bundle = new Bundle();
     private FormController form = null;
     private boolean multiView = false;
+    private LinearLayout multiPane = null;
 
     private FileSystemBrowser browser = null;
     private OneFileViewer viewer = null;
@@ -71,7 +75,14 @@ public class Main extends ActionBarActivity implements ControllerConnector.Contr
         setSupportActionBar(toolbar);
         form = new FormController(null);
         form.add(new TransientAdapter<String>(new StringBundleAdapter(), Tegmine.VIEW_TYPE_BROWSER), Tegmine.BUNDLE_VIEW_TYPE);
-        multiView = findViewById(R.id.main_single_view) == null;
+        multiPane = (LinearLayout) findViewById(R.id.main_view);
+        multiView = multiPane != null;
+        if (multiView) {
+            LayoutTransition transition = new LayoutTransition();
+            transition.enableTransitionType(LayoutTransition.CHANGING);
+            transition.setDuration(200);
+            multiPane.setLayoutTransition(transition);
+        }
     }
 
     private void setupToolbar(Toolbar toolbar) {
@@ -167,6 +178,7 @@ public class Main extends ActionBarActivity implements ControllerConnector.Contr
             }
             showEditor(bundle);
         }
+        resizeMultiPane();
     }
 
     private boolean openIn(Fragment fragment, int id, String tag) {
@@ -199,37 +211,80 @@ public class Main extends ActionBarActivity implements ControllerConnector.Contr
 
     private void setType(String type) {
         form.setValue(Tegmine.BUNDLE_VIEW_TYPE, type);
+        resizeMultiPane();
     }
 
-    private void hideEditor() {
-        if (multiView) { // Just remove from right view
-            getSupportFragmentManager().beginTransaction().remove(editor).commit();
-            editor = null;
-            setType(Tegmine.VIEW_TYPE_FILE);
-            viewer.refresh();
-        } else {
-            finish();
+    private void hideEditor(boolean confirm, final Runnable afterHide) {
+        if (null == editor) {
+            afterHide.run();
+            return;
         }
+        final Runnable doHide = new Runnable() {
+            @Override
+            public void run() {
+                if (multiView) { // Just remove from right view
+                    getSupportFragmentManager().beginTransaction().remove(editor).commit();
+                    editor = null;
+                }
+                afterHide.run();
+            }
+        };
+        if (!confirm || !editor.changed()) {
+            doHide.run();
+            return;
+        }
+        SuperActivity.showQuestionDialog(this, "Really exit?", "There are unsaved changes. Exit?", new Runnable() {
+            @Override
+            public void run() {
+                doHide.run();
+            }
+        }, new Runnable() {
+            @Override
+            public void run() {
+            }
+        });
+    }
+
+    private int[] resizePaneIDs = {R.id.main_left_view, R.id.main_center_view, R.id.main_right_view};
+
+    private void resizeMultiPane() {
+        if (!multiView) {
+            return;
+        }
+        String type = form.getValue(Tegmine.BUNDLE_VIEW_TYPE, String.class);
+        float[] sizes = {0.7f, 0.3f, 0f};
+        if (Tegmine.VIEW_TYPE_FILE.equals(type)) {
+            sizes = new float[]{0.4f, 0.6f, 0f};
+        }
+        if (Tegmine.VIEW_TYPE_EDITOR.equals(type)) {
+            sizes = new float[]{0.2f, 0.3f, 0.5f};
+        }
+        for (int i = 0; i < sizes.length; i++) {
+            findViewById(resizePaneIDs[i]).setLayoutParams(
+                new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, sizes[i]));
+        }
+    }
+
+    private void closeEditor(boolean confirm) {
+        final boolean haveEditor = editor != null;
+        hideEditor(confirm, new Runnable() {
+            @Override
+            public void run() {
+                // Hidden
+                if (haveEditor && multiView) {
+                    // Just closed editor
+                    setType(Tegmine.VIEW_TYPE_FILE);
+                    viewer.refresh();
+                    return;
+                }
+                finish(); // In all other cases - close
+            }
+        });
     }
 
     @Override
     public void onBackPressed() {
-        if (null != editor) { // Have editor - ask for change
-            if (editor.changed()) { // Have to ask
-                SuperActivity.showQuestionDialog(this, "Really exit?", "There are unsaved changes. Exit?", new Runnable() {
-                    @Override
-                    public void run() {
-                        hideEditor();
-                    }
-                }, new Runnable() {
-                    @Override
-                    public void run() {
-                    }
-                });
-                return;
-            }
-        }
-        hideEditor();
+        closeEditor(true);
     }
 
     @Override
@@ -244,7 +299,7 @@ public class Main extends ActionBarActivity implements ControllerConnector.Contr
     public void openFile(Bundle data, FileSystemItem item) {
         if (multiView) { // Show viever here
             showViewer(data);
-            if (null != editor) { // No editor now
+            if (null == editor) { // No editor now
                 setType(Tegmine.VIEW_TYPE_FILE);
             }
             return;
@@ -257,17 +312,20 @@ public class Main extends ActionBarActivity implements ControllerConnector.Contr
 
     @Override
     public void onAfterSave() {
-        logger.d("After save");
         setResult(RESULT_OK);
-        hideEditor();
+        closeEditor(false);
     }
 
     @Override
-    public void openEditor(Bundle data) {
+    public void openEditor(final Bundle data) {
         if (multiView) { // Show in center
             if (null != editor) { // Have to check OK to replace or not and close
-                showEditor(data);
-                setType(Tegmine.VIEW_TYPE_EDITOR);
+                hideEditor(true, new Runnable() {
+                    @Override
+                    public void run() {
+                        showEditor(data);
+                    }
+                });
             } else {
                 showEditor(data);
                 setType(Tegmine.VIEW_TYPE_EDITOR);

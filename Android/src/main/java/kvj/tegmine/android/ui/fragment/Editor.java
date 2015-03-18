@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.text.TextUtils;
 import android.util.TypedValue;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -84,6 +85,12 @@ public class Editor extends Fragment {
         editor = (EditText) view.findViewById(R.id.editor_text);
         editor.setTextColor(controller.theme().textColor());
         editor.setTextSize(TypedValue.COMPLEX_UNIT_SP, controller.theme().editorTextSp());
+        editor.setOnKeyListener(new View.OnKeyListener() {
+            @Override
+            public boolean onKey(View view, int i, KeyEvent keyEvent) {
+                return keyHandler(i, keyEvent);
+            }
+        });
         TextView title = (TextView) view.findViewById(R.id.editor_title_text);
         controller.applyHeaderStyle(title);
         form = new FormController(view);
@@ -134,6 +141,28 @@ public class Editor extends Fragment {
             }
         });
         return view;
+    }
+
+    private boolean keyHandler(int key, KeyEvent keyEvent) {
+        if (null == controller) {
+            return false;
+        }
+        if (keyEvent.getAction() != KeyEvent.ACTION_UP) {
+            return false;
+        }
+        if (keyEvent.isCtrlPressed() && key == KeyEvent.KEYCODE_S) {
+            save();
+            return true;
+        }
+        if (keyEvent.isCtrlPressed()) {
+            // Ctrl + template key
+            TemplateDef tmpl = controller.templateFromKeyEvent(keyEvent);
+            if (null != tmpl) {
+                applyTemplate(tmpl);
+                return true;
+            }
+        }
+        return false;
     }
 
     private void requestFocusFor(View view) {

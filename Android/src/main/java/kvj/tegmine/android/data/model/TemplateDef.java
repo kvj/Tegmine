@@ -8,6 +8,7 @@ public class TemplateDef {
     private String code;
     private String label = null;
     private String template;
+    private String key = null;
 
     public TemplateDef(String code, String template) {
         this.code = code;
@@ -28,5 +29,13 @@ public class TemplateDef {
 
     public String label() {
         return label != null ? label: code;
+    }
+
+    public void key(String key) {
+        this.key = key;
+    }
+
+    public String key() {
+        return key;
     }
 }

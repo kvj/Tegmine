@@ -39,6 +39,7 @@ import kvj.tegmine.android.data.def.FileSystemException;
 import kvj.tegmine.android.data.def.FileSystemItem;
 import kvj.tegmine.android.data.model.FileItemWatcher;
 import kvj.tegmine.android.data.model.LineMeta;
+import kvj.tegmine.android.data.model.TemplateDef;
 import kvj.tegmine.android.ui.adapter.OneFileAdapter;
 import kvj.tegmine.android.ui.form.FileSystemItemWidgetAdapter;
 
@@ -107,13 +108,13 @@ public class OneFileViewer extends Fragment {
         view.findViewById(R.id.one_file_do_add).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                startEditor(Tegmine.EDIT_TYPE_ADD);
+                startEditor(Tegmine.EDIT_TYPE_ADD, null);
             }
         });
         view.findViewById(R.id.one_file_do_edit).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                startEditor(Tegmine.EDIT_TYPE_EDIT);
+                startEditor(Tegmine.EDIT_TYPE_EDIT, null);
             }
         });
         listView = (ListView) view.findViewById(android.R.id.list);
@@ -174,10 +175,10 @@ public class OneFileViewer extends Fragment {
                 refresh();
                 return true;
             case KeyEvent.KEYCODE_A:
-                startEditor(Tegmine.EDIT_TYPE_ADD);
+                startEditor(Tegmine.EDIT_TYPE_ADD, null);
                 return true;
             case KeyEvent.KEYCODE_E:
-                startEditor(Tegmine.EDIT_TYPE_EDIT);
+                startEditor(Tegmine.EDIT_TYPE_EDIT, null);
                 return true;
             case KeyEvent.KEYCODE_C:
                 copyAt(listView.getSelectedItemPosition());
@@ -185,6 +186,14 @@ public class OneFileViewer extends Fragment {
             case KeyEvent.KEYCODE_P:
                 paste();
                 return true;
+        }
+        if (keyEvent.isCtrlPressed()) {
+            // Ctrl + template key
+            TemplateDef tmpl = controller.templateFromKeyEvent(keyEvent);
+            if (null != tmpl) {
+                startEditor(Tegmine.EDIT_TYPE_ADD, tmpl.code());
+                return true;
+            }
         }
         return false;
     }
@@ -345,9 +354,12 @@ public class OneFileViewer extends Fragment {
         form.save(outState, "root", "select");
     }
 
-    private void startEditor(String editType) {
+    private void startEditor(String editType, String tmpl) {
         Bundle bundle = new Bundle();
         bundle.putString(Tegmine.BUNDLE_EDIT_TYPE, editType);
+        if (null != tmpl) {
+            bundle.putString(Tegmine.BUNDLE_EDIT_TEMPLATE, tmpl);
+        }
         form.save(bundle, "root", "select");
         if (null != listener) {
             listener.openEditor(bundle);

@@ -4,6 +4,7 @@ import android.os.Environment;
 import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
 import android.util.TypedValue;
+import android.view.KeyEvent;
 import android.widget.TextView;
 
 import org.kvj.bravo7.log.Logger;
@@ -444,6 +445,7 @@ public class TegmineController {
                     }
                     TemplateDef tmpl = new TemplateDef(key, objectString(conf, "template", ""));
                     tmpl.label(objectString(conf, "label", null));
+                    tmpl.key(objectString(conf, "key", null));
                     templates.put(key, tmpl);
                 }
             }
@@ -607,5 +609,15 @@ public class TegmineController {
 
     public int watchSeconds() {
         return watchSeconds;
+    }
+
+    public TemplateDef templateFromKeyEvent(KeyEvent keyEvent) {
+        String label = new String(""+keyEvent.getDisplayLabel()).toLowerCase();
+        for (TemplateDef tmpl : templates().values()) {
+            if (tmpl.key() != null && tmpl.key().equals(label)) {
+                return tmpl;
+            }
+        }
+        return null;
     }
 }

@@ -25,6 +25,8 @@ import android.widget.TextView;
 
 import org.kvj.bravo7.SuperActivity;
 import org.kvj.bravo7.form.FormController;
+import org.kvj.bravo7.form.impl.bundle.BooleanBundleAdapter;
+import org.kvj.bravo7.form.impl.widget.TransientAdapter;
 import org.kvj.bravo7.log.Logger;
 import org.kvj.bravo7.util.Tasks;
 
@@ -77,9 +79,11 @@ public class OneFileViewer extends Fragment {
         this.controller = controller;
         form.add(new FileSystemItemWidgetAdapter(controller, null), "select");
         form.add(new FileSystemItemWidgetAdapter(controller, null), "root");
+        form.add(new TransientAdapter<>(new BooleanBundleAdapter(), controller.showNumbers()), "showNumbers");
+        form.add(new TransientAdapter<>(new BooleanBundleAdapter(), controller.wrapLines()), "wrapLines");
         form.load(bundle);
         item = form.getValue("select", FileSystemItem.class);
-        logger.d("new FileViewer:", item, bundle);
+        logger.d("new FileViewer:", item, bundle, controller.showNumbers(), controller.wrapLines());
         if (null == item) {
             SuperActivity.notifyUser(Tegmine.getInstance(), "File not found");
             return null;
@@ -119,6 +123,8 @@ public class OneFileViewer extends Fragment {
         });
         listView = (ListView) view.findViewById(android.R.id.list);
         adapter = new OneFileAdapter(controller, item);
+        adapter.showNumbers(form.getValue("showNumbers", Boolean.class));
+        adapter.wrapLines(form.getValue("wrapLines", Boolean.class));
         listView.setAdapter(adapter);
         registerForContextMenu(listView);
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
@@ -169,6 +175,14 @@ public class OneFileViewer extends Fragment {
         if (keyEvent.getAction() != KeyEvent.ACTION_UP) {
             return false;
         }
+        if (keyEvent.isCtrlPressed()) {
+            // Ctrl + template key
+            TemplateDef tmpl = controller.templateFromKeyEvent(keyEvent);
+            if (null != tmpl) {
+                startEditor(Tegmine.EDIT_TYPE_ADD, tmpl.code());
+                return true;
+            }
+        }
         switch (key) {
             case KeyEvent.KEYCODE_R:
                 SuperActivity.notifyUser(getActivity(), "Refreshed");
@@ -186,14 +200,13 @@ public class OneFileViewer extends Fragment {
             case KeyEvent.KEYCODE_P:
                 paste();
                 return true;
-        }
-        if (keyEvent.isCtrlPressed()) {
-            // Ctrl + template key
-            TemplateDef tmpl = controller.templateFromKeyEvent(keyEvent);
-            if (null != tmpl) {
-                startEditor(Tegmine.EDIT_TYPE_ADD, tmpl.code());
+            case KeyEvent.KEYCODE_W:
+                toggleWrapLines();
                 return true;
-            }
+            case KeyEvent.KEYCODE_N:
+                toggleLineNumbers();
+                getActivity().invalidateOptionsMenu();
+                return true;
         }
         return false;
     }
@@ -214,6 +227,10 @@ public class OneFileViewer extends Fragment {
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
         inflater.inflate(R.menu.menu_one_file, menu);
+        if (null != form) {
+            menu.findItem(R.id.menu_show_numbers).setChecked(form.getValue("showNumbers", Boolean.class));
+            menu.findItem(R.id.menu_wrap_lines).setChecked(form.getValue("wrapLines", Boolean.class));
+        }
     }
 
     private ClipboardManager getClipboard() {
@@ -265,12 +282,36 @@ public class OneFileViewer extends Fragment {
         return true;
     }
 
+    private boolean toggleLineNumbers() {
+        boolean showNumbers = !form.getValue("showNumbers", Boolean.class);
+        form.setValue("showNumbers", showNumbers);
+        adapter.showNumbers(showNumbers);
+        adapter.notifyDataSetChanged();
+        getActivity().invalidateOptionsMenu();
+        return showNumbers;
+    }
+
+    private boolean toggleWrapLines() {
+        boolean wrapLines = !form.getValue("wrapLines", Boolean.class);
+        form.setValue("wrapLines", wrapLines);
+        adapter.wrapLines(wrapLines);
+        adapter.notifyDataSetChanged();
+        getActivity().invalidateOptionsMenu();
+        return wrapLines;
+    }
+
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         if (null == controller) return true; // Ignore
         switch (item.getItemId()) {
             case R.id.menu_paste_text:
                 paste();
+                return true;
+            case R.id.menu_show_numbers:
+                toggleLineNumbers();
+                return true;
+            case R.id.menu_wrap_lines:
+                toggleWrapLines();
                 return true;
         }
         return super.onOptionsItemSelected(item);
@@ -351,7 +392,7 @@ public class OneFileViewer extends Fragment {
     }
 
     public void saveState(Bundle outState) {
-        form.save(outState, "root", "select");
+        form.save(outState, "root", "select", "wrapLines", "showNumbers");
     }
 
     private void startEditor(String editType, String tmpl) {

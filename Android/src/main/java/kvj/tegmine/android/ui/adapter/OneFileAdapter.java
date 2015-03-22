@@ -2,6 +2,7 @@ package kvj.tegmine.android.ui.adapter;
 
 import android.content.Context;
 import android.text.SpannableStringBuilder;
+import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -30,6 +31,17 @@ public class OneFileAdapter extends BaseAdapter {
 
     private static final int MAX_LINES = 30;
     private final SyntaxDef syntax;
+    private boolean showNumbers = false;
+    private boolean wrapLines = false;
+    private String showNumbersFormat = "%d";
+
+    public void showNumbers(boolean showNumbers) {
+        this.showNumbers = showNumbers;
+    }
+
+    public void wrapLines(boolean wrapLines) {
+        this.wrapLines = wrapLines;
+    }
 
     private enum DataState {FrameLoaded, FrameRequested};
 
@@ -60,6 +72,13 @@ public class OneFileAdapter extends BaseAdapter {
                     try {
                         logger.d("Will load from:", offset, linesCount);
                         controller.loadFilePart(lines, item, offset, linesCount);
+                        int linesTotal = lines.size();
+                        int digits = 1;
+                        while (linesTotal >= 10) {
+                            linesTotal /= 10;
+                            digits++;
+                        }
+                        showNumbersFormat = String.format("%% %dd", digits);
                         return true;
                     } catch (FileSystemException e) {
                         logger.d(e, "Failed to read file");
@@ -129,8 +148,8 @@ public class OneFileAdapter extends BaseAdapter {
             text.setTextSize(TypedValue.COMPLEX_UNIT_SP, controller.theme().fileTextSp());
             text.setTextColor(controller.theme().textColor());
             lineno.setTextSize(TypedValue.COMPLEX_UNIT_SP, controller.theme().fileTextSp());
-            lineno.setVisibility(View.GONE);
-            text.setSingleLine(false);
+            lineno.setTextColor(controller.theme().markColor());
+            lineno.setTextSize(TypedValue.COMPLEX_UNIT_SP, controller.theme().fileTextSp());
         } else {
             border = convertView.findViewById(R.id.one_file_item_border);
             text = (TextView) convertView.findViewById(R.id.one_file_item_text);
@@ -147,8 +166,19 @@ public class OneFileAdapter extends BaseAdapter {
             text.setText(builder);
             int leftIndent = (int) Tegmine.getInstance().sp2px(indent * controller.theme().fileIndentSp());
             text.setPadding(leftIndent, 0, 0, 0);
+            if (wrapLines) {
+                text.setSingleLine(false);
+                text.setEllipsize(TextUtils.TruncateAt.MIDDLE);
+            } else {
+                text.setSingleLine(true);
+            }
+            if (showNumbers) {
+                lineno.setText(String.format(showNumbersFormat, visibleLines.get(position)+1));
+                lineno.setVisibility(View.VISIBLE);
+            } else {
+                lineno.setVisibility(View.GONE);
+            }
         }
-        lineno.setText(String.format("% 4d", position+1));
         return convertView;
     }
 
@@ -192,7 +222,7 @@ public class OneFileAdapter extends BaseAdapter {
     private void updateVisible() {
         synchronized (lock) {
             visibleLines.clear();
-            for (int i = 0; i < lines.size(); i++) { // $COMMENT
+            for (int i = 0; i < lines.size(); i++) { // Store indexes of visible lines
                 if (lines.get(i).visible()) { // Visible line
                     visibleLines.add(i);
                 }

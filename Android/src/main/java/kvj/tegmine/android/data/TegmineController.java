@@ -60,6 +60,8 @@ public class TegmineController {
     private String selectedTheme = "default";
     private boolean scrollToBottom = true;
     private String clientName = "Undefined";
+    private boolean showNumbers = false;
+    private boolean wrapLines = true;
 
     private Listeners<ProgressListener> progressListeners = new Listeners<>();
 
@@ -408,47 +410,16 @@ public class TegmineController {
             loadFilePart(lines, configItem, 0, -1);
             config = new HashMap<>();
             readObject(lines, 0, config, 0);
-            // logger.d("New config:", config);
             defaultProvider = null;
             newLineBefore = objectBoolean(config, "newLineBefore", newLineBefore);
             newLineAfter = objectBoolean(config, "newLineAfter", newLineAfter);
             scrollToBottom = objectBoolean(config, "scrollToBottom", true);
             watchSeconds = objectInteger(config, "watchSeconds", watchSeconds);
             clientName = objectString(config, "client", clientName);
-            Map<String, Object> storageConfig = objectObject(config, "storage");
-            if (null != storageConfig) { // Have config
-                for (String key : storageConfig.keySet()) { // Create new instances
-                    Map<String, Object> conf = objectObject(storageConfig, key);
-                    if (null == conf) { // Invalid
-                        continue;
-                    }
-                    FileSystemProvider provider = null;
-                            String type = objectString(conf, "type", "local");
-                    if ("local".equals(type)) { // Local storage
-                        String storagePath = objectString(conf, "path", null);
-                        provider = new LocalFileSystemProvider(new File(storagePath), key);
-                    }
-                    if (null != provider) {
-                        fileSystemProviders.put(key, provider);
-                        if (objectBoolean(conf, "default", false)) { // Default
-                            defaultProvider = provider;
-                        }
-                    }
-                }
-            }
-            Map<String, Object> templatesConfig = objectObject(config, "templates");
-            if (null != templatesConfig) {
-                for (String key : templatesConfig.keySet()) { // Create new instances
-                    Map<String, Object> conf = objectObject(templatesConfig, key);
-                    if (null == conf) { // Invalid
-                        continue;
-                    }
-                    TemplateDef tmpl = new TemplateDef(key, objectString(conf, "template", ""));
-                    tmpl.label(objectString(conf, "label", null));
-                    tmpl.key(objectString(conf, "key", null));
-                    templates.put(key, tmpl);
-                }
-            }
+            showNumbers = objectBoolean(config, "showNumbers", showNumbers);
+            wrapLines = objectBoolean(config, "wrapLines", wrapLines);
+            reloadStorage(config);
+            reloadTemplates(config);
             reloadColorSchemes();
             reloadSyntaxes();
         } catch (FileSystemException e) {
@@ -456,6 +427,46 @@ public class TegmineController {
         }
         if (null != ex) { // Report status
             throw ex;
+        }
+    }
+
+    private void reloadTemplates(Map<String, Object> config) {
+        Map<String, Object> templatesConfig = objectObject(config, "templates");
+        if (null != templatesConfig) {
+            for (String key : templatesConfig.keySet()) { // Create new instances
+                Map<String, Object> conf = objectObject(templatesConfig, key);
+                if (null == conf) { // Invalid
+                    continue;
+                }
+                TemplateDef tmpl = new TemplateDef(key, objectString(conf, "template", ""));
+                tmpl.label(objectString(conf, "label", null));
+                tmpl.key(objectString(conf, "key", null));
+                templates.put(key, tmpl);
+            }
+        }
+    }
+
+    private void reloadStorage(Map<String, Object> config) {
+        Map<String, Object> storageConfig = objectObject(config, "storage");
+        if (null != storageConfig) { // Have config
+            for (String key : storageConfig.keySet()) { // Create new instances
+                Map<String, Object> conf = objectObject(storageConfig, key);
+                if (null == conf) { // Invalid
+                    continue;
+                }
+                FileSystemProvider provider = null;
+                String type = objectString(conf, "type", "local");
+                if ("local".equals(type)) { // Local storage
+                    String storagePath = objectString(conf, "path", null);
+                    provider = new LocalFileSystemProvider(new File(storagePath), key);
+                }
+                if (null != provider) {
+                    fileSystemProviders.put(key, provider);
+                    if (objectBoolean(conf, "default", false)) { // Default
+                        defaultProvider = provider;
+                    }
+                }
+            }
         }
     }
 
@@ -488,7 +499,10 @@ public class TegmineController {
     }
 
     public static boolean objectBoolean(Map<String, Object> obj, String name, boolean def) {
-        String value = objectString(obj, name, "y");
+        if (!obj.containsKey(name)) { // Def
+            return def;
+        }
+        String value = objectString(obj, name, "n");
         return (value.equalsIgnoreCase("y") || value.equalsIgnoreCase("yes") || value.equals("1") || value.equalsIgnoreCase("true"));
     }
 
@@ -619,5 +633,13 @@ public class TegmineController {
             }
         }
         return null;
+    }
+
+    public boolean showNumbers() {
+        return showNumbers;
+    }
+
+    public boolean wrapLines() {
+        return wrapLines;
     }
 }

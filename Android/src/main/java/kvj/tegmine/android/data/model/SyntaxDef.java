@@ -156,20 +156,18 @@ public class SyntaxDef {
             int closest = -1;
             int closestStart = -1;
             int closestLength = 0;
-            for (int i = 0; i < patterns.size(); i++) { // $COMMENT
+            for (int i = 0; i < patterns.size(); i++) { // Check every pattern and find best match
                 PatternDef pattern = patterns.get(i);
                 Matcher m = pattern.pattern.matcher(target);
                 if (m.find()) { // OK
                     matches[i] = m;
                     int st = m.start(pattern.group);
                     int len = m.group(pattern.group).length();
-                    if (closestStart >= st || closest == -1) { // This one is closest
-                        if (closestStart < st || (len > closestLength)) {
-                            // If two start from same char - take longest
-                            closest = i;
-                            closestStart = st;
-                            closestLength = len;
-                        }
+                    if ((st < closestStart) || ((len > closestLength) && (closestStart == st)) || (closest == -1)) {
+                        // First match or group starts earlier or match is longer
+                        closest = i;
+                        closestStart = st;
+                        closestLength = len;
                     }
                 } else {
                     matches[i] = null;

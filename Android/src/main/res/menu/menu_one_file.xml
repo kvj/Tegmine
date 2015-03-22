@@ -5,4 +5,19 @@
             android:id="@+id/menu_paste_text"
             android:title="@string/menu_paste_text"
             app:showAsAction="withText"/>
+    <item
+        android:id="@+id/menu_view_options"
+        android:title="@string/menu_view_options"
+        app:showAsAction="withText">
+        <menu>
+            <item
+                android:id="@+id/menu_show_numbers"
+                android:title="Show line numbers"
+                android:checkable="true"/>
+            <item
+                android:id="@+id/menu_wrap_lines"
+                android:title="Wrap lines"
+                android:checkable="true"/>
+        </menu>
+    </item>
 </menu>

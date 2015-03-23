@@ -3,6 +3,8 @@ package kvj.tegmine.android.ui.fragment;
 import android.content.Context;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.text.InputFilter;
+import android.text.Spanned;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.KeyEvent;
@@ -43,7 +45,40 @@ import kvj.tegmine.android.ui.form.FileSystemItemWidgetAdapter;
 /**
  * Created by kvorobyev on 2/22/15.
  */
-public class Editor extends Fragment {
+public class Editor extends Fragment implements InputFilter {
+
+    private String findString(String where, int point) {
+        int lineStarts = where.substring(0, point).lastIndexOf('\n')+1;
+        int lineEnds = where.substring(point).indexOf('\n');
+        if (-1 == lineEnds) {
+            lineEnds = where.length();
+        } else {
+            lineEnds += point;
+        }
+        return where.substring(lineStarts, lineEnds);
+    }
+
+    @Override
+    public CharSequence filter(CharSequence source, int start, int end,
+                               Spanned spanned, int dstart, int dend) {
+//        logger.d("Filter:", source, start, end, dstart, dend);
+        if (controller == null) return null;
+        if (source.length() == 1 && source.charAt(0) == '\n') {
+            // New line
+            String line = findString(spanned.toString(), dstart);
+            int indent = controller.indent(line);
+            String sign = controller.signInLine(line);
+//            logger.d("Indent:", line, indent, sign);
+            StringBuilder builder = new StringBuilder(source);
+            controller.addIndent(builder, indent);
+            if (null != sign) {
+                builder.append(sign);
+                builder.append(' ');
+            }
+            return builder.toString();
+        }
+        return null;
+    }
 
     public static interface EditorListener {
 
@@ -91,6 +126,7 @@ public class Editor extends Fragment {
                 return keyHandler(i, keyEvent);
             }
         });
+        editor.setFilters(new InputFilter[] {this});
         TextView title = (TextView) view.findViewById(R.id.editor_title_text);
         controller.applyHeaderStyle(title);
         form = new FormController(view);
@@ -149,6 +185,9 @@ public class Editor extends Fragment {
         }
         if (keyEvent.getAction() != KeyEvent.ACTION_UP) {
             return false;
+        }
+        if (key == KeyEvent.KEYCODE_TAB) {
+            logger.d("Tab event:", keyEvent.getFlags(), keyEvent.getModifiers());
         }
         if (keyEvent.isCtrlPressed() && key == KeyEvent.KEYCODE_S) {
             save();

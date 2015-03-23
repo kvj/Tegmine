@@ -156,6 +156,9 @@ public class TegmineController {
         if (TextUtils.isEmpty(line)) { // Empty line - indent undefined
             return -1;
         }
+        if (line.trim().length() == 0) {
+            return -1;
+        }
         int spaces = 0;
         for (int i = 0; i < line.length(); i++) { // Search for a first non space/tab
             if (line.charAt(i) == '\t') { // Tab
@@ -641,5 +644,15 @@ public class TegmineController {
 
     public boolean wrapLines() {
         return wrapLines;
+    }
+
+    private Pattern signPattern = Pattern.compile("^\\s*(\\S)\\s\\S.*$");
+
+    public String signInLine(String line) {
+        Matcher m = signPattern.matcher(line);
+        if (m.find()) {
+            return m.group(1);
+        }
+        return null;
     }
 }

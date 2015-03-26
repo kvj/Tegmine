@@ -17,22 +17,17 @@ public class FileSystemItemAdapter implements BundleAdapter<FileSystemItem> {
 
     Logger logger = Logger.forInstance(this);
     private final TegmineController controller;
-    private final String providerName;
 
-    public FileSystemItemAdapter(TegmineController controller, String providerName) {
+    public FileSystemItemAdapter(TegmineController controller) {
         this.controller = controller;
-        this.providerName = providerName;
     }
 
     @Override
     public FileSystemItem get(Bundle bundle, String name, FileSystemItem def) {
-        try {
-            FileSystemItem item = controller.fileSystemProvider(providerName).fromBundle(name+"_", bundle);
-            if (null != item) { // Found item
-                return item;
-            }
-        } catch (FileSystemException e) {
-            logger.e(e, "Failed to read");
+        String url = bundle.getString(name);
+        FileSystemItem item = controller.fromURL(url);
+        if (null != item) { // Found item
+            return item;
         }
         return def;
     }
@@ -42,11 +37,6 @@ public class FileSystemItemAdapter implements BundleAdapter<FileSystemItem> {
         if (null == value) {
             return;
         }
-        try {
-            bundle.putString(Tegmine.BUNDLE_PROVIDER, providerName);
-            controller.fileSystemProvider().toBundle(bundle, name+"_", value);
-        } catch (FileSystemException e) {
-            logger.e(e, "");
-        }
+        bundle.putString(name, value.toURL());
     }
 }

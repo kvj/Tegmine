@@ -18,6 +18,7 @@ public class LocalFileSystemItem extends FileSystemItem<LocalFileSystemItem> {
     private long lastUpdateTime = 0;
 
     public LocalFileSystemItem(LocalFileSystemProvider provider, File file, LocalFileSystemItem parent) throws FileSystemException {
+        super(provider.name());
         this.name = file.getName();
         this.type = file.isDirectory()? FileSystemItemType.Folder: FileSystemItemType.File;
         this.parent = parent;

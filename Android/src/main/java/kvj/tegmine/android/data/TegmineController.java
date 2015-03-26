@@ -20,6 +20,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -240,6 +241,9 @@ public class TegmineController {
     private static Pattern urlPattern = Pattern.compile("^tegmine\\+([a-z0-9_]+)://(.*)$");
 
     public FileSystemItem fromURL(String url) {
+        if (TextUtils.isEmpty(url)) {
+            return null;
+        }
         Matcher m = urlPattern.matcher(url);
         if (!m.find()) { // Not found
             logger.w("Failed to load item from URL:", url);
@@ -306,13 +310,14 @@ public class TegmineController {
         return i;
     }
 
-    private void setupFailsave() {
+    private void setupFailsave() throws FileSystemException {
         templates.clear();
         fileSystemProviders.clear();
         colorSchemes.clear();
         syntaxes.clear();
         if (!fileSystemProviders.containsKey("sdcard")) { // Failsafe - should always be there
             FileSystemProvider provider = new LocalFileSystemProvider(Environment.getExternalStorageDirectory(), "sdcard");
+            provider.label("SD Card");
             fileSystemProviders.put("sdcard", provider);
         }
         if (null == defaultProvider) { // No default provider
@@ -449,7 +454,7 @@ public class TegmineController {
         }
     }
 
-    private void reloadStorage(Map<String, Object> config) {
+    private void reloadStorage(Map<String, Object> config) throws FileSystemException {
         Map<String, Object> storageConfig = objectObject(config, "storage");
         if (null != storageConfig) { // Have config
             for (String key : storageConfig.keySet()) { // Create new instances
@@ -464,6 +469,7 @@ public class TegmineController {
                     provider = new LocalFileSystemProvider(new File(storagePath), key);
                 }
                 if (null != provider) {
+                    provider.label(objectString(conf, "label", null));
                     fileSystemProviders.put(key, provider);
                     if (objectBoolean(conf, "default", false)) { // Default
                         defaultProvider = provider;
@@ -525,6 +531,10 @@ public class TegmineController {
 
     public boolean scrollToBottom() {
         return scrollToBottom;
+    }
+
+    public boolean isRoot(FileSystemItem item) {
+        return fileSystemProvider(item.providerName()).root().equals(item);
     }
 
     public static class TemplateApplyResult {
@@ -654,5 +664,9 @@ public class TegmineController {
             return m.group(1);
         }
         return null;
+    }
+
+    public Collection<String> fileSystemProviders() {
+        return fileSystemProviders.keySet();
     }
 }

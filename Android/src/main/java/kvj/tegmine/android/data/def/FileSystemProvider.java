@@ -14,6 +14,7 @@ import java.util.List;
 abstract public class FileSystemProvider<T extends FileSystemItem> {
 
     protected final String name;
+    protected String label = null;
 
     protected FileSystemProvider(String name) {
         this.name = name;
@@ -24,6 +25,14 @@ abstract public class FileSystemProvider<T extends FileSystemItem> {
     }
 
     protected Logger logger = Logger.forInstance(this);
+
+    public String label() {
+        return label != null? label: name;
+    }
+
+    public void label(String label) {
+        this.label = label;
+    }
 
     public final List<? extends FileSystemItem> children(FileSystemItem parent) throws FileSystemException {
         return childrenT(cast(parent));
@@ -77,19 +86,9 @@ abstract public class FileSystemProvider<T extends FileSystemItem> {
         return (T)item;
     }
 
-    public void toBundle(Bundle bundle, String prefix, FileSystemItem item) throws FileSystemException {
-        toBundleT(bundle, prefix, cast(item));
-    }
-
-    protected void toBundleT(Bundle bundle, String prefix, T item) throws FileSystemException{
-        throw new FileSystemException("Not implemented");
-    }
-
-    public T fromBundle(String prefix, Bundle bundle) throws FileSystemException {
-        throw new FileSystemException("Not implemented");
-    }
-
     public T fromURL(String url) throws FileSystemException {
         throw new FileSystemException("Not implemented");
     }
+
+    public abstract T root();
 }

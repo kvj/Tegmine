@@ -10,7 +10,11 @@ import kvj.tegmine.android.data.def.FileSystemItem;
  */
 public class FileSystemItemWidgetAdapter extends TransientAdapter<FileSystemItem>{
 
-    public FileSystemItemWidgetAdapter(TegmineController ctrl, String providerName) {
-        super(new FileSystemItemAdapter(ctrl, providerName), null);
+    public FileSystemItemWidgetAdapter(TegmineController ctrl) {
+        super(new FileSystemItemAdapter(ctrl), null);
+    }
+
+    public FileSystemItemWidgetAdapter(TegmineController ctrl, FileSystemItem def) {
+        super(new FileSystemItemAdapter(ctrl), def);
     }
 }

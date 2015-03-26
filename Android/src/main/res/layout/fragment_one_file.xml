@@ -6,28 +6,31 @@
         android:orientation="vertical"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
-        <LinearLayout
-            android:layout_gravity="center"
-            android:orientation="horizontal"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content">
-            <ImageView
-                android:id="@+id/one_file_title_icon"
-                android:layout_width="wrap_content"
-                android:layout_gravity="center_vertical"
-                android:layout_height="wrap_content"
-                android:src="@drawable/icn_file_light"/>
-            <TextView
-                android:id="@+id/one_file_title_text"
-                android:layout_width="match_parent"
-                android:singleLine="true"
-                android:ellipsize="middle"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center_vertical"
-                android:layout_weight="0"
-                android:text="Hi Korea!"
-                android:padding="@dimen/textPadding"/>
-        </LinearLayout>
+        <FrameLayout android:layout_width="match_parent"
+                     android:layout_height="wrap_content">
+            <LinearLayout
+                    android:layout_gravity="center"
+                    android:orientation="horizontal"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content">
+                <ImageView
+                        android:id="@+id/one_file_title_icon"
+                        android:layout_width="wrap_content"
+                        android:layout_gravity="center_vertical"
+                        android:layout_height="wrap_content"
+                        android:src="@drawable/icn_file_light"/>
+                <TextView
+                        android:id="@+id/one_file_title_text"
+                        android:layout_width="match_parent"
+                        android:singleLine="true"
+                        android:ellipsize="middle"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center_vertical"
+                        android:layout_weight="0"
+                        android:text="Hi Korea!"
+                        android:padding="@dimen/textPadding"/>
+            </LinearLayout>
+        </FrameLayout>
         <ListView
             android:id="@android:id/list"
             android:divider="#000000"

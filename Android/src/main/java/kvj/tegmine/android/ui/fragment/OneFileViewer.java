@@ -77,8 +77,8 @@ public class OneFileViewer extends Fragment {
 
     public OneFileViewer create(final TegmineController controller, Bundle bundle) {
         this.controller = controller;
-        form.add(new FileSystemItemWidgetAdapter(controller, null), "select");
-        form.add(new FileSystemItemWidgetAdapter(controller, null), "root");
+        form.add(new FileSystemItemWidgetAdapter(controller), "select");
+        form.add(new FileSystemItemWidgetAdapter(controller), "root");
         form.add(new TransientAdapter<>(new BooleanBundleAdapter(), controller.showNumbers()), "showNumbers");
         form.add(new TransientAdapter<>(new BooleanBundleAdapter(), controller.wrapLines()), "wrapLines");
         form.load(bundle);

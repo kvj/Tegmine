@@ -24,16 +24,16 @@ import kvj.tegmine.android.data.def.FileSystemProvider;
  */
 public class LocalFileSystemProvider extends FileSystemProvider<LocalFileSystemItem> {
 
-    private final File parent;
+    private final LocalFileSystemItem root;
 
-    public LocalFileSystemProvider(File parent, String name) {
+    public LocalFileSystemProvider(File parent, String name) throws FileSystemException {
         super(name);
-        this.parent = parent;
+        this.root = new LocalFileSystemItem(this, parent, null);
     }
 
     @Override
     protected List<LocalFileSystemItem> childrenT(LocalFileSystemItem parent) throws FileSystemException {
-        File from = parent != null ? parent.file: this.parent;
+        File from = parent != null ? parent.file: this.root.file;
         List<LocalFileSystemItem> result = new ArrayList<>();
         logger.d("Getting contents of", from.getAbsolutePath(), from.isDirectory());
         if (!from.exists() || !from.isDirectory()) { // Invalid file
@@ -60,26 +60,24 @@ public class LocalFileSystemProvider extends FileSystemProvider<LocalFileSystemI
         return result;
     }
 
-    @Override
-    protected void toBundleT(Bundle bundle, String prefix, LocalFileSystemItem item) throws FileSystemException {
-        bundle.putString(prefix+Tegmine.BUNDLE_FILE_LOCATION, item.file.getAbsolutePath());
-    }
-
     private LocalFileSystemItem fromPath(String path) throws FileSystemException {
         if (TextUtils.isEmpty(path)) { // Not defined
             return null;
         }
-        File file = path.startsWith("/") ? new File(path): new File(parent, path);
+        File file = path.startsWith("/") ? new File(path): new File(root.file, path);
         if (!file.exists()) { // Invalid file
-            logger.w("Non existing file:", path, file.getAbsolutePath(), parent.getAbsolutePath());
+            logger.w("Non existing file:", path, file.getAbsolutePath(), root.file.getAbsolutePath());
             return null;
+        }
+        if (file.equals(root.file)) {
+            return root;
         }
         LocalFileSystemItem item = new LocalFileSystemItem(this, file, null);
         List<File> parents = new ArrayList<>();
         file = file.getParentFile();
-        while (!this.parent.equals(file)) {
+        while (!this.root.file.equals(file)) {
             if (file.getParentFile() == null) { // Different tree
-                logger.w("File from different tree:", file.getAbsolutePath(), parent.getAbsolutePath());
+                logger.w("File from different tree:", file.getAbsolutePath(), root.file.getAbsolutePath(), path);
                 return null;
             }
             parents.add(file);
@@ -93,12 +91,6 @@ public class LocalFileSystemProvider extends FileSystemProvider<LocalFileSystemI
         }
         return item;
 
-    }
-
-    @Override
-    public LocalFileSystemItem fromBundle(String prefix, Bundle bundle) throws FileSystemException {
-        String path = bundle.getString(prefix+Tegmine.BUNDLE_FILE_LOCATION, null);
-        return fromPath(path);
     }
 
     @Override
@@ -147,5 +139,10 @@ public class LocalFileSystemProvider extends FileSystemProvider<LocalFileSystemI
             throw new FileSystemException("Invalid URL");
         }
         return item;
+    }
+
+    @Override
+    public LocalFileSystemItem root() {
+        return root;
     }
 }

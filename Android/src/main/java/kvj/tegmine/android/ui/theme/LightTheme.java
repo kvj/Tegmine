@@ -58,6 +58,10 @@ public class LightTheme {
         return color(Colors.Base3, Color.WHITE);
     }
 
+    public int selectedColor() {
+        return color(Colors.Base2, Color.GRAY);
+    }
+
     public int headerTextSp() {
         return 18;
     }

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:orientation="horizontal"
+              android:layout_width="match_parent"
+              android:layout_height="48dp">
+    <FrameLayout
+            android:layout_weight="0"
+            android:layout_width="72dp"
+            android:layout_height="match_parent"
+            android:paddingStart="16dp"
+            android:paddingLeft="16dp">
+        <ImageView
+                android:src="@drawable/icn_folder_light"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"/>
+    </FrameLayout>
+    <FrameLayout
+            android:layout_weight="1"
+            android:layout_marginEnd="16dp"
+            android:layout_marginRight="16dp"
+            android:layout_width="0dp"
+            android:layout_height="match_parent">
+        <TextView
+                android:id="@+id/item_navigation_text"
+                android:text="Hi Korea!"
+                android:layout_gravity="center_vertical"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="Roboto Medium"
+                android:textSize="14sp"/>
+    </FrameLayout>
+</LinearLayout>

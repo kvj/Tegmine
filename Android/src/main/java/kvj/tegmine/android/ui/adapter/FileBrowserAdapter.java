@@ -25,8 +25,6 @@ import kvj.tegmine.android.data.def.FileSystemItemType;
  */
 public class FileBrowserAdapter extends AnotherListAdapter<FileBrowserAdapter.Item> {
 
-    private final String providerName;
-
     class Item {
         boolean expanded = false;
         FileSystemItem<?> item = null;
@@ -38,11 +36,16 @@ public class FileBrowserAdapter extends AnotherListAdapter<FileBrowserAdapter.It
     private static Logger logger = Logger.forClass(FileBrowserAdapter.class);
     private Item root = new Item();
 
-    public FileBrowserAdapter(TegmineController controller, String providerName, FileSystemItem rootItem) {
+    public FileBrowserAdapter(TegmineController controller) {
         super(new ArrayList<Item>(), R.layout.item_file_browser);
-        root.item = rootItem;
         this.controller = controller;
-        this.providerName = providerName;
+    }
+
+    public void load(FileSystemItem rootItem, FileSystemItem expandTo) {
+        root = new Item();
+        root.item = rootItem;
+        data.clear();
+        expandTo(expandTo);
     }
 
     public void expandTo(FileSystemItem target) {
@@ -113,7 +116,7 @@ public class FileBrowserAdapter extends AnotherListAdapter<FileBrowserAdapter.It
             @Override
             protected List<Item> doInBackground() {
                 try {
-                    List<? extends FileSystemItem> items = controller.fileSystemProvider(providerName).children(item.item);
+                    List<? extends FileSystemItem> items = controller.fileSystemProvider(item.item.providerName()).children(item.item);
                     List<Item> newItems = new ArrayList<>(items.size());
                     for (FileSystemItem itm : items) { // Create new items
                         Item newItem = new Item();

@@ -8,6 +8,11 @@ abstract public class FileSystemItem<T> {
     public String name = "";
     public FileSystemItemType type = FileSystemItemType.Folder;
     public T parent = null;
+    private String provider = null;
+
+    protected FileSystemItem(String provider) {
+        this.provider = provider;
+    }
 
     public String details() {
         return name; // By default just name
@@ -26,5 +31,9 @@ abstract public class FileSystemItem<T> {
 
     public void commit() {
         // Called when IO operation is done
+    }
+
+    public String providerName() {
+        return provider;
     }
 }

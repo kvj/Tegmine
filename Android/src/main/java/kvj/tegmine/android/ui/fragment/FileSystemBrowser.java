@@ -3,7 +3,9 @@ package kvj.tegmine.android.ui.fragment;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.ListFragment;
+import android.support.v4.widget.DrawerLayout;
 import android.util.TypedValue;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -21,6 +23,7 @@ import kvj.tegmine.android.data.def.FileSystemException;
 import kvj.tegmine.android.data.def.FileSystemItem;
 import kvj.tegmine.android.data.def.FileSystemItemType;
 import kvj.tegmine.android.ui.adapter.FileBrowserAdapter;
+import kvj.tegmine.android.ui.adapter.StorageNavigationAdapter;
 import kvj.tegmine.android.ui.form.FileSystemItemWidgetAdapter;
 
 /**
@@ -29,7 +32,10 @@ import kvj.tegmine.android.ui.form.FileSystemItemWidgetAdapter;
 public class FileSystemBrowser extends Fragment {
 
     private ListView listView = null;
-    private String providerName = null;
+    private DrawerLayout drawer = null;
+    private View drawerPane = null;
+    private ListView storageList = null;
+    private StorageNavigationAdapter storageListAdapter = null;
 
     public static interface BrowserListener {
 
@@ -63,10 +69,10 @@ public class FileSystemBrowser extends Fragment {
 
     public FileSystemBrowser create(TegmineController controller, Bundle bundle) {
         this.controller = controller;
-        providerName = bundle.getString(Tegmine.BUNDLE_PROVIDER, null);
-        form.add(new FileSystemItemWidgetAdapter(controller, providerName), "select");
-        form.add(new FileSystemItemWidgetAdapter(controller, providerName), "root");
+        form.add(new FileSystemItemWidgetAdapter(controller, controller.fileSystemProvider(bundle.getString(Tegmine.BUNDLE_PROVIDER)).root()), "root");
+        form.add(new FileSystemItemWidgetAdapter(controller), "select");
         form.load(bundle);
+        logger.d("Will create view", controller, bundle);
         return this;
     }
 
@@ -75,16 +81,34 @@ public class FileSystemBrowser extends Fragment {
         if (null == controller) { // Invalid fragment
             return null;
         }
-        logger.d("Will create view", controller);
         View view = inflater.inflate(R.layout.fragment_file_browser, container, false);
         form.setView(view);
         titleText = (TextView) view.findViewById(R.id.file_browser_title_text);
         titleText.setTextSize(TypedValue.COMPLEX_UNIT_SP, controller.theme().headerTextSp());
         titleText.setTextColor(controller.theme().textColor());
         listView = (ListView) view.findViewById(android.R.id.list);
-        this.adapter = new FileBrowserAdapter(controller, providerName, form.getValue("root", FileSystemItem.class));
+        drawer = (DrawerLayout) view.findViewById(R.id.file_browser_drawer);
+        drawerPane = view.findViewById(R.id.file_browser_navigation);
+        storageList = (ListView) view.findViewById(R.id.file_browser_storage_list);
+        storageList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+                selectStorage(storageListAdapter.getItem(i));
+            }
+        });
+        storageListAdapter = new StorageNavigationAdapter(controller) {
+
+            @Override
+            public boolean selected(String name) {
+                return adapter.root().providerName().equals(name);
+            }
+        };
+        storageList.setAdapter(storageListAdapter);
+        storageListAdapter.refresh();
+        drawerPane.setBackgroundColor(controller.theme().backgroundColor());
+        adapter = new FileBrowserAdapter(controller);
+        adapter.load(form.getValue("root", FileSystemItem.class), form.getValue("select", FileSystemItem.class));
         listView.setAdapter(adapter);
-        adapter.expandTo(form.getValue("select", FileSystemItem.class));
         listView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
             @Override
             public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
@@ -98,25 +122,51 @@ public class FileSystemBrowser extends Fragment {
                 onListItemClick(pos);
             }
         });
-        if (null != adapter.root()) { // Have root defined
-            titleText.setText(adapter.root().details());
-        } else {
-            titleText.setText("Root");
-        }
+        drawer.setDrawerListener(new DrawerLayout.DrawerListener() {
+            @Override
+            public void onDrawerSlide(View drawerView, float slideOffset) {
+            }
+
+            @Override
+            public void onDrawerOpened(View drawerView) {
+                storageListAdapter.refresh();
+            }
+
+            @Override
+            public void onDrawerClosed(View drawerView) {
+            }
+
+            @Override
+            public void onDrawerStateChanged(int newState) {
+            }
+        });
+        updateTitle();
         return view;
+    }
+
+    private void updateTitle() {
+        if (controller.isRoot(adapter.root())) { // Have root defined
+            titleText.setText(controller.fileSystemProvider(adapter.root().providerName()).label());
+        } else {
+            titleText.setText(adapter.root().details());
+        }
+    }
+
+    private void selectStorage(String name) {
+        form.setValue("root", controller.fileSystemProvider(name).root());
+        form.setValue("select", null);
+        adapter.load(form.getValue("root", FileSystemItem.class), null);
+        drawer.closeDrawer(Gravity.LEFT);
+        updateTitle();
     }
 
     private void onLongItemClick(int position) {
         FileSystemItem item = adapter.getFileSystemItem(position);
         if (item.type == FileSystemItemType.Folder) { // Collapse/expand
-            try {
-                Bundle bundle = new Bundle();
-                controller.fileSystemProvider().toBundle(bundle, "root_", item);
-                if (null != listener) {
-                    listener.openNewWindow(bundle);
-                }
-            } catch (FileSystemException e) {
-                logger.e(e, "Failed to put item to bundle", item);
+            Bundle bundle = new Bundle();
+            bundle.putString("root", item.toURL());
+            if (null != listener) {
+                listener.openNewWindow(bundle);
             }
         }
     }
@@ -128,17 +178,13 @@ public class FileSystemBrowser extends Fragment {
             adapter.collapseExpand(position);
         }
         if (item.type == FileSystemItemType.File) { // Open viewer
-            try {
-                Bundle bundle = new Bundle();
-                if (null != adapter.root()) { // Have custom root
-                    controller.fileSystemProvider().toBundle(bundle, "root_", adapter.root());
-                }
-                controller.fileSystemProvider().toBundle(bundle, "select_", item);
-                if (null != listener) {
-                    listener.openFile(bundle, item);
-                }
-            } catch (FileSystemException e) {
-                logger.e(e, "Failed to put item to bundle", item);
+            Bundle bundle = new Bundle();
+            if (null != adapter.root()) { // Have custom root
+                bundle.putString("root", adapter.root().toURL());
+            }
+            bundle.putString("select", item.toURL());
+            if (null != listener) {
+                listener.openFile(bundle, item);
             }
         }
 
@@ -146,6 +192,23 @@ public class FileSystemBrowser extends Fragment {
 
     public void saveState(Bundle outState) {
         form.save(outState, "root", "select");
-        super.onSaveInstanceState(outState);
     }
+
+    public void toggleNavigation() {
+        if (null != drawer) {
+            if (drawer.isDrawerOpen(Gravity.LEFT)) {
+                drawer.closeDrawer(Gravity.LEFT);
+            } else {
+                drawer.openDrawer(Gravity.LEFT);
+            }
+
+        }
+    }
+
+    public void refresh() {
+        if (null != storageListAdapter) {
+            storageListAdapter.refresh();
+        }
+    }
+
 }

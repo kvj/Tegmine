@@ -102,13 +102,7 @@ public class ShortcutCreator extends FragmentActivity implements ControllerConne
             launchIntent.putExtra(Tegmine.BUNDLE_EDIT_TYPE, Tegmine.EDIT_TYPE_EDIT);
         }
         Bundle itemsBundle = new Bundle();
-        try {
-            controller.fileSystemProvider().toBundle(itemsBundle, "select_", selected);
-        } catch (FileSystemException e) {
-            logger.e(e, "Failed to save to bundle");
-            SuperActivity.notifyUser(this, "Invalid file selected");
-            return;
-        }
+        itemsBundle.putString("select", selected.toURL());
         launchIntent.putExtras(itemsBundle);
         intent.putExtra(Intent.EXTRA_SHORTCUT_INTENT, launchIntent);
         intent.putExtra(Intent.EXTRA_SHORTCUT_NAME, title);
@@ -123,7 +117,8 @@ public class ShortcutCreator extends FragmentActivity implements ControllerConne
             return;
         }
         if (this.controller == null) {
-            form.add(new FileSystemItemWidgetAdapter(controller, controller.fileSystemProvider().name()), "selected");
+            form.add(new FileSystemItemWidgetAdapter(controller), "selected");
+            findViewById(R.id.shortcut_file_selector).setBackgroundColor(controller.theme().backgroundColor());
             Bundle data = new Bundle();
             FileSystemBrowser
                 browser = new FileSystemBrowser().create(controller, data).setListener(this);

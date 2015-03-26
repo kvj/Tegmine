@@ -71,8 +71,8 @@ public class Main extends ActionBarActivity implements ControllerConnector.Contr
         setContentView(R.layout.activity_main);
         toolbar = (Toolbar) findViewById(R.id.main_toolbar);
         progressBar = (ContentLoadingProgressBar)findViewById(R.id.main_progress_bar);
-        setupToolbar(toolbar);
         setSupportActionBar(toolbar);
+        setupToolbar(toolbar);
         form = new FormController(null);
         form.add(new TransientAdapter<String>(new StringBundleAdapter(), Tegmine.VIEW_TYPE_BROWSER), Tegmine.BUNDLE_VIEW_TYPE);
         multiPane = (LinearLayout) findViewById(R.id.main_view);
@@ -86,8 +86,16 @@ public class Main extends ActionBarActivity implements ControllerConnector.Contr
     }
 
     private void setupToolbar(Toolbar toolbar) {
-        toolbar.setLogo(R.mipmap.ic_launcher);
-        toolbar.setLogoDescription(R.string.app_name);
+        toolbar.setTitle(R.string.app_name);
+        toolbar.setNavigationIcon(R.drawable.toolbar_drawer);
+        toolbar.setNavigationOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (null != browser) {
+                    browser.toggleNavigation();
+                }
+            }
+        });
     }
 
 
@@ -344,6 +352,9 @@ public class Main extends ActionBarActivity implements ControllerConnector.Contr
         super.onActivityResult(requestCode, resultCode, data);
         if (null != viewer) {
             viewer.refresh();
+        }
+        if (null != browser) {
+            browser.refresh();
         }
     }
 

@@ -32,6 +32,7 @@ public class FileChooser extends DialogFragment implements FileSystemBrowser.Bro
     public static FileChooser newDialog(TegmineController controller, FileChooserListener listener) {
         FileChooser instance = new FileChooser();
         instance.setShowsDialog(false);
+        instance.setStyle(DialogFragment.STYLE_NO_TITLE, instance.getTheme());
         instance.controller = controller;
         instance.listener = listener;
         return instance;
@@ -46,6 +47,7 @@ public class FileChooser extends DialogFragment implements FileSystemBrowser.Bro
         data.putString(Tegmine.BUNDLE_PROVIDER, "sdcard");
         FileSystemBrowser browser = new FileSystemBrowser().create(controller, data).setListener(this);
         View v = inflater.inflate(R.layout.dialog_settings, container, false);
+        v.findViewById(R.id.settings_frame).setBackgroundColor(controller.theme().backgroundColor());
         getChildFragmentManager().beginTransaction().addToBackStack("browser").replace(R.id.settings_frame, browser, "browser").commit();
         return v;
     }

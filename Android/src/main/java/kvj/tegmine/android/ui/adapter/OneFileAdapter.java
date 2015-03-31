@@ -161,6 +161,7 @@ public class OneFileAdapter extends BaseAdapter {
         } else {
             border.setVisibility(line.folded()? View.VISIBLE: View.GONE);
             int indent = line.indent();
+            SyntaxDef.SyntaxedStringBuilder syntaxedBuilder = new SyntaxDef.SyntaxedStringBuilder(line.data());
             SpannableStringBuilder builder = new SpannableStringBuilder();
             controller.applyTheme(syntax, line, builder);
             text.setText(builder);

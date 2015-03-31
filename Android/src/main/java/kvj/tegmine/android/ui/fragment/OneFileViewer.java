@@ -52,6 +52,12 @@ public class OneFileViewer extends Fragment {
 
     private ListView listView = null;
 
+    public void requestFocus() {
+        if (null != listView) {
+            listView.requestFocus();
+        }
+    }
+
     public static interface FileViewerListener {
         public void openEditor(Bundle data);
     }

@@ -283,6 +283,7 @@ public class Main extends ActionBarActivity implements ControllerConnector.Contr
                     // Just closed editor
                     setType(Tegmine.VIEW_TYPE_FILE);
                     viewer.refresh();
+                    viewer.requestFocus();
                     return;
                 }
                 finish(); // In all other cases - close

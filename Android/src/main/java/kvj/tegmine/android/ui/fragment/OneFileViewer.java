@@ -6,6 +6,7 @@ import android.content.ClipDescription;
 import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.text.TextUtils;
@@ -32,6 +33,7 @@ import org.kvj.bravo7.util.Tasks;
 
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 import kvj.tegmine.android.R;
@@ -41,6 +43,7 @@ import kvj.tegmine.android.data.def.FileSystemException;
 import kvj.tegmine.android.data.def.FileSystemItem;
 import kvj.tegmine.android.data.model.FileItemWatcher;
 import kvj.tegmine.android.data.model.LineMeta;
+import kvj.tegmine.android.data.model.SyntaxDef;
 import kvj.tegmine.android.data.model.TemplateDef;
 import kvj.tegmine.android.ui.adapter.OneFileAdapter;
 import kvj.tegmine.android.ui.form.FileSystemItemWidgetAdapter;
@@ -372,7 +375,28 @@ public class OneFileViewer extends Fragment {
         if (null != adapter && v == listView) { // OK to show
             menu.clear();
             getActivity().getMenuInflater().inflate(R.menu.context_one_file, menu);
+            AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo)menuInfo;
+            Collection<SyntaxDef.Pair<String>> links = adapter.features(info.position, "link");
+            for (SyntaxDef.Pair<String> link : links) {
+                newLinkMenu(menu, link.v2());
+            }
         }
+    }
+
+    private MenuItem newLinkMenu(ContextMenu menu, final String url) {
+        MenuItem item = menu.add(url);
+        item.setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
+            @Override
+            public boolean onMenuItemClick(MenuItem menuItem) {
+                Intent browserIntent = new Intent(Intent.ACTION_VIEW);
+                browserIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                browserIntent.setData(Uri.parse(url));
+                startActivity(browserIntent);
+
+                return true;
+            }
+        });
+        return item;
     }
 
     private void loadFileLayout() {

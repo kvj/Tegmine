@@ -626,14 +626,20 @@ public class TegmineController {
         return progressListeners;
     }
 
+    public SyntaxDef.SyntaxedStringBuilder syntaxize(SyntaxDef syntax, LineMeta line) {
+        SyntaxDef.SyntaxedStringBuilder syntaxedStringBuilder = new SyntaxDef.SyntaxedStringBuilder(line.data());
+        syntax.apply(syntaxedStringBuilder);
+        return syntaxedStringBuilder;
+    }
+
     public SyntaxDef.SyntaxedStringBuilder applyTheme(SyntaxDef syntax, LineMeta line, SpannableStringBuilder builder) {
         if (null == syntax) {
             builder.append(line.data());
             return null;
         }
         SyntaxDef.SyntaxedStringBuilder syntaxedStringBuilder = new SyntaxDef.SyntaxedStringBuilder(line.data());
-        syntax.apply(theme(), syntaxedStringBuilder);
-        syntaxedStringBuilder.span(builder);
+        syntax.apply(syntaxedStringBuilder);
+        syntaxedStringBuilder.span(theme(), builder);
         return syntaxedStringBuilder;
     }
 

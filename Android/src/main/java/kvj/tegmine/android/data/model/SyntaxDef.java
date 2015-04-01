@@ -50,43 +50,48 @@ public class SyntaxDef {
         }
     }
 
+    public static class SyntaxBlock {
+        private final Pair<Integer> pair;
+        private final PatternDef pattern;
+
+        public SyntaxBlock(Pair<Integer> pair, PatternDef pattern) {
+            this.pair = pair;
+            this.pattern = pattern;
+        }
+    }
+
     public static class SyntaxedStringBuilder {
         private Logger logger = Logger.forInstance(this);
 
-        private List<Integer> starts = new ArrayList<>();
-        private List<Integer> ends = new ArrayList<>();
-        private List<PatternDef> patterns = new ArrayList<>();
+        private List<SyntaxBlock> blocks = new ArrayList<>();
 
         private final String data;
-        private LightTheme theme = null;
 
         public SyntaxedStringBuilder(String data) {
             this.data = data;
         }
 
         public void add(int start, int finish, PatternDef pattern) {
-            starts.add(start);
-            ends.add(finish);
-            patterns.add(pattern);
+            blocks.add(new SyntaxBlock(new Pair<Integer>(start, finish), pattern));
         }
 
-        public Iterable<PatternDef> allInside(final int position) {
-            return new Iterable<PatternDef>() {
+        public Iterable<SyntaxBlock> allInside(final int position) {
+            return new Iterable<SyntaxBlock>() {
                 @Override
-                public Iterator<PatternDef> iterator() {
-                    return new Iterator<PatternDef>() {
+                public Iterator<SyntaxBlock> iterator() {
+                    return new Iterator<SyntaxBlock>() {
 
                         private int index = 0;
 
                         @Override
                         public boolean hasNext() {
-                            if (index >= patterns.size()) {
+                            if (index >= blocks.size()) {
                                 return false;
                             }
-                            if (starts.get(index) > position || ends.get(index) <= position) {
+                            if (blocks.get(index).pair.v1() > position || blocks.get(index).pair.v2() <= position) {
                                 index++;
-                                while (index < patterns.size()) {
-                                    if (starts.get(index) <= position && ends.get(index) > position) {
+                                while (index < blocks.size()) {
+                                    if (blocks.get(index).pair.v1() <= position && blocks.get(index).pair.v2() > position) {
                                         return true; // New index
                                     }
                                     index++;
@@ -97,10 +102,11 @@ public class SyntaxDef {
                         }
 
                         @Override
-                        public PatternDef next() {
-                            PatternDef p = patterns.get(index);
+                        public SyntaxBlock next() {
+                            SyntaxBlock
+                                syntaxBlock = blocks.get(index);
                             index++;
-                            return p;
+                            return syntaxBlock;
                         }
 
                         @Override
@@ -115,9 +121,9 @@ public class SyntaxDef {
             Set<Integer> indexes = new HashSet<>();
             indexes.add(0);
             indexes.add(data.length());
-            for (int i = 0; i < patterns.size(); i++) {
-                indexes.add(starts.get(i));
-                indexes.add(ends.get(i));
+            for (int i = 0; i < blocks.size(); i++) {
+                indexes.add(blocks.get(i).pair.v1());
+                indexes.add(blocks.get(i).pair.v2());
             }
             final List<Integer> sorted = new ArrayList<>(indexes);
             Collections.sort(sorted);
@@ -151,41 +157,61 @@ public class SyntaxDef {
             };
         }
 
-        public void span(SpannableStringBuilder builder) {
+        public Collection<Pair<String>> allFeatures(int position) {
+            List<Pair<String>> result = new ArrayList<>();
+            Iterable<SyntaxBlock> patternDefs = blocks;
+            if (position != -1) {
+                patternDefs = allInside(position);
+            }
+            for (SyntaxBlock syntaxBlock : patternDefs) {
+                for (String feature : syntaxBlock.pattern.features) {
+                    result.add(new Pair<String>(feature, data.substring(syntaxBlock.pair.v1(), syntaxBlock.pair.v2())));
+                }
+            }
+            return result;
+        }
+
+        public void span(LightTheme theme, SpannableStringBuilder builder) {
             // Make spans
             for (Pair<Integer> startFinish : layout()) {
                 if (startFinish.v1() == startFinish.v2()) {
                     continue;
                 }
-                builder.append(data.substring(startFinish.v1(), startFinish.v2()));
-                if (null == theme) continue;
                 LightTheme.Colors bg = null;
                 LightTheme.Colors fg = null;
                 Boolean bold = null;
-                for (PatternDef patternDef : allInside(startFinish.v1)) {
-//                    logger.d("Pattern:", patternDef.bg, patternDef.fg, patternDef.bold);
-                    bg = SyntaxDef.plus(bg, patternDef.bg);
-                    fg = SyntaxDef.plus(fg, patternDef.fg);
-                    bold = SyntaxDef.plus(bold, patternDef.bold);
+                int start = builder.length();
+                int finish = start + startFinish.v2() - startFinish.v1();
+                String text = data.substring(startFinish.v1(), startFinish.v2());
+                for (SyntaxBlock block : allInside(startFinish.v1)) {
+//                    logger.d("Pattern:", patternDef.name, patternDef.shrink);
+                    bg = SyntaxDef.plus(bg, block.pattern.bg);
+                    fg = SyntaxDef.plus(fg, block.pattern.fg);
+                    bold = SyntaxDef.plus(bold, block.pattern.bold);
+                    if (block.pattern.shrink > 0 && (finish - start > block.pattern.shrink)) {
+                        text = text.substring(0, block.pattern.shrink) + "…";
+                        finish = start + text.length();
+                    }
                 }
-                logger.d("pair", startFinish.v1, startFinish.v2, bg, fg, data);
+//                logger.d("pair", start, finish, bg, fg, data, text);
+                builder.append(text);
                 if (Boolean.TRUE.equals(bold)) { // Bold text
                     CharacterStyle span = new StyleSpan(Typeface.BOLD);
-                    builder.setSpan(span, startFinish.v1(), startFinish.v2(),
+                    builder.setSpan(span, start, finish,
                                     SpannableStringBuilder.SPAN_EXCLUSIVE_EXCLUSIVE);
                 }
                 if (null != bg) { // Have color
                     CharacterStyle
                         span =
                         new BackgroundColorSpan(theme.color(bg, theme.backgroundColor()));
-                    builder.setSpan(span, startFinish.v1(), startFinish.v2(),
+                    builder.setSpan(span, start, finish,
                                     SpannableStringBuilder.SPAN_EXCLUSIVE_EXCLUSIVE);
                 }
                 if (null != fg) { // Have color
                     CharacterStyle
                         span =
                         new ForegroundColorSpan(theme.color(fg, theme.textColor()));
-                    builder.setSpan(span, startFinish.v1(), startFinish.v2(),
+                    builder.setSpan(span, start, finish,
                                     SpannableStringBuilder.SPAN_EXCLUSIVE_EXCLUSIVE);
                 }
             }
@@ -239,6 +265,13 @@ public class SyntaxDef {
             p.pattern = Pattern.compile(pattern);
             p.group = TegmineController.objectInteger(ruleConfig, "group", 0);
             p.includesStr = TegmineController.objectList(ruleConfig, String.class, "includes");
+            String features = TegmineController.objectString(ruleConfig, "feature", null);
+            if (!TextUtils.isEmpty(features)) {
+                for (String f : features.split(" ")) {
+                    p.features.add(f);
+                }
+            }
+            p.shrink = TegmineController.objectInteger(ruleConfig, "shrink", 0);
             rulesMap.put(p.name, p);
         }
         Map<String, List<String>> groupsData = new LinkedHashMap<>();
@@ -266,13 +299,6 @@ public class SyntaxDef {
                 if (mappingConfig.containsKey("bold")) {
                     p.bold = TegmineController.objectBoolean(mappingConfig, "bold", false);
                 }
-                String features = TegmineController.objectString(mappingConfig, "feature", null);
-                if (!TextUtils.isEmpty(features)) {
-                    for (String f : features.split(" ")) {
-                        p.features.add(f);
-                    }
-                }
-                p.shrink = TegmineController.objectInteger(mappingConfig, "shrink", 0);
                 if (null != p.includesStr) {
                     for (String name : p.includesStr) {
                         List<String> groupContents = groupsData.get(name);
@@ -289,7 +315,7 @@ public class SyntaxDef {
                         }
                     }
                 }
-                logger.d("Configured pattern:", p.name, p.pattern, p.includesStr, p.includes);
+                logger.d("Configured pattern:", p.name, p.pattern, p.includesStr, p.includes, p.shrink);
                 patterns.add(p);
             }
         }
@@ -301,16 +327,16 @@ public class SyntaxDef {
         return LightTheme.Colors.findColor(colorName);
     }
 
-    private void append(LightTheme theme, SyntaxedStringBuilder builder, int from, int to, PatternDef current) {
+    private void append(SyntaxedStringBuilder builder, int from, int to, PatternDef current) {
         if (from < to && null != current) { // Have some data
             builder.add(from, to, current);
         }
     }
 
-    private void apply(LightTheme theme, SyntaxedStringBuilder builder, int from, int to, List<PatternDef> patterns, PatternDef current) {
+    private void apply(SyntaxedStringBuilder builder, int from, int to, List<PatternDef> patterns, PatternDef current) {
         Matcher[] matches = new Matcher[patterns.size()];
         int start = from;
-        append(theme, builder, from, to, current);
+        append(builder, from, to, current);
         while (true) {
             String target = builder.data.substring(start, to);
             int closest = -1;
@@ -340,7 +366,7 @@ public class SyntaxDef {
                 Matcher m = matches[closest];
                 PatternDef p = patterns.get(closest);
                 // Call recursive
-                apply(theme, builder, start+closestStart, start+closestStart+closestLength,
+                apply(builder, start+closestStart, start+closestStart+closestLength,
                         p.includes, p);
                 start = start+closestStart + closestLength;
 //                logger.d("After apply", start, target, closestStart, p.pattern, m.group(p.group));
@@ -355,10 +381,9 @@ public class SyntaxDef {
         return curr;
     }
 
-    public void apply(LightTheme theme, SyntaxedStringBuilder builder) {
+    public void apply(SyntaxedStringBuilder builder) {
         // Here is the story
-        apply(theme, builder, 0, builder.data.length(), patterns, null);
-        builder.theme = theme;
+        apply(builder, 0, builder.data.length(), patterns, null);
     }
 
 }

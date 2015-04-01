@@ -14,7 +14,11 @@ import org.kvj.bravo7.log.Logger;
 import org.kvj.bravo7.util.Tasks;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import kvj.tegmine.android.R;
 import kvj.tegmine.android.Tegmine;
@@ -129,6 +133,23 @@ public class OneFileAdapter extends BaseAdapter {
                 return null; // No line yet
             }
         }
+    }
+
+    public Collection<SyntaxDef.Pair<String>> features(int position, String... features) {
+        List<SyntaxDef.Pair<String>> result = new ArrayList<>();
+        Set<String> featuresSet = new HashSet<>();
+        Collections.addAll(featuresSet, features);
+        if (null == syntax || featuresSet.isEmpty()) {
+            return result;
+        }
+        SyntaxDef.SyntaxedStringBuilder syntaxed = controller.syntaxize(syntax, line(position));
+        Collection<SyntaxDef.Pair<String>> pairs = syntaxed.allFeatures(-1);// All from line
+        for (SyntaxDef.Pair<String> pair : pairs) {
+            if (featuresSet.contains(pair.v1())) {
+                result.add(pair);
+            }
+        }
+        return result;
     }
 
     @Override

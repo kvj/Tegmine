@@ -556,9 +556,10 @@ public class TegmineController {
     }
 
     private static Pattern tmplPattern = Pattern.compile("\\$\\{([^\\}]+?)\\}");
-    public TemplateApplyResult applyTemlate(TemplateDef tmpl) {
+    public TemplateApplyResult applyTemplate(String text, TemplateDef tmpl) {
         Matcher m = tmplPattern.matcher(tmpl.template());
         StringBuffer buffer = new StringBuffer();
+        buffer.append(text);
         int cursor = -1;
         while (m.find()) {
             String value = m.group(1);
@@ -584,7 +585,7 @@ public class TegmineController {
                 repl.setLength(0);
                 repl.append(new SimpleDateFormat(value.substring(2)).format(new Date()));
             }
-            logger.d("Template:", tmpl.template(), value, repl);
+            // logger.d("Template:", tmpl.template(), value, repl);
             m.appendReplacement(buffer, repl.toString());
             if ("c".equals(value)) { // Cursor - remember position
                 cursor = buffer.length();
@@ -649,6 +650,7 @@ public class TegmineController {
 
     public TemplateDef templateFromKeyEvent(KeyEvent keyEvent) {
         String label = new String(""+keyEvent.getDisplayLabel()).toLowerCase();
+        logger.d("template key:", label);
         for (TemplateDef tmpl : templates().values()) {
             if (tmpl.key() != null && tmpl.key().equals(label)) {
                 return tmpl;

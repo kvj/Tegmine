@@ -399,7 +399,7 @@ public class Editor extends Fragment implements InputFilter {
     }
 
     private void applyTemplate(TemplateDef tmpl) {
-        TegmineController.TemplateApplyResult applyResult = controller.applyTemlate(tmpl);
+        TegmineController.TemplateApplyResult applyResult = controller.applyTemplate(editor.getText().toString(), tmpl);
         form.setValue("contents", applyResult.value());
         editor.setSelection(applyResult.cursor());
     }

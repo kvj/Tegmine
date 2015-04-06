@@ -7,4 +7,5 @@ public interface ProgressListener {
 
     public void activityStarted();
     public void activityStopped();
+    public void themeChanged();
 }

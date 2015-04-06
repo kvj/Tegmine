@@ -34,6 +34,7 @@ import kvj.tegmine.android.data.def.FileSystemException;
 import kvj.tegmine.android.data.def.FileSystemItem;
 import kvj.tegmine.android.data.def.FileSystemProvider;
 import kvj.tegmine.android.data.impl.provider.local.LocalFileSystemProvider;
+import kvj.tegmine.android.data.model.AutoThemeChanger;
 import kvj.tegmine.android.data.model.LineMeta;
 import kvj.tegmine.android.data.model.ProgressListener;
 import kvj.tegmine.android.data.model.SyntaxDef;
@@ -46,6 +47,7 @@ import kvj.tegmine.android.ui.theme.LightTheme;
 public class TegmineController {
 
     private static final int SPACES_IN_TAB = 2;
+    private final AutoThemeChanger autoThemeChanger;
     private Map<String, FileSystemProvider> fileSystemProviders = new LinkedHashMap<>();
     private Map<String, TemplateDef> templates = new LinkedHashMap<>();
     private FileSystemProvider defaultProvider = null;
@@ -67,6 +69,22 @@ public class TegmineController {
     private Listeners<ProgressListener> progressListeners = new Listeners<>();
 
     public TegmineController() {
+        autoThemeChanger = new AutoThemeChanger() {
+
+            @Override
+            public void onNewTheme(final String name) {
+                if (colorSchemes.containsKey(name) && !selectedTheme.equals(name)) { // Theme changed
+                    selectedTheme = name;
+                    progressListeners().emit(new Listeners.ListenerEmitter<ProgressListener>() {
+                        @Override
+                        public boolean emit(ProgressListener listener) {
+                            listener.themeChanged();
+                            return true;
+                        }
+                    });
+                }
+            }
+        };
         try {
             reloadConfig();
         } catch (FileSystemException e) {
@@ -315,6 +333,7 @@ public class TegmineController {
         fileSystemProviders.clear();
         colorSchemes.clear();
         syntaxes.clear();
+        autoThemeChanger.clear();
         if (!fileSystemProviders.containsKey("sdcard")) { // Failsafe - should always be there
             FileSystemProvider provider = new LocalFileSystemProvider(Environment.getExternalStorageDirectory(), "sdcard");
             provider.label("SD Card");
@@ -428,6 +447,7 @@ public class TegmineController {
             wrapLines = objectBoolean(config, "wrapLines", wrapLines);
             reloadStorage(config);
             reloadTemplates(config);
+            autoThemeChanger.setup(config);
             reloadColorSchemes();
             reloadSyntaxes();
         } catch (FileSystemException e) {
@@ -679,5 +699,9 @@ public class TegmineController {
 
     public Collection<String> fileSystemProviders() {
         return fileSystemProviders.keySet();
+    }
+
+    public void ambientLightChanged(float value) {
+        autoThemeChanger.ambientLightChanged(value);
     }
 }

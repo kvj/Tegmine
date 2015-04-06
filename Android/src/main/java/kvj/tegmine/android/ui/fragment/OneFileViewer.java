@@ -43,6 +43,7 @@ import kvj.tegmine.android.data.def.FileSystemException;
 import kvj.tegmine.android.data.def.FileSystemItem;
 import kvj.tegmine.android.data.model.FileItemWatcher;
 import kvj.tegmine.android.data.model.LineMeta;
+import kvj.tegmine.android.data.model.ProgressListener;
 import kvj.tegmine.android.data.model.SyntaxDef;
 import kvj.tegmine.android.data.model.TemplateDef;
 import kvj.tegmine.android.ui.adapter.OneFileAdapter;
@@ -51,7 +52,7 @@ import kvj.tegmine.android.ui.form.FileSystemItemWidgetAdapter;
 /**
  * Created by kvorobyev on 2/16/15.
  */
-public class OneFileViewer extends Fragment {
+public class OneFileViewer extends Fragment implements ProgressListener {
 
     private ListView listView = null;
 
@@ -59,6 +60,19 @@ public class OneFileViewer extends Fragment {
         if (null != listView) {
             listView.requestFocus();
         }
+    }
+
+    @Override
+    public void activityStarted() {
+    }
+
+    @Override
+    public void activityStopped() {
+    }
+
+    @Override
+    public void themeChanged() {
+        applyTheme();
     }
 
     public static interface FileViewerListener {
@@ -82,6 +96,15 @@ public class OneFileViewer extends Fragment {
     public OneFileViewer setListener(FileViewerListener listener) {
         this.listener = listener;
         return this;
+    }
+
+    private void applyTheme() {
+        if (null == controller) {
+            return;
+        }
+        titleText.setTextSize(TypedValue.COMPLEX_UNIT_SP, controller.theme().headerTextSp());
+        titleText.setTextColor(controller.theme().textColor());
+        listView.deferNotifyDataSetChanged();
     }
 
     public OneFileViewer create(final TegmineController controller, Bundle bundle) {
@@ -115,8 +138,6 @@ public class OneFileViewer extends Fragment {
         setHasOptionsMenu(true);
         View view = inflater.inflate(R.layout.fragment_one_file, container, false);
         titleText = (TextView) view.findViewById(R.id.one_file_title_text);
-        titleText.setTextSize(TypedValue.COMPLEX_UNIT_SP, controller.theme().headerTextSp());
-        titleText.setTextColor(controller.theme().textColor());
         titleText.setText(item.details());
         view.findViewById(R.id.one_file_do_add).setOnClickListener(new View.OnClickListener() {
             @Override
@@ -451,15 +472,20 @@ public class OneFileViewer extends Fragment {
 
     @Override
     public void onResume() {
-        logger.d("Viewer resumed");
         super.onResume();
+        if (null != controller) {
+            controller.progressListeners().add(this);
+            applyTheme();
+        }
         if (null != watcher) watcher.active(true);
     }
 
     @Override
     public void onPause() {
-        logger.d("Viewer paused");
         if (null != watcher) watcher.active(false);
+        if (null != controller) {
+            controller.progressListeners().remove(this);
+        }
         super.onPause();
     }
 }

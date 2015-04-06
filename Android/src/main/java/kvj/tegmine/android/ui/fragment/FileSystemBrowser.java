@@ -2,7 +2,6 @@ package kvj.tegmine.android.ui.fragment;
 
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
-import android.support.v4.app.ListFragment;
 import android.support.v4.widget.DrawerLayout;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -19,9 +18,9 @@ import org.kvj.bravo7.log.Logger;
 import kvj.tegmine.android.R;
 import kvj.tegmine.android.Tegmine;
 import kvj.tegmine.android.data.TegmineController;
-import kvj.tegmine.android.data.def.FileSystemException;
 import kvj.tegmine.android.data.def.FileSystemItem;
 import kvj.tegmine.android.data.def.FileSystemItemType;
+import kvj.tegmine.android.data.model.ProgressListener;
 import kvj.tegmine.android.ui.adapter.FileBrowserAdapter;
 import kvj.tegmine.android.ui.adapter.StorageNavigationAdapter;
 import kvj.tegmine.android.ui.form.FileSystemItemWidgetAdapter;
@@ -29,13 +28,27 @@ import kvj.tegmine.android.ui.form.FileSystemItemWidgetAdapter;
 /**
  * Created by kvorobyev on 2/14/15.
  */
-public class FileSystemBrowser extends Fragment {
+public class FileSystemBrowser extends Fragment implements ProgressListener {
 
     private ListView listView = null;
     private DrawerLayout drawer = null;
     private View drawerPane = null;
     private ListView storageList = null;
     private StorageNavigationAdapter storageListAdapter = null;
+
+    @Override
+    public void activityStarted() {
+    }
+
+    @Override
+    public void activityStopped() {
+    }
+
+    @Override
+    public void themeChanged() {
+        logger.d("Theme changed:", controller.theme().textColor());
+        applyTheme();
+    }
 
     public static interface BrowserListener {
 
@@ -76,6 +89,12 @@ public class FileSystemBrowser extends Fragment {
         return this;
     }
 
+    private void applyTheme() {
+        titleText.setTextColor(controller.theme().textColor());
+        drawerPane.setBackgroundColor(controller.theme().backgroundColor());
+        adapter.notifyDataSetChanged();
+    }
+
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         if (null == controller) { // Invalid fragment
@@ -85,7 +104,6 @@ public class FileSystemBrowser extends Fragment {
         form.setView(view);
         titleText = (TextView) view.findViewById(R.id.file_browser_title_text);
         titleText.setTextSize(TypedValue.COMPLEX_UNIT_SP, controller.theme().headerTextSp());
-        titleText.setTextColor(controller.theme().textColor());
         listView = (ListView) view.findViewById(android.R.id.list);
         drawer = (DrawerLayout) view.findViewById(R.id.file_browser_drawer);
         drawerPane = view.findViewById(R.id.file_browser_navigation);
@@ -105,7 +123,6 @@ public class FileSystemBrowser extends Fragment {
         };
         storageList.setAdapter(storageListAdapter);
         storageListAdapter.refresh();
-        drawerPane.setBackgroundColor(controller.theme().backgroundColor());
         adapter = new FileBrowserAdapter(controller);
         adapter.load(form.getValue("root", FileSystemItem.class), form.getValue("select", FileSystemItem.class));
         listView.setAdapter(adapter);
@@ -211,4 +228,20 @@ public class FileSystemBrowser extends Fragment {
         }
     }
 
+    @Override
+    public void onPause() {
+        if (null != controller) {
+            controller.progressListeners().remove(this);
+        }
+        super.onPause();
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        if (null != controller) {
+            controller.progressListeners().add(this);
+            applyTheme();
+        }
+    }
 }

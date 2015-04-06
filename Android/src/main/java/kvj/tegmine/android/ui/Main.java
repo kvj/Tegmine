@@ -1,7 +1,12 @@
 package kvj.tegmine.android.ui;
 
 import android.animation.LayoutTransition;
+import android.content.Context;
 import android.content.Intent;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentTransaction;
@@ -35,7 +40,8 @@ public class Main extends ActionBarActivity implements ControllerConnector.Contr
         FileSystemBrowser.BrowserListener,
         Editor.EditorListener,
         OneFileViewer.FileViewerListener,
-        ProgressListener {
+        ProgressListener,
+        SensorEventListener {
 
     private static final int REQUEST_EDITOR = 21;
     private static final int REQUEST_BROWSER = 22;
@@ -53,6 +59,7 @@ public class Main extends ActionBarActivity implements ControllerConnector.Contr
     private OneFileViewer viewer = null;
     private Editor editor = null;
     private ContentLoadingProgressBar progressBar = null;
+    private SensorManager mSensorManager = null;
 
     protected void initBundle(Bundle savedInstanceState) {
         if (null != savedInstanceState) {
@@ -67,6 +74,7 @@ public class Main extends ActionBarActivity implements ControllerConnector.Contr
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         initBundle(savedInstanceState);
         setContentView(R.layout.activity_main);
         toolbar = (Toolbar) findViewById(R.id.main_toolbar);
@@ -159,6 +167,11 @@ public class Main extends ActionBarActivity implements ControllerConnector.Contr
 
     }
 
+    private void applyTheme() {
+        findViewById(R.id.main_root).setBackgroundColor(controller.theme().backgroundColor());
+        toolbar.setTitleTextColor(controller.theme().textColor());
+    }
+
     @Override
     public void onController(TegmineController controller) {
         if (this.controller != null) { // Already set
@@ -166,8 +179,8 @@ public class Main extends ActionBarActivity implements ControllerConnector.Contr
         }
         form.setView(findViewById(R.id.main_root));
         form.load(bundle);
-        findViewById(R.id.main_root).setBackgroundColor(controller.theme().backgroundColor());
         this.controller = controller;
+        applyTheme();
         String mode = form.getValue(Tegmine.BUNDLE_VIEW_TYPE, String.class);
 
         if (Tegmine.VIEW_TYPE_BROWSER.equals(mode)) { // Open single browser
@@ -187,6 +200,7 @@ public class Main extends ActionBarActivity implements ControllerConnector.Contr
             showEditor(bundle);
         }
         resizeMultiPane();
+        controller.progressListeners().add(this);
     }
 
     private boolean openIn(Fragment fragment, int id, String tag) {
@@ -371,5 +385,42 @@ public class Main extends ActionBarActivity implements ControllerConnector.Contr
         if (null != progressBar) {
             progressBar.hide();
         }
+    }
+
+    @Override
+    public void themeChanged() {
+        applyTheme();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (null != controller) {
+            controller.progressListeners().add(this);
+            themeChanged();
+        }
+        mSensorManager.registerListener(this, mSensorManager.getDefaultSensor(Sensor.TYPE_LIGHT), SensorManager.SENSOR_DELAY_UI);
+    }
+
+    @Override
+    protected void onPause() {
+        if (null != controller) {
+            controller.progressListeners().remove(this);
+        }
+        mSensorManager.unregisterListener(this);
+        super.onPause();
+    }
+
+    @Override
+    public void onSensorChanged(SensorEvent event) {
+        float light = event.values[0];
+        if (null != controller) {
+            controller.ambientLightChanged(light);
+        }
+    }
+
+    @Override
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {
+
     }
 }

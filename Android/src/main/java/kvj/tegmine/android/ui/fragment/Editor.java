@@ -40,14 +40,39 @@ import kvj.tegmine.android.data.def.FileSystemException;
 import kvj.tegmine.android.data.def.FileSystemItem;
 import kvj.tegmine.android.data.model.FileItemWatcher;
 import kvj.tegmine.android.data.model.LineMeta;
+import kvj.tegmine.android.data.model.ProgressListener;
 import kvj.tegmine.android.data.model.TemplateDef;
 import kvj.tegmine.android.ui.form.FileSystemItemWidgetAdapter;
 
 /**
  * Created by kvorobyev on 2/22/15.
  */
-public class Editor extends Fragment implements InputFilter {
+public class Editor extends Fragment implements InputFilter, ProgressListener {
 
+
+    private TextView title = null;
+
+    @Override
+    public void activityStarted() {
+    }
+
+    @Override
+    public void activityStopped() {
+    }
+
+    @Override
+    public void themeChanged() {
+        applyTheme();
+    }
+
+    private void applyTheme() {
+        if (null == controller) {
+            return;
+        }
+        editor.setTextColor(controller.theme().textColor());
+        editor.setTextSize(TypedValue.COMPLEX_UNIT_SP, controller.theme().editorTextSp());
+        controller.applyHeaderStyle(title);
+    }
 
     private class PositionInText {
 
@@ -137,20 +162,16 @@ public class Editor extends Fragment implements InputFilter {
         if (null == controller) { // Ignore auto fragment
             return null;
         }
-        logger.d("Load editor:", bundle);
         View view = inflater.inflate(R.layout.fragment_editor, container, false);
         editor = (EditText) view.findViewById(R.id.editor_text);
-        editor.setTextColor(controller.theme().textColor());
-        editor.setTextSize(TypedValue.COMPLEX_UNIT_SP, controller.theme().editorTextSp());
         editor.setOnKeyListener(new View.OnKeyListener() {
             @Override
             public boolean onKey(View view, int i, KeyEvent keyEvent) {
                 return keyHandler(i, keyEvent);
             }
         });
-        editor.setFilters(new InputFilter[] {this});
-        TextView title = (TextView) view.findViewById(R.id.editor_title_text);
-        controller.applyHeaderStyle(title);
+        editor.setFilters(new InputFilter[]{this});
+        title = (TextView) view.findViewById(R.id.editor_title_text);
         form = new FormController(view);
         form.add(new FileSystemItemWidgetAdapter(controller), "select");
         form.add(new FileSystemItemWidgetAdapter(controller), "root");
@@ -430,12 +451,19 @@ public class Editor extends Fragment implements InputFilter {
     @Override
     public void onResume() {
         super.onResume();
+        if (null != controller) {
+            controller.progressListeners().add(this);
+            applyTheme();
+        }
         if (null != watcher) watcher.active(true);
     }
 
     @Override
     public void onPause() {
         if (null != watcher) watcher.active(false);
+        if (null != controller) {
+            controller.progressListeners().remove(this);
+        }
         super.onPause();
     }
 }

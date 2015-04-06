@@ -30,6 +30,7 @@ import org.kvj.bravo7.util.Tasks;
 
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import kvj.tegmine.android.R;
@@ -47,7 +48,15 @@ import kvj.tegmine.android.ui.form.FileSystemItemWidgetAdapter;
  */
 public class Editor extends Fragment implements InputFilter {
 
-    private String findString(String where, int point) {
+
+    private class PositionInText {
+
+        int lineNo;
+        int positionInLine;
+        String line;
+    }
+
+    private PositionInText findString(String where, int point) {
         int lineStarts = where.substring(0, point).lastIndexOf('\n')+1;
         int lineEnds = where.substring(point).indexOf('\n');
         if (-1 == lineEnds) {
@@ -55,7 +64,20 @@ public class Editor extends Fragment implements InputFilter {
         } else {
             lineEnds += point;
         }
-        return where.substring(lineStarts, lineEnds);
+        PositionInText pos = new PositionInText();
+        pos.line = where.substring(lineStarts, lineEnds);
+        pos.positionInLine = point - lineStarts;
+        pos.lineNo = 0;
+        int newLineStart = 0;
+        while (true) {
+            int newLine = where.indexOf('\n', newLineStart);
+            if (newLine == -1 || newLine >= lineStarts) {
+                break;
+            }
+            pos.lineNo++;
+            newLineStart = newLine+1;
+        }
+        return pos;
     }
 
     @Override
@@ -65,7 +87,7 @@ public class Editor extends Fragment implements InputFilter {
         if (controller == null) return null;
         if (source.length() == 1 && source.charAt(0) == '\n') {
             // New line
-            String line = findString(spanned.toString(), dstart);
+            String line = findString(spanned.toString(), dstart).line;
             int indent = controller.indent(line);
             String sign = controller.signInLine(line);
 //            logger.d("Indent:", line, indent, sign);
@@ -183,11 +205,14 @@ public class Editor extends Fragment implements InputFilter {
         if (null == controller) {
             return false;
         }
-        if (keyEvent.getAction() != KeyEvent.ACTION_UP) {
+        if (keyEvent.getAction() != KeyEvent.ACTION_DOWN) {
             return false;
         }
         if (key == KeyEvent.KEYCODE_TAB) {
-            logger.d("Tab event:", keyEvent.getFlags(), keyEvent.getModifiers());
+            if (!keyEvent.isCtrlPressed() && !keyEvent.isAltPressed()) { // only tab and shift-tab
+                shiftIndent(keyEvent.isShiftPressed());
+                return true;
+            }
         }
         if (keyEvent.isCtrlPressed() && key == KeyEvent.KEYCODE_S) {
             save();
@@ -202,6 +227,54 @@ public class Editor extends Fragment implements InputFilter {
             }
         }
         return false;
+    }
+
+    private void shiftIndent(boolean reverse) {
+        String input = editor.getText().toString();
+        int selStart = editor.getSelectionStart();
+        int selFinish = editor.getSelectionEnd();
+        boolean noSelection = selStart == selFinish;
+        PositionInText start = findString(input, selStart);
+        PositionInText finish = findString(input, editor.getSelectionEnd());
+        List<String> lines = new ArrayList<>();
+        Collections.addAll(lines, input.split("\n"));
+        StringBuilder indented = new StringBuilder();
+        for (int i = 0; i < controller.spacesInTab(); i++) {
+            indented.append(' ');
+        }
+        for (int i = start.lineNo; i <= finish.lineNo && i<lines.size(); i++) {
+            if (!reverse) { // Add indent
+                lines.set(i, indented.toString() + lines.get(i));
+                if (i == start.lineNo) { // First time
+                    selStart += controller.spacesInTab();
+                }
+                selFinish += controller.spacesInTab();
+            } else {
+                int indent = controller.indent(lines.get(i));
+                if (indent > 0) { // Remove indent
+                    lines.set(i, lines.get(i).substring(controller.spacesInTab()));
+                    if (i == start.lineNo) { // First time
+                        selStart -= controller.spacesInTab();
+                    }
+                    selFinish -= controller.spacesInTab();
+                }
+            }
+        }
+        StringBuilder output = new StringBuilder();
+        for (int i = 0; i < lines.size(); i++) { // $COMMENT
+            if (i>0) {
+                output.append('\n');
+            }
+            output.append(lines.get(i));
+        }
+        editor.setText(output.toString());
+        if (selStart>output.length()) {
+            selStart = output.length();
+        }
+        if (selFinish>output.length()) {
+            selFinish = output.length();
+        }
+        editor.setSelection(selStart, selFinish);
     }
 
     private void requestFocusFor(View view) {

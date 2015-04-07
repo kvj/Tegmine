@@ -2,15 +2,14 @@ package kvj.tegmine.android.ui.adapter;
 
 import android.graphics.Color;
 import android.view.View;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import org.kvj.bravo7.adapter.AnotherListAdapter;
 
 import java.util.ArrayList;
-import java.util.List;
 
 import kvj.tegmine.android.R;
-import kvj.tegmine.android.Tegmine;
 import kvj.tegmine.android.data.TegmineController;
 import kvj.tegmine.android.data.def.FileSystemProvider;
 
@@ -30,8 +29,10 @@ public abstract class StorageNavigationAdapter extends AnotherListAdapter<String
     public void customize(View view, int position) {
         FileSystemProvider provider = controller.fileSystemProvider(getItem(position));
         TextView caption = (TextView) view.findViewById(R.id.item_navigation_text);
+        ImageView icon = (ImageView) view.findViewById(R.id.item_navigation_icon);
         caption.setTextColor(controller.theme().textColor());
         caption.setText(provider.label());
+        icon.setImageResource(controller.theme().folderIcon());
         view.setBackgroundColor(selected(getItem(position))? controller.theme().selectedColor(): Color.TRANSPARENT);
     }
 

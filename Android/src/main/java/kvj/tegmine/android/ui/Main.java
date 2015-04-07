@@ -95,7 +95,7 @@ public class Main extends ActionBarActivity implements ControllerConnector.Contr
 
     private void setupToolbar(Toolbar toolbar) {
         toolbar.setTitle(R.string.app_name);
-        toolbar.setNavigationIcon(R.drawable.toolbar_drawer);
+        toolbar.setNavigationIcon(getV7DrawerToggleDelegate().getThemeUpIndicator());
         toolbar.setNavigationOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -169,7 +169,6 @@ public class Main extends ActionBarActivity implements ControllerConnector.Contr
 
     private void applyTheme() {
         findViewById(R.id.main_root).setBackgroundColor(controller.theme().backgroundColor());
-        toolbar.setTitleTextColor(controller.theme().textColor());
     }
 
     @Override

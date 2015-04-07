@@ -9,6 +9,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
+import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 
@@ -35,6 +36,7 @@ public class FileSystemBrowser extends Fragment implements ProgressListener {
     private View drawerPane = null;
     private ListView storageList = null;
     private StorageNavigationAdapter storageListAdapter = null;
+    private ImageView titleIcon = null;
 
     @Override
     public void activityStarted() {
@@ -90,9 +92,15 @@ public class FileSystemBrowser extends Fragment implements ProgressListener {
     }
 
     private void applyTheme() {
+        if (null == controller) {
+            return;
+        }
         titleText.setTextColor(controller.theme().textColor());
+        titleText.setTextSize(TypedValue.COMPLEX_UNIT_SP, controller.theme().headerTextSp());
+        titleIcon.setImageResource(controller.theme().folderIcon());
         drawerPane.setBackgroundColor(controller.theme().backgroundColor());
         adapter.notifyDataSetChanged();
+        storageListAdapter.notifyDataSetChanged();
     }
 
     @Override
@@ -103,7 +111,7 @@ public class FileSystemBrowser extends Fragment implements ProgressListener {
         View view = inflater.inflate(R.layout.fragment_file_browser, container, false);
         form.setView(view);
         titleText = (TextView) view.findViewById(R.id.file_browser_title_text);
-        titleText.setTextSize(TypedValue.COMPLEX_UNIT_SP, controller.theme().headerTextSp());
+        titleIcon = (ImageView) view.findViewById(R.id.file_browser_title_icon);
         listView = (ListView) view.findViewById(android.R.id.list);
         drawer = (DrawerLayout) view.findViewById(R.id.file_browser_drawer);
         drawerPane = view.findViewById(R.id.file_browser_navigation);

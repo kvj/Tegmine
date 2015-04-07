@@ -21,6 +21,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AbsListView;
 import android.widget.AdapterView;
+import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 
@@ -55,6 +56,7 @@ import kvj.tegmine.android.ui.form.FileSystemItemWidgetAdapter;
 public class OneFileViewer extends Fragment implements ProgressListener {
 
     private ListView listView = null;
+    private ImageView titleIcon = null;
 
     public void requestFocus() {
         if (null != listView) {
@@ -104,6 +106,7 @@ public class OneFileViewer extends Fragment implements ProgressListener {
         }
         titleText.setTextSize(TypedValue.COMPLEX_UNIT_SP, controller.theme().headerTextSp());
         titleText.setTextColor(controller.theme().textColor());
+        titleIcon.setImageResource(controller.theme().fileIcon());
         listView.deferNotifyDataSetChanged();
     }
 
@@ -139,6 +142,7 @@ public class OneFileViewer extends Fragment implements ProgressListener {
         View view = inflater.inflate(R.layout.fragment_one_file, container, false);
         titleText = (TextView) view.findViewById(R.id.one_file_title_text);
         titleText.setText(item.details());
+        titleIcon = (ImageView) view.findViewById(R.id.one_file_title_icon);
         view.findViewById(R.id.one_file_do_add).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {

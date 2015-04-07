@@ -403,6 +403,7 @@ public class TegmineController {
                 try {
                     Map<String, Object> themeConfig = file2Object(fileItem);
                     LightTheme newTheme = new LightTheme();
+                    newTheme.dark(objectBoolean(themeConfig, "dark", false));
                     for (Map.Entry<String, Object> oneThemeLine : themeConfig.entrySet()) {
                         boolean loaded = newTheme.loadColor(oneThemeLine.getKey(), oneThemeLine.getValue().toString());
                         if (!loaded) {

@@ -51,6 +51,7 @@ public class Editor extends Fragment implements InputFilter, ProgressListener {
 
 
     private TextView title = null;
+    private ImageView titleIcon = null;
 
     @Override
     public void activityStarted() {
@@ -69,9 +70,13 @@ public class Editor extends Fragment implements InputFilter, ProgressListener {
         if (null == controller) {
             return;
         }
+        boolean doEdit = Tegmine.EDIT_TYPE_EDIT.equals(form.getValue(Tegmine.BUNDLE_EDIT_TYPE, String.class));
         editor.setTextColor(controller.theme().textColor());
         editor.setTextSize(TypedValue.COMPLEX_UNIT_SP, controller.theme().editorTextSp());
         controller.applyHeaderStyle(title);
+        titleIcon.setImageResource(doEdit ?
+                controller.theme().fileEditIcon():
+                controller.theme().fileAddIcon());
     }
 
     private class PositionInText {
@@ -209,9 +214,7 @@ public class Editor extends Fragment implements InputFilter, ProgressListener {
             }
         };
         title.setText(item.details());
-        ImageView icon = (ImageView) view.findViewById(R.id.editor_title_icon);
-        boolean doEdit = Tegmine.EDIT_TYPE_EDIT.equals(form.getValue(Tegmine.BUNDLE_EDIT_TYPE, String.class));
-        icon.setImageResource(doEdit ? R.drawable.icn_file_edit_light : R.drawable.icn_file_add_light);
+        titleIcon = (ImageView) view.findViewById(R.id.editor_title_icon);
         loadContents(editor);
         view.findViewById(R.id.editor_do_save).setOnClickListener(new View.OnClickListener() {
             @Override

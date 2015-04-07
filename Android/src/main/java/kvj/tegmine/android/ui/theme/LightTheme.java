@@ -46,16 +46,26 @@ public class LightTheme {
         return colorInt;
     }
 
+    private boolean dark = false;
+
+    public void dark(boolean dark) {
+        this.dark = dark;
+    }
+
+    public boolean dark() {
+        return dark;
+    }
+
     public int textColor() {
-        return color(Colors.Base0, Color.BLACK);
+        return color(Colors.Base0, dark? Color.BLACK: Color.WHITE);
     }
 
     public int markColor() {
-        return color(Colors.Base2, Color.BLACK);
+        return color(Colors.Base2, dark? Color.BLACK: Color.WHITE);
     }
 
     public int backgroundColor() {
-        return color(Colors.Base3, Color.WHITE);
+        return color(Colors.Base3, dark? Color.WHITE: Color.BLACK);
     }
 
     public int selectedColor() {
@@ -87,11 +97,23 @@ public class LightTheme {
     }
 
     public int folderIcon() {
-        return R.drawable.icn_folder_light;
+        return dark? R.drawable.icn_folder_dark: R.drawable.icn_folder_light;
     }
 
     public int fileIcon() {
-        return R.drawable.icn_file_light;
+        return dark? R.drawable.icn_file_dark: R.drawable.icn_file_light;
+    }
+
+    public int fileEditIcon() {
+        return dark? R.drawable.icn_file_edit_dark: R.drawable.icn_file_edit_light;
+    }
+
+    public int fileAddIcon() {
+        return dark? R.drawable.icn_file_add_dark: R.drawable.icn_file_add_light;
+    }
+
+    public int fileSaveIcon() {
+        return dark? R.drawable.icn_file_save_dark: R.drawable.icn_file_save_light;
     }
 
     public boolean loadColor(String code, String color) {

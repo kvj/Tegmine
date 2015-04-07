@@ -23,6 +23,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import kvj.tegmine.android.data.TegmineController;
+import kvj.tegmine.android.data.model.util.Wrappers;
 import kvj.tegmine.android.ui.theme.LightTheme;
 
 /**
@@ -31,30 +32,11 @@ import kvj.tegmine.android.ui.theme.LightTheme;
 public class SyntaxDef {
 
 
-    public static class Pair<T> {
-
-        private final T v1;
-        private final T v2;
-
-        public Pair(T v1, T v2) {
-            this.v1 = v1;
-            this.v2 = v2;
-        }
-
-        public T v1() {
-            return v1;
-        }
-
-        public T v2() {
-            return v2;
-        }
-    }
-
     public static class SyntaxBlock {
-        private final Pair<Integer> pair;
+        private final Wrappers.Pair<Integer> pair;
         private final PatternDef pattern;
 
-        public SyntaxBlock(Pair<Integer> pair, PatternDef pattern) {
+        public SyntaxBlock(Wrappers.Pair<Integer> pair, PatternDef pattern) {
             this.pair = pair;
             this.pattern = pattern;
         }
@@ -72,7 +54,7 @@ public class SyntaxDef {
         }
 
         public void add(int start, int finish, PatternDef pattern) {
-            blocks.add(new SyntaxBlock(new Pair<Integer>(start, finish), pattern));
+            blocks.add(new SyntaxBlock(new Wrappers.Pair<Integer>(start, finish), pattern));
         }
 
         public Iterable<SyntaxBlock> allInside(final int position) {
@@ -117,7 +99,7 @@ public class SyntaxDef {
             };
         }
 
-        public Iterable<Pair<Integer>> layout() {
+        public Iterable<Wrappers.Pair<Integer>> layout() {
             Set<Integer> indexes = new HashSet<>();
             indexes.add(0);
             indexes.add(data.length());
@@ -128,7 +110,7 @@ public class SyntaxDef {
             final List<Integer> sorted = new ArrayList<>(indexes);
             Collections.sort(sorted);
 //            logger.d("layout", starts, ends, sorted, data);
-            final Iterator<Pair<Integer>> iterator = new Iterator<Pair<Integer>>() {
+            final Iterator<Wrappers.Pair<Integer>> iterator = new Iterator<Wrappers.Pair<Integer>>() {
 
                 private int index = 1;
 
@@ -138,9 +120,9 @@ public class SyntaxDef {
                 }
 
                 @Override
-                public Pair<Integer> next() {
+                public Wrappers.Pair<Integer> next() {
 
-                    Pair<Integer> result = new Pair<>(sorted.get(index-1), sorted.get(index));
+                    Wrappers.Pair<Integer> result = new Wrappers.Pair<>(sorted.get(index-1), sorted.get(index));
                     index++;
                     return result;
                 }
@@ -149,23 +131,23 @@ public class SyntaxDef {
                 public void remove() {
                 }
             };
-            return new Iterable<Pair<Integer>>() {
+            return new Iterable<Wrappers.Pair<Integer>>() {
                 @Override
-                public Iterator<Pair<Integer>> iterator() {
+                public Iterator<Wrappers.Pair<Integer>> iterator() {
                     return iterator;
                 }
             };
         }
 
-        public Collection<Pair<String>> allFeatures(int position) {
-            List<Pair<String>> result = new ArrayList<>();
+        public Collection<Wrappers.Pair<String>> allFeatures(int position) {
+            List<Wrappers.Pair<String>> result = new ArrayList<>();
             Iterable<SyntaxBlock> patternDefs = blocks;
             if (position != -1) {
                 patternDefs = allInside(position);
             }
             for (SyntaxBlock syntaxBlock : patternDefs) {
                 for (String feature : syntaxBlock.pattern.features) {
-                    result.add(new Pair<String>(feature, data.substring(syntaxBlock.pair.v1(), syntaxBlock.pair.v2())));
+                    result.add(new Wrappers.Pair<String>(feature, data.substring(syntaxBlock.pair.v1(), syntaxBlock.pair.v2())));
                 }
             }
             return result;
@@ -173,7 +155,7 @@ public class SyntaxDef {
 
         public void span(LightTheme theme, SpannableStringBuilder builder) {
             // Make spans
-            for (Pair<Integer> startFinish : layout()) {
+            for (Wrappers.Pair<Integer> startFinish : layout()) {
                 if (startFinish.v1() == startFinish.v2()) {
                     continue;
                 }
@@ -183,7 +165,7 @@ public class SyntaxDef {
                 int start = builder.length();
                 int finish = start + startFinish.v2() - startFinish.v1();
                 String text = data.substring(startFinish.v1(), startFinish.v2());
-                for (SyntaxBlock block : allInside(startFinish.v1)) {
+                for (SyntaxBlock block : allInside(startFinish.v1())) {
 //                    logger.d("Pattern:", patternDef.name, patternDef.shrink);
                     bg = SyntaxDef.plus(bg, block.pattern.bg);
                     fg = SyntaxDef.plus(fg, block.pattern.fg);

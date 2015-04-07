@@ -45,8 +45,8 @@ import kvj.tegmine.android.data.def.FileSystemItem;
 import kvj.tegmine.android.data.model.FileItemWatcher;
 import kvj.tegmine.android.data.model.LineMeta;
 import kvj.tegmine.android.data.model.ProgressListener;
-import kvj.tegmine.android.data.model.SyntaxDef;
 import kvj.tegmine.android.data.model.TemplateDef;
+import kvj.tegmine.android.data.model.util.Wrappers;
 import kvj.tegmine.android.ui.adapter.OneFileAdapter;
 import kvj.tegmine.android.ui.form.FileSystemItemWidgetAdapter;
 
@@ -401,8 +401,8 @@ public class OneFileViewer extends Fragment implements ProgressListener {
             menu.clear();
             getActivity().getMenuInflater().inflate(R.menu.context_one_file, menu);
             AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo)menuInfo;
-            Collection<SyntaxDef.Pair<String>> links = adapter.features(info.position, "link");
-            for (SyntaxDef.Pair<String> link : links) {
+            Collection<Wrappers.Pair<String>> links = adapter.features(info.position, "link");
+            for (Wrappers.Pair<String> link : links) {
                 newLinkMenu(menu, link.v2());
             }
         }

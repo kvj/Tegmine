@@ -27,6 +27,7 @@ import kvj.tegmine.android.data.def.FileSystemException;
 import kvj.tegmine.android.data.def.FileSystemItem;
 import kvj.tegmine.android.data.model.LineMeta;
 import kvj.tegmine.android.data.model.SyntaxDef;
+import kvj.tegmine.android.data.model.util.Wrappers;
 
 /**
  * Created by kvorobyev on 2/17/15.
@@ -135,16 +136,16 @@ public class OneFileAdapter extends BaseAdapter {
         }
     }
 
-    public Collection<SyntaxDef.Pair<String>> features(int position, String... features) {
-        List<SyntaxDef.Pair<String>> result = new ArrayList<>();
+    public Collection<Wrappers.Pair<String>> features(int position, String... features) {
+        List<Wrappers.Pair<String>> result = new ArrayList<>();
         Set<String> featuresSet = new HashSet<>();
         Collections.addAll(featuresSet, features);
         if (null == syntax || featuresSet.isEmpty()) {
             return result;
         }
         SyntaxDef.SyntaxedStringBuilder syntaxed = controller.syntaxize(syntax, line(position));
-        Collection<SyntaxDef.Pair<String>> pairs = syntaxed.allFeatures(-1);// All from line
-        for (SyntaxDef.Pair<String> pair : pairs) {
+        Collection<Wrappers.Pair<String>> pairs = syntaxed.allFeatures(-1);// All from line
+        for (Wrappers.Pair<String> pair : pairs) {
             if (featuresSet.contains(pair.v1())) {
                 result.add(pair);
             }

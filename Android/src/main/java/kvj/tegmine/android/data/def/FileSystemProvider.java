@@ -1,12 +1,13 @@
 package kvj.tegmine.android.data.def;
 
-import android.os.Bundle;
-
 import org.kvj.bravo7.log.Logger;
 
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.List;
+import java.util.regex.Pattern;
+
+import kvj.tegmine.android.data.model.util.Wrappers;
 
 /**
  * Created by kvorobyev on 2/13/15.
@@ -15,6 +16,9 @@ abstract public class FileSystemProvider<T extends FileSystemItem> {
 
     protected final String name;
     protected String label = null;
+
+    protected Wrappers.Tuple2<Pattern, Integer> filePattern = null;
+    protected Wrappers.Tuple2<Pattern, Integer> folderPattern = null;
 
     protected FileSystemProvider(String name) {
         this.name = name;
@@ -91,4 +95,16 @@ abstract public class FileSystemProvider<T extends FileSystemItem> {
     }
 
     public abstract T root();
+
+    public Wrappers.Tuple2<Pattern, Integer> pattern(FileSystemItemType type) {
+        return type == FileSystemItemType.File ? filePattern: folderPattern;
+    }
+
+    public void filePattern(Wrappers.Tuple2<Pattern, Integer> filePattern) {
+        this.filePattern = filePattern;
+    }
+
+    public void folderPattern(Wrappers.Tuple2<Pattern, Integer> folderPattern) {
+        this.folderPattern = folderPattern;
+    }
 }

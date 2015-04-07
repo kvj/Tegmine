@@ -39,6 +39,7 @@ import kvj.tegmine.android.data.model.LineMeta;
 import kvj.tegmine.android.data.model.ProgressListener;
 import kvj.tegmine.android.data.model.SyntaxDef;
 import kvj.tegmine.android.data.model.TemplateDef;
+import kvj.tegmine.android.data.model.util.Wrappers;
 import kvj.tegmine.android.ui.theme.LightTheme;
 
 /**
@@ -475,6 +476,20 @@ public class TegmineController {
         }
     }
 
+    private Wrappers.Tuple2<Pattern, Integer> loadPattern(Map<String, Object> config, String name) {
+        String pattern = objectString(config, name, null);
+        if (TextUtils.isEmpty(pattern)) {
+            return null;
+        }
+        try {
+            Pattern p = Pattern.compile(pattern);
+            return new Wrappers.Tuple2<Pattern, Integer>(p, objectInteger(config, name+"_group", 0));
+        } catch (Exception e) {
+            logger.e(e, "Failed to parse pattern", pattern);
+        }
+        return null;
+    }
+
     private void reloadStorage(Map<String, Object> config) throws FileSystemException {
         Map<String, Object> storageConfig = objectObject(config, "storage");
         if (null != storageConfig) { // Have config
@@ -495,6 +510,8 @@ public class TegmineController {
                     if (objectBoolean(conf, "default", false)) { // Default
                         defaultProvider = provider;
                     }
+                    provider.filePattern(loadPattern(conf, "file_pattern"));
+                    provider.folderPattern(loadPattern(conf, "folder_pattern"));
                 }
             }
         }

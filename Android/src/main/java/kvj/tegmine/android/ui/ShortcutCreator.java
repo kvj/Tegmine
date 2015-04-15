@@ -81,7 +81,7 @@ public class ShortcutCreator extends FragmentActivity implements ControllerConne
         int template = form.getValue("template", Integer.class);
         logger.d("Finishing:", selected.toURL(), title, mode, template);
         Intent.ShortcutIconResource icon =
-            Intent.ShortcutIconResource.fromContext(this, R.mipmap.ic_launcher);
+            Intent.ShortcutIconResource.fromContext(this, R.mipmap.ic_app);
         Intent intent = new Intent();
         Intent launchIntent = new Intent(this, Main.class);
         if (mode == 0) {

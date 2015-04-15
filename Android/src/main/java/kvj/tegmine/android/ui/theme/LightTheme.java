@@ -12,7 +12,32 @@ import kvj.tegmine.android.R;
  */
 public class LightTheme {
 
-    public static enum Colors {Base0("base0"), Base1("base1"), Base2("base2"), Base3("base3"),
+    public enum Size {
+        headerTextSp("headerText", 18), browserTextSp("browserText", 16), fileTextSp("fileText", 14),
+        fileIndentSp("fileIndent", 14), editorTextSp("editorText", 14), paddingDp("padding", 16);
+
+        private final String code;
+        private final int def;
+        Size(String code, int def) {
+            this.code = code;
+            this.def = def;
+        }
+
+        public int def() {
+            return def;
+        }
+
+        public static Size findSize(String code) {
+            for (Size size : Size.values()) {
+                if (size.code.equals(code)) {
+                    return size;
+                }
+            }
+            return null;
+        }
+    };
+
+    public enum Colors {Base0("base0"), Base1("base1"), Base2("base2"), Base3("base3"),
         Yellow("yellow"), Orange("orange"), Red("red"), Magenta("magenta"),
         Violet("violet"), Blue("blue"), Cyan("cyan"), Green("green");
         private final String code;
@@ -35,15 +60,24 @@ public class LightTheme {
         }
     };
 
-    protected Map<Colors, Integer> mapping = new HashMap<>();
+    protected Map<Colors, Integer> mappingColors = new HashMap<>();
+    protected Map<Size, Integer> mappingSizes = new HashMap<>();
 
     public int color(Colors color, int defaultColor) {
-        Integer colorInt = mapping.get(color);
+        Integer colorInt = mappingColors.get(color);
         if (null == colorInt) {
-            // No mapping
+            // No mappingColors
             return defaultColor;
         }
         return colorInt;
+    }
+
+    private int size(Size size) {
+        Integer custom = mappingSizes.get(size);
+        if (null != custom) {
+            return custom;
+        }
+        return size.def();
     }
 
     private boolean dark = false;
@@ -57,43 +91,43 @@ public class LightTheme {
     }
 
     public int textColor() {
-        return color(Colors.Base0, dark? Color.BLACK: Color.WHITE);
+        return color(Colors.Base0, dark? Color.WHITE: Color.BLACK);
     }
 
     public int markColor() {
-        return color(Colors.Base2, dark? Color.BLACK: Color.WHITE);
+        return color(Colors.Base2, dark? Color.DKGRAY: Color.GRAY);
     }
 
     public int backgroundColor() {
-        return color(Colors.Base3, dark? Color.WHITE: Color.BLACK);
+        return color(Colors.Base3, dark? Color.BLACK: Color.WHITE);
     }
 
     public int selectedColor() {
-        return color(Colors.Base2, Color.GRAY);
+        return color(Colors.Base2, markColor());
     }
 
     public int headerTextSp() {
-        return 18;
+        return size(Size.headerTextSp);
     }
 
     public int browserTextSp() {
-        return 16;
+        return size(Size.browserTextSp);
     }
 
     public int fileTextSp() {
-        return 14;
+        return size(Size.fileTextSp);
     }
 
     public int fileIndentSp() {
-        return 14;
+        return size(Size.fileIndentSp);
     }
 
     public int editorTextSp() {
-        return 14;
+        return size(Size.editorTextSp);
     }
 
-    public int padding() {
-        return 16;
+    public int paddingDp() {
+        return size(Size.paddingDp);
     }
 
     public int folderIcon() {
@@ -116,12 +150,21 @@ public class LightTheme {
         return dark? R.drawable.icn_file_save_dark: R.drawable.icn_file_save_light;
     }
 
-    public boolean loadColor(String code, String color) {
-        Colors col = Colors.findColor(code);
+    public boolean loadColor(Colors col, String color) {
         if (null != col) {
-            mapping.put(col, Color.parseColor(color));
+            mappingColors.put(col, Color.parseColor(color));
             return true;
         }
         return false;
     }
+
+    public boolean loadSize(String key, int value) {
+        Size size = Size.findSize(key);
+        if (null != size && value >= 0) {
+            mappingSizes.put(size, value);
+            return true;
+        }
+        return false;
+    }
+
 }

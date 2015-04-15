@@ -104,6 +104,7 @@ public class Main extends ActionBarActivity implements ControllerConnector.Contr
                 }
             }
         });
+        toolbar.setAlpha(0.8f);
     }
 
 

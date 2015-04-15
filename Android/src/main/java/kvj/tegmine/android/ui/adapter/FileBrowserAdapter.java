@@ -83,7 +83,7 @@ public class FileBrowserAdapter extends AnotherListAdapter<FileBrowserAdapter.It
         ViewGroup group = (ViewGroup) view.findViewById(R.id.file_browser_item);
         int leftPadding = 0;
         if (item.level > 1) { // Need padding
-            leftPadding = (int) (Tegmine.getInstance().dp2px(controller.theme().padding()) * (item.level - 1));
+            leftPadding = (int) (Tegmine.getInstance().dp2px(controller.theme().paddingDp()) * (item.level - 1));
         }
         group.setPadding(leftPadding, 0, 0, 0);
     }

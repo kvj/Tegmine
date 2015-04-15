@@ -406,9 +406,13 @@ public class TegmineController {
                     LightTheme newTheme = new LightTheme();
                     newTheme.dark(objectBoolean(themeConfig, "dark", false));
                     for (Map.Entry<String, Object> oneThemeLine : themeConfig.entrySet()) {
-                        boolean loaded = newTheme.loadColor(oneThemeLine.getKey(), oneThemeLine.getValue().toString());
-                        if (!loaded) {
-                            logger.w("Theme line ignored:", oneThemeLine.getKey(), oneThemeLine.getValue());
+                        String key = oneThemeLine.getKey();
+                        LightTheme.Colors color = LightTheme.Colors.findColor(key);
+                        if (null != color) {
+                            newTheme.loadColor(color, oneThemeLine.getValue().toString());
+                        } else {
+                            // Size variable
+                            newTheme.loadSize(oneThemeLine.getKey(), objectInteger(themeConfig, key, -1));
                         }
                     }
                     colorSchemes.put(oneLine.getKey(), newTheme);

@@ -1,7 +1,7 @@
 package kvj.tegmine.android.ui;
 
 import android.os.Bundle;
-import android.support.v4.app.FragmentActivity;
+import android.support.v7.app.AppCompatActivity;
 
 import org.kvj.bravo7.ControllerConnector;
 import org.kvj.bravo7.log.Logger;
@@ -15,7 +15,7 @@ import kvj.tegmine.android.ui.fragment.MainPreferences;
 /**
  * Created by kvorobyev on 2/26/15.
  */
-public class Settings extends FragmentActivity implements ControllerConnector.ControllerReceiver<TegmineController> {
+public class Settings extends AppCompatActivity implements ControllerConnector.ControllerReceiver<TegmineController> {
     private ControllerConnector<Tegmine, TegmineController, ControllerService> conn = new ControllerConnector<>(this, this);
 
     private Logger logger = Logger.forInstance(this);

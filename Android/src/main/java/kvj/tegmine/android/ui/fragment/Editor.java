@@ -3,9 +3,14 @@ package kvj.tegmine.android.ui.fragment;
 import android.content.Context;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.text.Editable;
 import android.text.InputFilter;
+import android.text.Spannable;
+import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextUtils;
+import android.text.TextWatcher;
+import android.text.style.CharacterStyle;
 import android.util.TypedValue;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -23,7 +28,7 @@ import android.widget.TextView;
 import org.kvj.bravo7.SuperActivity;
 import org.kvj.bravo7.form.FormController;
 import org.kvj.bravo7.form.impl.bundle.StringBundleAdapter;
-import org.kvj.bravo7.form.impl.widget.TextViewStringAdapter;
+import org.kvj.bravo7.form.impl.widget.TextViewCharSequenceAdapter;
 import org.kvj.bravo7.form.impl.widget.TransientAdapter;
 import org.kvj.bravo7.log.Logger;
 import org.kvj.bravo7.util.Tasks;
@@ -41,6 +46,7 @@ import kvj.tegmine.android.data.def.FileSystemItem;
 import kvj.tegmine.android.data.model.FileItemWatcher;
 import kvj.tegmine.android.data.model.LineMeta;
 import kvj.tegmine.android.data.model.ProgressListener;
+import kvj.tegmine.android.data.model.SyntaxDef;
 import kvj.tegmine.android.data.model.TemplateDef;
 import kvj.tegmine.android.ui.form.FileSystemItemWidgetAdapter;
 
@@ -52,6 +58,84 @@ public class Editor extends Fragment implements InputFilter, ProgressListener {
 
     private TextView title = null;
     private ImageView titleIcon = null;
+    private SyntaxDef syntax = null;
+
+    private static class ChangeMark {
+        private final int start;
+        private final int count;
+
+        private ChangeMark(int start, int count) {
+            this.start = start;
+            this.count = count;
+        }
+    }
+
+    private TextWatcher coloringWatcher = new TextWatcher() {
+
+        private volatile boolean inChange = false;
+
+        private ChangeMark findMark(Spannable s) {
+            ChangeMark[] marks = s.getSpans(0, 1, ChangeMark.class);
+            if (marks.length > 0) { // Found
+                return marks[0];
+            }
+            return null;
+        }
+
+        @Override
+        public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+        }
+
+        @Override
+        public void onTextChanged(CharSequence s, int start, int before, int count) {
+            if (inChange) { // Ignore
+                return;
+            }
+            Spannable builder = (Spannable) s;
+            ChangeMark mark = findMark(builder);
+            if (null == mark && s.length() > 0) { // Add mark
+                builder.setSpan(new ChangeMark(start, count), 0, 1, SpannableStringBuilder.SPAN_EXCLUSIVE_EXCLUSIVE);
+            }
+        }
+
+        @Override
+        public void afterTextChanged(Editable s) {
+            if (null == syntax) { // Ignore
+                return;
+            }
+            if (inChange) { // Ignore
+                return;
+            }
+            SpannableStringBuilder builder = (SpannableStringBuilder) s;
+            ChangeMark mark = findMark(builder);
+            if (null == mark) { // In change
+                return;
+            }
+            inChange = true;
+            String txt = s.toString();
+            PositionInText startLine = findString(txt, mark.start);
+            PositionInText finishLine = findString(txt, mark.start + mark.count);
+            int startIndex = startLine.lineStarts;
+            int endIndex = finishLine.lineStarts + finishLine.line.length();
+            String part = txt.substring(startIndex, endIndex);
+            CharacterStyle[] spans = builder.getSpans(startIndex, endIndex, CharacterStyle.class);
+            for (CharacterStyle span : spans) { // Clear span
+                builder.removeSpan(span);
+            }
+            String[] parts = part.split("\n");
+//            logger.d("Changed:", s.getClass().getSimpleName(), mark.start, mark.count, parts.length);
+            int index = startIndex;
+            for (int i = 0; i < parts.length; i++) { // Replace text
+                String line = parts[i];
+                SpannableStringBuilder lineBuilder = new SpannableStringBuilder();
+                controller.applyTheme(syntax, line, lineBuilder);
+                builder.replace(index, index+lineBuilder.length(), lineBuilder);
+                index += line.length()+1;
+            }
+            builder.removeSpan(mark);
+            inChange = false;
+        }
+    };
 
     @Override
     public void activityStarted() {
@@ -81,6 +165,7 @@ public class Editor extends Fragment implements InputFilter, ProgressListener {
 
     private class PositionInText {
 
+        int lineStarts;
         int lineNo;
         int positionInLine;
         String line;
@@ -95,6 +180,7 @@ public class Editor extends Fragment implements InputFilter, ProgressListener {
             lineEnds += point;
         }
         PositionInText pos = new PositionInText();
+        pos.lineStarts = lineStarts;
         pos.line = where.substring(lineStarts, lineEnds);
         pos.positionInLine = point - lineStarts;
         pos.lineNo = 0;
@@ -127,7 +213,7 @@ public class Editor extends Fragment implements InputFilter, ProgressListener {
                 builder.append(sign);
                 builder.append(' ');
             }
-            return builder.toString();
+            return builder;
         }
         return null;
     }
@@ -176,19 +262,21 @@ public class Editor extends Fragment implements InputFilter, ProgressListener {
             }
         });
         editor.setFilters(new InputFilter[]{this});
+        editor.addTextChangedListener(coloringWatcher);
         title = (TextView) view.findViewById(R.id.editor_title_text);
         form = new FormController(view);
         form.add(new FileSystemItemWidgetAdapter(controller), "select");
         form.add(new FileSystemItemWidgetAdapter(controller), "root");
-        form.add(new TransientAdapter<String>(new StringBundleAdapter(), Tegmine.EDIT_TYPE_ADD), Tegmine.BUNDLE_EDIT_TYPE);
-        form.add(new TransientAdapter<String>(new StringBundleAdapter(), null), Tegmine.BUNDLE_EDIT_TEMPLATE);
-        form.add(new TextViewStringAdapter(R.id.editor_text, null), "contents");
+        form.add(new TransientAdapter<>(new StringBundleAdapter(), Tegmine.EDIT_TYPE_ADD), Tegmine.BUNDLE_EDIT_TYPE);
+        form.add(new TransientAdapter<>(new StringBundleAdapter(), null), Tegmine.BUNDLE_EDIT_TEMPLATE);
+        form.add(new TextViewCharSequenceAdapter(R.id.editor_text, null), "contents");
         form.load(bundle);
         form.setAsOriginal();
         item = form.getValue("select", FileSystemItem.class);
         if (null == item) { // Invalid
             return null;
         }
+        this.syntax = controller.findSyntax(item);
         watcher = new FileItemWatcher(controller, item) {
             @Override
             public void itemChanged(FileSystemItem item) {
@@ -311,9 +399,9 @@ public class Editor extends Fragment implements InputFilter, ProgressListener {
     }
 
     private void loadContents(final EditText editor) {
-        final boolean needValue = (null == form.getValue("contents", String.class)); // Value is not yet loaded
+        final boolean needValue = !form.wasRestored(); // Value is not yet loaded
         logger.d("loadContents", needValue);
-        final StringBuilder buffer = new StringBuilder();
+        final SpannableStringBuilder buffer = new SpannableStringBuilder();
         if (Tegmine.EDIT_TYPE_ADD.equals(form.getValue(Tegmine.BUNDLE_EDIT_TYPE, String.class))) { // No contents in add mode
             if (needValue) {
                 String template = form.getValue(Tegmine.BUNDLE_EDIT_TEMPLATE, String.class);
@@ -322,9 +410,9 @@ public class Editor extends Fragment implements InputFilter, ProgressListener {
                 if (null != tmpl) {
                     applyTemplate(tmpl);
                 } else {
-                    form.setValue("contents", "");
+                    text2Editor(null, buffer.length());
                 }
-                form.setOriginalValue("contents", form.getValue("contents", String.class));
+                form.setOriginalValue("contents", form.getValue("contents"));
             }
             requestFocusFor(editor);
             return;
@@ -344,14 +432,13 @@ public class Editor extends Fragment implements InputFilter, ProgressListener {
 
             @Override
             protected void onPostExecute(FileSystemException e) {
-                logger.d("Loaded file contents", e, buffer.length());
+                logger.d("Loaded file contents", e, buffer.length(), needValue);
                 if (null == e) { // Success
                     if (needValue) { // Have to set
-                        form.setValue("contents", buffer.toString());
+                        text2Editor(buffer, buffer.length());
                     }
-                    form.setOriginalValue("contents", buffer.toString()); // Always
+                    form.setOriginalValue("contents", buffer); // Always
                     requestFocusFor(editor);
-                    editor.setSelection(buffer.length());
                 } else {
                     logger.e(e, "Failed to load file contents");
                 }
@@ -362,7 +449,7 @@ public class Editor extends Fragment implements InputFilter, ProgressListener {
 
     public void saveState(Bundle data) {
         form.save(data);
-        logger.d("Saved state:", data);
+//        logger.d("Saved state:", data);
     }
 
     public boolean changed() {
@@ -373,7 +460,7 @@ public class Editor extends Fragment implements InputFilter, ProgressListener {
         if (null == controller) { // ???
             return;
         }
-        final String contents = form.getValue("contents", String.class);
+        final CharSequence contents = form.getValue("contents");
         final boolean doEdit = Tegmine.EDIT_TYPE_EDIT.equals(form.getValue(Tegmine.BUNDLE_EDIT_TYPE, String.class));
         if (!doEdit && TextUtils.isEmpty(contents)) { // No data entered in add mode - nothing to do
             onAfterSave();
@@ -389,7 +476,7 @@ public class Editor extends Fragment implements InputFilter, ProgressListener {
                     } else {
                         stream = controller.fileSystemProvider().append(item);
                     }
-                    controller.writeEdited(stream, contents, doEdit);
+                    controller.writeEdited(stream, contents.toString().trim(), doEdit);
                     item.commit();
                 } catch (FileSystemException e) {
                     return e;
@@ -422,10 +509,23 @@ public class Editor extends Fragment implements InputFilter, ProgressListener {
         listener = null;
     }
 
+    private void text2Editor(SpannableStringBuilder text, int cursor) {
+        form.setValue("contents", text);
+        if (cursor <= editor.getText().length()) {
+            editor.setSelection(cursor);
+        } else {
+            editor.setSelection(editor.getText().length());
+        }
+    }
+
     private void applyTemplate(TemplateDef tmpl) {
         TegmineController.TemplateApplyResult applyResult = controller.applyTemplate(editor.getText().toString(), tmpl);
-        form.setValue("contents", applyResult.value());
-        editor.setSelection(applyResult.cursor());
+        List<LineMeta> lines = new ArrayList<>();
+        controller.split(lines, applyResult.value());
+        SpannableStringBuilder builder = new SpannableStringBuilder();
+        logger.d("applyTemplate:", lines);
+        controller.linesForEditor(lines, builder);
+        text2Editor(builder, applyResult.cursor());
     }
 
     private MenuItem.OnMenuItemClickListener templateListener(final TemplateDef tmpl) {

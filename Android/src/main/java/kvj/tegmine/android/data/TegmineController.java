@@ -144,6 +144,18 @@ public class TegmineController {
         }
     }
 
+    public void split(List<LineMeta> lines, String text) {
+        if (TextUtils.isEmpty(text)) { // No lines
+            return;
+        }
+        String[] lineStrs = text.split("\n");
+        for (String line : lineStrs) { // $COMMENT
+            LineMeta meta = new LineMeta(indent(line, false), -1);
+            meta.data(line.trim());
+            lines.add(meta);
+        }
+    }
+
     public void loadFilePart(List<LineMeta> buffer, FileSystemItem item, long from, int lines) throws FileSystemException {
         try {
             InputStream stream = fileSystemProvider().read(item);
@@ -173,10 +185,14 @@ public class TegmineController {
     }
 
     public int indent(String line) {
+        return indent(line, true);
+    }
+
+    public int indent(String line, boolean trimEmpty) {
         if (TextUtils.isEmpty(line)) { // Empty line - indent undefined
             return -1;
         }
-        if (line.trim().length() == 0) {
+        if (line.trim().length() == 0 && trimEmpty) {
             return -1;
         }
         int spaces = 0;
@@ -197,15 +213,12 @@ public class TegmineController {
         return SPACES_IN_TAB;
     }
 
-    public void linesForEditor(List<LineMeta> lines, StringBuilder buffer) {
+    public void linesForEditor(List<LineMeta> lines, SpannableStringBuilder buffer) {
         for (int i = 0; i < lines.size(); i++) { // Iterate over lines
             LineMeta line = lines.get(i);
             String trimmed = line.data();
             if (i>0) { // Add new line
                 buffer.append('\n');
-            }
-            if (trimmed.length() == 0) { // Empty
-                continue;
             }
             for (int j = 0; j < line.indent() * spacesInTab(); j++) { // Add spaces
                 buffer.append(' ');
@@ -675,14 +688,26 @@ public class TegmineController {
         return syntaxedStringBuilder;
     }
 
-    public SyntaxDef.SyntaxedStringBuilder applyTheme(SyntaxDef syntax, LineMeta line, SpannableStringBuilder builder) {
+    public SyntaxDef.SyntaxedStringBuilder applyTheme(SyntaxDef syntax, String line, SpannableStringBuilder builder, SyntaxDef.Feature... features) {
         if (null == syntax) {
-            builder.append(line.data());
+            builder.append(line);
             return null;
         }
-        SyntaxDef.SyntaxedStringBuilder syntaxedStringBuilder = new SyntaxDef.SyntaxedStringBuilder(line.data());
+        for (int i = 0; i < line.length(); i++) { // Search for a first non space/tab
+            if (line.charAt(i) == '\t') { // Tab
+                for (int j = 0; j < spacesInTab(); j++) { // Add spaces
+                    builder.append(' ');
+                }
+            } else if (line.charAt(i) == ' ') { // Space
+                builder.append(' ');
+            } else {
+                // Everything else
+                break;
+            }
+        }
+        SyntaxDef.SyntaxedStringBuilder syntaxedStringBuilder = new SyntaxDef.SyntaxedStringBuilder(line.trim());
         syntax.apply(syntaxedStringBuilder);
-        syntaxedStringBuilder.span(theme(), builder);
+        syntaxedStringBuilder.span(theme(), builder, features);
         return syntaxedStringBuilder;
     }
 

@@ -5,15 +5,13 @@ import android.os.Bundle;
 import org.kvj.bravo7.form.BundleAdapter;
 import org.kvj.bravo7.log.Logger;
 
-import kvj.tegmine.android.Tegmine;
 import kvj.tegmine.android.data.TegmineController;
-import kvj.tegmine.android.data.def.FileSystemException;
 import kvj.tegmine.android.data.def.FileSystemItem;
 
 /**
  * Created by kvorobyev on 2/19/15.
  */
-public class FileSystemItemAdapter implements BundleAdapter<FileSystemItem> {
+public class FileSystemItemAdapter extends BundleAdapter<FileSystemItem> {
 
     Logger logger = Logger.forInstance(this);
     private final TegmineController controller;

@@ -11,7 +11,7 @@ import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.widget.ContentLoadingProgressBar;
-import android.support.v7.app.ActionBarActivity;
+import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -36,7 +36,7 @@ import kvj.tegmine.android.ui.fragment.FileSystemBrowser;
 import kvj.tegmine.android.ui.fragment.OneFileViewer;
 
 
-public class Main extends ActionBarActivity implements ControllerConnector.ControllerReceiver<TegmineController>,
+public class Main extends AppCompatActivity implements ControllerConnector.ControllerReceiver<TegmineController>,
         FileSystemBrowser.BrowserListener,
         Editor.EditorListener,
         OneFileViewer.FileViewerListener,
@@ -95,7 +95,7 @@ public class Main extends ActionBarActivity implements ControllerConnector.Contr
 
     private void setupToolbar(Toolbar toolbar) {
         toolbar.setTitle(R.string.app_name);
-        toolbar.setNavigationIcon(getV7DrawerToggleDelegate().getThemeUpIndicator());
+        toolbar.setNavigationIcon(getDrawerToggleDelegate().getThemeUpIndicator());
         toolbar.setNavigationOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {

@@ -32,6 +32,8 @@ import kvj.tegmine.android.ui.theme.LightTheme;
 public class SyntaxDef {
 
 
+    public enum Feature {Shrink};
+
     public static class SyntaxBlock {
         private final Wrappers.Pair<Integer> pair;
         private final PatternDef pattern;
@@ -153,8 +155,21 @@ public class SyntaxDef {
             return result;
         }
 
-        public void span(LightTheme theme, SpannableStringBuilder builder) {
+        private static boolean hasFeature(Feature feature, Feature... features) {
+            if (null == features) {
+                return false;
+            }
+            for (Feature f : features) { // $COMMENT
+                if (f == feature) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public void span(LightTheme theme, SpannableStringBuilder builder, Feature... features) {
             // Make spans
+            int spanShift = 0;
             for (Wrappers.Pair<Integer> startFinish : layout()) {
                 if (startFinish.v1() == startFinish.v2()) {
                     continue;
@@ -170,7 +185,9 @@ public class SyntaxDef {
                     bg = SyntaxDef.plus(bg, block.pattern.bg);
                     fg = SyntaxDef.plus(fg, block.pattern.fg);
                     bold = SyntaxDef.plus(bold, block.pattern.bold);
-                    if (block.pattern.shrink > 0 && (finish - start > block.pattern.shrink)) {
+                    if (hasFeature(Feature.Shrink, features)
+                            && block.pattern.shrink > 0
+                            && (finish - start > block.pattern.shrink)) {
                         text = text.substring(0, block.pattern.shrink) + "…";
                         finish = start + text.length();
                     }
@@ -179,21 +196,21 @@ public class SyntaxDef {
                 builder.append(text);
                 if (Boolean.TRUE.equals(bold)) { // Bold text
                     CharacterStyle span = new StyleSpan(Typeface.BOLD);
-                    builder.setSpan(span, start, finish,
+                    builder.setSpan(span, spanShift+start, spanShift+finish,
                                     SpannableStringBuilder.SPAN_EXCLUSIVE_EXCLUSIVE);
                 }
                 if (null != bg) { // Have color
                     CharacterStyle
                         span =
                         new BackgroundColorSpan(theme.color(bg, theme.backgroundColor()));
-                    builder.setSpan(span, start, finish,
+                    builder.setSpan(span, spanShift+start, spanShift+finish,
                                     SpannableStringBuilder.SPAN_EXCLUSIVE_EXCLUSIVE);
                 }
                 if (null != fg) { // Have color
                     CharacterStyle
                         span =
                         new ForegroundColorSpan(theme.color(fg, theme.textColor()));
-                    builder.setSpan(span, start, finish,
+                    builder.setSpan(span, spanShift+start, spanShift+finish,
                                     SpannableStringBuilder.SPAN_EXCLUSIVE_EXCLUSIVE);
                 }
             }

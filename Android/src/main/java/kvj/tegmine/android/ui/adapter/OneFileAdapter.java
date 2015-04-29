@@ -183,9 +183,8 @@ public class OneFileAdapter extends BaseAdapter {
         } else {
             border.setVisibility(line.folded()? View.VISIBLE: View.GONE);
             int indent = line.indent();
-            SyntaxDef.SyntaxedStringBuilder syntaxedBuilder = new SyntaxDef.SyntaxedStringBuilder(line.data());
             SpannableStringBuilder builder = new SpannableStringBuilder();
-            controller.applyTheme(syntax, line, builder);
+            controller.applyTheme(syntax, line.data(), builder, SyntaxDef.Feature.Shrink);
             text.setText(builder);
             int leftIndent = (int) Tegmine.getInstance().sp2px(indent * controller.theme().fileIndentSp());
             text.setPadding(leftIndent, 0, 0, 0);

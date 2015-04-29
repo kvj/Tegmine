@@ -2,7 +2,7 @@ package kvj.tegmine.android.ui;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.support.v4.app.FragmentActivity;
+import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
 import android.view.View;
 import android.widget.ArrayAdapter;
@@ -21,19 +21,16 @@ import java.util.Map;
 import kvj.tegmine.android.R;
 import kvj.tegmine.android.Tegmine;
 import kvj.tegmine.android.data.TegmineController;
-import kvj.tegmine.android.data.def.FileSystemException;
 import kvj.tegmine.android.data.def.FileSystemItem;
 import kvj.tegmine.android.data.model.TemplateDef;
 import kvj.tegmine.android.infra.ControllerService;
-import kvj.tegmine.android.ui.dialog.FileChooser;
 import kvj.tegmine.android.ui.form.FileSystemItemWidgetAdapter;
 import kvj.tegmine.android.ui.fragment.FileSystemBrowser;
-import kvj.tegmine.android.ui.fragment.MainPreferences;
 
 /**
  * Created by kvorobyev on 2/26/15.
  */
-public class ShortcutCreator extends FragmentActivity implements ControllerConnector.ControllerReceiver<TegmineController>,FileSystemBrowser.BrowserListener {
+public class ShortcutCreator extends AppCompatActivity implements ControllerConnector.ControllerReceiver<TegmineController>,FileSystemBrowser.BrowserListener {
     private ControllerConnector<Tegmine, TegmineController, ControllerService> conn = new ControllerConnector<>(this, this);
 
     private Logger logger = Logger.forInstance(this);

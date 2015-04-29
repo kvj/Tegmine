@@ -456,7 +456,7 @@ public class OneFileViewer extends Fragment implements ProgressListener {
         if (null != tmpl) {
             bundle.putString(Tegmine.BUNDLE_EDIT_TEMPLATE, tmpl);
         }
-        form.save(bundle, "root", "select");
+        form.save(bundle, true, "root", "select");
         if (null != listener) {
             listener.openEditor(bundle);
         }

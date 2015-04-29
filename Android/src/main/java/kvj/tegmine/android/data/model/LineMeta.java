@@ -46,4 +46,9 @@ public class LineMeta {
     public String data() {
         return data;
     }
+
+    @Override
+    public String toString() {
+        return String.format("LineMeta: %d %d", indent, start);
+    }
 }

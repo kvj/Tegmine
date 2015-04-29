@@ -21,11 +21,12 @@
 
         <android.support.v4.widget.ContentLoadingProgressBar
             android:id="@+id/main_progress_bar"
+            style="@android:style/Widget.ProgressBar.Horizontal"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:indeterminate="true"
             android:indeterminateBehavior="repeat"
-            android:visibility="invisible" />
+            android:visibility="gone" />
         <FrameLayout
             android:id="@+id/main_single_view"
             android:layout_margin="3dp"

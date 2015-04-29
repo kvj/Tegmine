@@ -1,13 +1,22 @@
 <resources>
 
     <!-- Base application theme. -->
-    <style name="AppTheme" parent="Theme.AppCompat.Light">
+    <style name="AppThemeLight" parent="Theme.AppCompat.Light">
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
-        <item name="colorPrimary">#ffdddddd</item>
-        <item name="colorPrimaryDark">#ffdddddd</item>
     </style>
-    
+
+    <style name="AppThemeDark" parent="Theme.AppCompat">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+    </style>
+
+    <style name="AppDialogLight" parent="Theme.AppCompat.Light.Dialog">
+    </style>
+
+    <style name="AppDialogDark" parent="Theme.AppCompat.Dialog">
+    </style>
+
     <style name="CircleButton">
         <item name="android:layout_width">56dp</item>
         <item name="android:layout_height">56dp</item>

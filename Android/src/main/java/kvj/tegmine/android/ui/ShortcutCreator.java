@@ -9,12 +9,12 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.Spinner;
 
-import org.kvj.bravo7.ControllerConnector;
 import org.kvj.bravo7.SuperActivity;
 import org.kvj.bravo7.form.FormController;
 import org.kvj.bravo7.form.impl.widget.SpinnerIntegerAdapter;
 import org.kvj.bravo7.form.impl.widget.TextViewStringAdapter;
 import org.kvj.bravo7.log.Logger;
+import org.kvj.bravo7.ng.App;
 
 import java.util.Map;
 
@@ -23,24 +23,23 @@ import kvj.tegmine.android.Tegmine;
 import kvj.tegmine.android.data.TegmineController;
 import kvj.tegmine.android.data.def.FileSystemItem;
 import kvj.tegmine.android.data.model.TemplateDef;
-import kvj.tegmine.android.infra.ControllerService;
 import kvj.tegmine.android.ui.form.FileSystemItemWidgetAdapter;
 import kvj.tegmine.android.ui.fragment.FileSystemBrowser;
 
 /**
  * Created by kvorobyev on 2/26/15.
  */
-public class ShortcutCreator extends AppCompatActivity implements ControllerConnector.ControllerReceiver<TegmineController>,FileSystemBrowser.BrowserListener {
-    private ControllerConnector<Tegmine, TegmineController, ControllerService> conn = new ControllerConnector<>(this, this);
+public class ShortcutCreator extends AppCompatActivity implements FileSystemBrowser.BrowserListener {
 
     private Logger logger = Logger.forInstance(this);
-    private TegmineController controller = null;
     private Spinner typeSpinner = null;
     private Spinner templateSpinner = null;
     private FormController form = null;
+    private TegmineController controller = App.controller();
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
+        setTheme(controller.theme().dark() ? R.style.AppDialogDark : R.style.AppDialogLight);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_shortcut);
         form = new FormController(findViewById(R.id.shortcut_root));
@@ -60,6 +59,7 @@ public class ShortcutCreator extends AppCompatActivity implements ControllerConn
                 doFinish();
             }
         });
+        onController();
     }
 
     private void doFinish() {
@@ -108,41 +108,22 @@ public class ShortcutCreator extends AppCompatActivity implements ControllerConn
         finish();
     }
 
-    @Override
-    public void onController(TegmineController controller) {
-        if (null == controller) {
-            return;
+    public void onController() {
+        form.add(new FileSystemItemWidgetAdapter(controller), "selected");
+        findViewById(R.id.shortcut_file_selector).setBackgroundColor(controller.theme().backgroundColor());
+        Bundle data = new Bundle();
+        FileSystemBrowser
+            browser = new FileSystemBrowser().create(controller, data).setListener(this);
+        getSupportFragmentManager().beginTransaction().replace(R.id.shortcut_file_selector, browser).commit();
+        ArrayAdapter<CharSequence> templateAdapter =
+            new ArrayAdapter<CharSequence>(this, android.R.layout.simple_spinner_item);
+        templateAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        templateAdapter.add("No template");
+        for (Map.Entry<String, TemplateDef> tmpl : controller.templates().entrySet()) {
+            templateAdapter.add(tmpl.getValue().label());
         }
-        if (this.controller == null) {
-            form.add(new FileSystemItemWidgetAdapter(controller), "selected");
-            findViewById(R.id.shortcut_file_selector).setBackgroundColor(controller.theme().backgroundColor());
-            Bundle data = new Bundle();
-            FileSystemBrowser
-                browser = new FileSystemBrowser().create(controller, data).setListener(this);
-            getSupportFragmentManager().beginTransaction().replace(R.id.shortcut_file_selector, browser).commit();
-            ArrayAdapter<CharSequence> templateAdapter =
-                new ArrayAdapter<CharSequence>(this, android.R.layout.simple_spinner_item);
-            templateAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-            templateAdapter.add("No template");
-            for (Map.Entry<String, TemplateDef> tmpl : controller.templates().entrySet()) {
-                templateAdapter.add(tmpl.getValue().label());
-            }
-            templateSpinner.setAdapter(templateAdapter);
-            form.load(this, data);
-        }
-        this.controller = controller;
-    }
-
-    @Override
-    protected void onStart() {
-        super.onStart();
-        conn.connectController(ControllerService.class);
-    }
-
-    @Override
-    protected void onStop() {
-        super.onStop();
-        conn.disconnectController();
+        templateSpinner.setAdapter(templateAdapter);
+        form.load(this, data);
     }
 
     @Override

@@ -120,7 +120,7 @@ public class OneFileViewer extends Fragment implements ProgressListener {
         item = form.getValue("select", FileSystemItem.class);
         logger.d("new FileViewer:", item, bundle, controller.showNumbers(), controller.wrapLines());
         if (null == item) {
-            SuperActivity.notifyUser(Tegmine.getInstance(), "File not found");
+            SuperActivity.notifyUser(controller.context(), "File not found");
             return null;
         }
         watcher = new FileItemWatcher(controller, item) {

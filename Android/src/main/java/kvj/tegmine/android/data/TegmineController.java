@@ -1,5 +1,7 @@
 package kvj.tegmine.android.data;
 
+import android.content.Context;
+import android.content.res.Resources;
 import android.os.Environment;
 import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
@@ -7,7 +9,10 @@ import android.util.TypedValue;
 import android.view.KeyEvent;
 import android.widget.TextView;
 
+import com.lazydroid.autoupdateapk.AutoUpdateApk;
+
 import org.kvj.bravo7.log.Logger;
+import org.kvj.bravo7.ng.Controller;
 import org.kvj.bravo7.util.Listeners;
 
 import java.io.BufferedOutputStream;
@@ -29,7 +34,7 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import kvj.tegmine.android.Tegmine;
+import kvj.tegmine.android.R;
 import kvj.tegmine.android.data.def.FileSystemException;
 import kvj.tegmine.android.data.def.FileSystemItem;
 import kvj.tegmine.android.data.def.FileSystemProvider;
@@ -45,10 +50,11 @@ import kvj.tegmine.android.ui.theme.LightTheme;
 /**
  * Created by kvorobyev on 2/13/15.
  */
-public class TegmineController {
+public class TegmineController extends Controller {
 
     private static final int SPACES_IN_TAB = 2;
     private final AutoThemeChanger autoThemeChanger;
+    private final AutoUpdateApk apk;
     private Map<String, FileSystemProvider> fileSystemProviders = new LinkedHashMap<>();
     private Map<String, TemplateDef> templates = new LinkedHashMap<>();
     private FileSystemProvider defaultProvider = null;
@@ -69,7 +75,10 @@ public class TegmineController {
 
     private Listeners<ProgressListener> progressListeners = new Listeners<>();
 
-    public TegmineController() {
+    public TegmineController(Context context) {
+        super(context, "Tegmine:");
+        apk = new AutoUpdateApk(context);
+        apk.setUpdateInterval(AutoUpdateApk.DAYS);
         autoThemeChanger = new AutoThemeChanger() {
 
             @Override
@@ -450,7 +459,7 @@ public class TegmineController {
         FileSystemException ex = null;
         setupFailsave();
         try {
-            String path = Tegmine.getInstance().getStringPreference("p_config_file", "");
+            String path = settingsString(R.string.p_config_file, "");
             if (TextUtils.isEmpty(path)) { // Not set
                 throw new FileSystemException("Config file not set");
             }
@@ -596,6 +605,10 @@ public class TegmineController {
 
     public boolean isRoot(FileSystemItem item) {
         return fileSystemProvider(item.providerName()).root().equals(item);
+    }
+
+    public AutoUpdateApk autoUpdate() {
+        return apk;
     }
 
     public static class TemplateApplyResult {
@@ -756,5 +769,15 @@ public class TegmineController {
 
     public void ambientLightChanged(float value) {
         autoThemeChanger.ambientLightChanged(value);
+    }
+
+    public float dp2px(float dp) {
+        Resources r = context.getResources();
+        return r.getDisplayMetrics().density * dp;
+    }
+
+    public float sp2px(float dp) {
+        Resources r = context.getResources();
+        return r.getDisplayMetrics().scaledDensity * dp;
     }
 }

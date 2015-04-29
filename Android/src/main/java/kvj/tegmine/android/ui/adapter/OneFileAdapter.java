@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.Set;
 
 import kvj.tegmine.android.R;
-import kvj.tegmine.android.Tegmine;
 import kvj.tegmine.android.data.TegmineController;
 import kvj.tegmine.android.data.def.FileSystemException;
 import kvj.tegmine.android.data.def.FileSystemItem;
@@ -186,7 +185,7 @@ public class OneFileAdapter extends BaseAdapter {
             SpannableStringBuilder builder = new SpannableStringBuilder();
             controller.applyTheme(syntax, line.data(), builder, SyntaxDef.Feature.Shrink);
             text.setText(builder);
-            int leftIndent = (int) Tegmine.getInstance().sp2px(indent * controller.theme().fileIndentSp());
+            int leftIndent = (int) controller.sp2px(indent * controller.theme().fileIndentSp());
             text.setPadding(leftIndent, 0, 0, 0);
             if (wrapLines) {
                 text.setSingleLine(false);

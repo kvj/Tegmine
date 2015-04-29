@@ -156,9 +156,6 @@ public class Editor extends Fragment implements InputFilter, ProgressListener {
     }
 
     private void applyTheme() {
-        if (null == controller) {
-            return;
-        }
         boolean doEdit = Tegmine.EDIT_TYPE_EDIT.equals(form.getValue(Tegmine.BUNDLE_EDIT_TYPE, String.class));
         editor.setTextColor(controller.theme().textColor());
         editor.setTextSize(TypedValue.COMPLEX_UNIT_SP, controller.theme().editorTextSp());
@@ -393,7 +390,7 @@ public class Editor extends Fragment implements InputFilter, ProgressListener {
 
     private void requestFocusFor(View view) {
         view.requestFocus();
-        InputMethodManager imm = (InputMethodManager) Tegmine.getInstance().getSystemService(
+        InputMethodManager imm = (InputMethodManager) controller.context().getSystemService(
             Context.INPUT_METHOD_SERVICE);
         if (null != imm) {
             imm.showSoftInput(view, InputMethodManager.SHOW_IMPLICIT);

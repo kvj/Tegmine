@@ -18,25 +18,24 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.LinearLayout;
 
-import org.kvj.bravo7.ControllerConnector;
 import org.kvj.bravo7.SuperActivity;
 import org.kvj.bravo7.form.FormController;
 import org.kvj.bravo7.form.impl.bundle.StringBundleAdapter;
 import org.kvj.bravo7.form.impl.widget.TransientAdapter;
 import org.kvj.bravo7.log.Logger;
+import org.kvj.bravo7.ng.App;
 
 import kvj.tegmine.android.R;
 import kvj.tegmine.android.Tegmine;
 import kvj.tegmine.android.data.TegmineController;
 import kvj.tegmine.android.data.def.FileSystemItem;
 import kvj.tegmine.android.data.model.ProgressListener;
-import kvj.tegmine.android.infra.ControllerService;
 import kvj.tegmine.android.ui.fragment.Editor;
 import kvj.tegmine.android.ui.fragment.FileSystemBrowser;
 import kvj.tegmine.android.ui.fragment.OneFileViewer;
 
 
-public class Main extends AppCompatActivity implements ControllerConnector.ControllerReceiver<TegmineController>,
+public class Main extends AppCompatActivity implements
         FileSystemBrowser.BrowserListener,
         Editor.EditorListener,
         OneFileViewer.FileViewerListener,
@@ -46,8 +45,7 @@ public class Main extends AppCompatActivity implements ControllerConnector.Contr
     private static final int REQUEST_EDITOR = 21;
     private static final int REQUEST_BROWSER = 22;
     private static final int REQUEST_VIEWER = 23;
-    private ControllerConnector<Tegmine, TegmineController, ControllerService> conn = new ControllerConnector<>(this, this);
-    private TegmineController controller = null;
+    private TegmineController controller = App.controller();
     private Toolbar toolbar;
     private Logger logger = Logger.forInstance(this);
     private Bundle bundle = new Bundle();
@@ -73,6 +71,7 @@ public class Main extends AppCompatActivity implements ControllerConnector.Contr
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        setTheme(controller.theme().dark() ? R.style.AppThemeDark: R.style.AppThemeLight);
         super.onCreate(savedInstanceState);
         mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         initBundle(savedInstanceState);
@@ -82,6 +81,7 @@ public class Main extends AppCompatActivity implements ControllerConnector.Contr
         setSupportActionBar(toolbar);
         setupToolbar(toolbar);
         form = new FormController(null);
+        form.setView(findViewById(R.id.main_root));
         form.add(new TransientAdapter<String>(new StringBundleAdapter(), Tegmine.VIEW_TYPE_BROWSER), Tegmine.BUNDLE_VIEW_TYPE);
         multiPane = (LinearLayout) findViewById(R.id.main_view);
         multiView = multiPane != null;
@@ -91,6 +91,8 @@ public class Main extends AppCompatActivity implements ControllerConnector.Contr
             transition.setDuration(200);
             multiPane.setLayoutTransition(transition);
         }
+        form.load(bundle);
+        onController();
     }
 
     private void setupToolbar(Toolbar toolbar) {
@@ -104,7 +106,6 @@ public class Main extends AppCompatActivity implements ControllerConnector.Contr
                 }
             }
         });
-        toolbar.setAlpha(0.8f);
     }
 
 
@@ -122,22 +123,10 @@ public class Main extends AppCompatActivity implements ControllerConnector.Contr
                 startActivity(new Intent(this, Settings.class));
                 break;
             case R.id.menu_check_updates:
-                Tegmine.app().getAutoUpdate().checkUpdatesManually();
+                controller.autoUpdate().checkUpdatesManually();
                 break;
         }
         return super.onOptionsItemSelected(item);
-    }
-
-    @Override
-    protected void onStart() {
-        super.onStart();
-        conn.connectController(ControllerService.class);
-    }
-
-    @Override
-    protected void onStop() {
-        conn.disconnectController();
-        super.onStop();
     }
 
     private void showBrowser() {
@@ -172,14 +161,7 @@ public class Main extends AppCompatActivity implements ControllerConnector.Contr
         findViewById(R.id.main_root).setBackgroundColor(controller.theme().backgroundColor());
     }
 
-    @Override
-    public void onController(TegmineController controller) {
-        if (this.controller != null) { // Already set
-            return;
-        }
-        form.setView(findViewById(R.id.main_root));
-        form.load(bundle);
-        this.controller = controller;
+    public void onController() {
         applyTheme();
         String mode = form.getValue(Tegmine.BUNDLE_VIEW_TYPE, String.class);
 
@@ -395,10 +377,8 @@ public class Main extends AppCompatActivity implements ControllerConnector.Contr
     @Override
     protected void onResume() {
         super.onResume();
-        if (null != controller) {
-            controller.progressListeners().add(this);
-            themeChanged();
-        }
+        controller.progressListeners().add(this);
+        themeChanged();
         mSensorManager.registerListener(this, mSensorManager.getDefaultSensor(Sensor.TYPE_LIGHT), SensorManager.SENSOR_DELAY_UI);
     }
 

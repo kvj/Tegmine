@@ -1,17 +1,13 @@
 package kvj.tegmine.android;
 
-import com.lazydroid.autoupdateapk.AutoUpdateApk;
-
-import org.kvj.bravo7.ApplicationContext;
-import org.kvj.bravo7.log.AndroidLogger;
-import org.kvj.bravo7.log.Logger;
+import org.kvj.bravo7.ng.App;
 
 import kvj.tegmine.android.data.TegmineController;
 
 /**
  * Created by kvorobyev on 2/13/15.
  */
-public class Tegmine extends ApplicationContext {
+public class Tegmine extends App<TegmineController> {
 
     public static final String BUNDLE_VIEW_TYPE = "view_type";
     public static final String BUNDLE_FILE_LOCATION = "file_location";
@@ -24,26 +20,12 @@ public class Tegmine extends ApplicationContext {
     public static final String EDIT_TYPE_EDIT = "edit_edit";
     public static final String BUNDLE_PROVIDER = "provider";
 
-    private AutoUpdateApk apk = null;
-
     @Override
-    public void onCreate() {
-        super.onCreate();
-        apk = new AutoUpdateApk(this);
-        apk.setUpdateInterval(AutoUpdateApk.DAYS);
-        Logger.setOutput(new AndroidLogger("Tegmine:"));
-        publishBean(new TegmineController());
+    protected TegmineController create() {
+        return new TegmineController(this);
     }
 
     @Override
     protected void init() {
-    }
-
-    public static Tegmine app() {
-        return (Tegmine) getInstance();
-    }
-
-    public AutoUpdateApk getAutoUpdate() {
-        return apk;
     }
 }

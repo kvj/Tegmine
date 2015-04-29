@@ -123,13 +123,18 @@ public class Editor extends Fragment implements InputFilter, ProgressListener {
                 builder.removeSpan(span);
             }
             String[] parts = part.split("\n");
-//            logger.d("Changed:", s.getClass().getSimpleName(), mark.start, mark.count, parts.length);
             int index = startIndex;
             for (int i = 0; i < parts.length; i++) { // Replace text
                 String line = parts[i];
                 SpannableStringBuilder lineBuilder = new SpannableStringBuilder();
                 controller.applyTheme(syntax, line, lineBuilder);
-                builder.replace(index, index+lineBuilder.length(), lineBuilder);
+                spans = lineBuilder.getSpans(0, lineBuilder.length(), CharacterStyle.class);
+                for (CharacterStyle span : spans) { // $COMMENT
+                    builder.setSpan(span,
+                            lineBuilder.getSpanStart(span)+index,
+                            lineBuilder.getSpanEnd(span)+index,
+                            Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                }
                 index += line.length()+1;
             }
             builder.removeSpan(mark);
@@ -261,8 +266,6 @@ public class Editor extends Fragment implements InputFilter, ProgressListener {
                 return keyHandler(i, keyEvent);
             }
         });
-        editor.setFilters(new InputFilter[]{this});
-        editor.addTextChangedListener(coloringWatcher);
         title = (TextView) view.findViewById(R.id.editor_title_text);
         form = new FormController(view);
         form.add(new FileSystemItemWidgetAdapter(controller), "select");
@@ -345,7 +348,6 @@ public class Editor extends Fragment implements InputFilter, ProgressListener {
         String input = editor.getText().toString();
         int selStart = editor.getSelectionStart();
         int selFinish = editor.getSelectionEnd();
-        boolean noSelection = selStart == selFinish;
         PositionInText start = findString(input, selStart);
         PositionInText finish = findString(input, editor.getSelectionEnd());
         List<String> lines = new ArrayList<>();
@@ -398,6 +400,11 @@ public class Editor extends Fragment implements InputFilter, ProgressListener {
         }
     }
 
+    private void enableEditorListeners() {
+        editor.setFilters(new InputFilter[]{this});
+        editor.addTextChangedListener(coloringWatcher);
+    }
+
     private void loadContents(final EditText editor) {
         final boolean needValue = !form.wasRestored(); // Value is not yet loaded
         logger.d("loadContents", needValue);
@@ -415,6 +422,7 @@ public class Editor extends Fragment implements InputFilter, ProgressListener {
                 form.setOriginalValue("contents", form.getValue("contents"));
             }
             requestFocusFor(editor);
+            enableEditorListeners();
             return;
         }
         Tasks.SimpleTask<FileSystemException> task = new Tasks.SimpleTask<FileSystemException>() {
@@ -423,7 +431,7 @@ public class Editor extends Fragment implements InputFilter, ProgressListener {
                 try {
                     List<LineMeta> lines = new ArrayList<>();
                     controller.loadFilePart(lines, item, 0, -1);
-                    controller.linesForEditor(lines, buffer);
+                    controller.linesForEditor(lines, buffer, syntax);
                     return null;
                 } catch (FileSystemException e) {
                     return e;
@@ -439,6 +447,7 @@ public class Editor extends Fragment implements InputFilter, ProgressListener {
                     }
                     form.setOriginalValue("contents", buffer); // Always
                     requestFocusFor(editor);
+                    enableEditorListeners();
                 } else {
                     logger.e(e, "Failed to load file contents");
                 }
@@ -524,7 +533,7 @@ public class Editor extends Fragment implements InputFilter, ProgressListener {
         controller.split(lines, applyResult.value());
         SpannableStringBuilder builder = new SpannableStringBuilder();
         logger.d("applyTemplate:", lines);
-        controller.linesForEditor(lines, builder);
+        controller.linesForEditor(lines, builder, null);
         text2Editor(builder, applyResult.cursor());
     }
 

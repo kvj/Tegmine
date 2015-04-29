@@ -213,7 +213,7 @@ public class TegmineController {
         return SPACES_IN_TAB;
     }
 
-    public void linesForEditor(List<LineMeta> lines, SpannableStringBuilder buffer) {
+    public void linesForEditor(List<LineMeta> lines, SpannableStringBuilder buffer, SyntaxDef syntax) {
         for (int i = 0; i < lines.size(); i++) { // Iterate over lines
             LineMeta line = lines.get(i);
             String trimmed = line.data();
@@ -223,7 +223,13 @@ public class TegmineController {
             for (int j = 0; j < line.indent() * spacesInTab(); j++) { // Add spaces
                 buffer.append(' ');
             }
-            buffer.append(trimmed);
+            if (null == syntax) { //
+                buffer.append(trimmed);
+            } else {
+                SyntaxDef.SyntaxedStringBuilder syntaxedStringBuilder = new SyntaxDef.SyntaxedStringBuilder(trimmed);
+                syntax.apply(syntaxedStringBuilder);
+                syntaxedStringBuilder.span(theme(), buffer);
+            }
         }
     }
 

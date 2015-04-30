@@ -414,7 +414,7 @@ public class Editor extends Fragment implements InputFilter, ProgressListener {
                 if (null != tmpl) {
                     applyTemplate(tmpl);
                 } else {
-                    text2Editor(null, buffer.length());
+                    text2Editor(null, 0);
                 }
                 form.setOriginalValue("contents", form.getValue("contents"));
             }
@@ -530,7 +530,7 @@ public class Editor extends Fragment implements InputFilter, ProgressListener {
         controller.split(lines, applyResult.value());
         SpannableStringBuilder builder = new SpannableStringBuilder();
         logger.d("applyTemplate:", lines);
-        controller.linesForEditor(lines, builder, null);
+        controller.linesForEditor(lines, builder, syntax);
         text2Editor(builder, applyResult.cursor());
     }
 

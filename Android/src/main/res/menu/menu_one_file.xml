@@ -2,13 +2,15 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
       xmlns:app="http://schemas.android.com/apk/res-auto">
     <item
-            android:id="@+id/menu_paste_text"
-            android:title="@string/menu_paste_text"
-            app:showAsAction="withText"/>
+        android:id="@+id/menu_show_editors"
+        android:title="@string/menu_show_editors"
+        app:showAsAction="ifRoom"
+        android:orderInCategory="0"/>
     <item
         android:id="@+id/menu_view_options"
         android:title="@string/menu_view_options"
-        app:showAsAction="withText">
+        app:showAsAction="ifRoom"
+        android:orderInCategory="1">
         <menu>
             <item
                 android:id="@+id/menu_show_numbers"
@@ -20,4 +22,9 @@
                 android:checkable="true"/>
         </menu>
     </item>
+    <item
+        android:id="@+id/menu_paste_text"
+        android:title="@string/menu_paste_text"
+        app:showAsAction="ifRoom"
+        android:orderInCategory="2"/>
 </menu>

@@ -8,6 +8,8 @@
     <string name="menu_copy_clipboard">Copy to Clipboard</string>
     <string name="menu_view_options">View options</string>
     <string name="p_config_file">p_config_file</string>
+    <string name="p_tabs_size">p_tabs_size</string>
+    <string name="menu_show_editors">Editors</string>
     <string-array name="shortcut_types">
         <item>Display file</item>
         <item>Append to</item>

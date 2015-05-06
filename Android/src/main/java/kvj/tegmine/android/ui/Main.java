@@ -18,7 +18,6 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.LinearLayout;
 
-import org.kvj.bravo7.SuperActivity;
 import org.kvj.bravo7.form.FormController;
 import org.kvj.bravo7.form.impl.bundle.StringBundleAdapter;
 import org.kvj.bravo7.form.impl.widget.TransientAdapter;
@@ -31,6 +30,7 @@ import kvj.tegmine.android.data.TegmineController;
 import kvj.tegmine.android.data.def.FileSystemItem;
 import kvj.tegmine.android.data.model.ProgressListener;
 import kvj.tegmine.android.ui.fragment.Editor;
+import kvj.tegmine.android.ui.fragment.Editors;
 import kvj.tegmine.android.ui.fragment.FileSystemBrowser;
 import kvj.tegmine.android.ui.fragment.OneFileViewer;
 
@@ -55,7 +55,7 @@ public class Main extends AppCompatActivity implements
 
     private FileSystemBrowser browser = null;
     private OneFileViewer viewer = null;
-    private Editor editor = null;
+    private Editors editors = null;
     private ContentLoadingProgressBar progressBar = null;
     private SensorManager mSensorManager = null;
 
@@ -71,7 +71,7 @@ public class Main extends AppCompatActivity implements
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        setTheme(controller.theme().dark() ? R.style.AppThemeDark: R.style.AppThemeLight);
+        setTheme(controller.theme().dark() ? R.style.AppThemeDark : R.style.AppThemeLight);
         super.onCreate(savedInstanceState);
         mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         initBundle(savedInstanceState);
@@ -148,11 +148,11 @@ public class Main extends AppCompatActivity implements
     }
 
     private void showEditor(Bundle data) {
-        editor = new Editor().setListener(this).create(controller, data);
+        editors = new Editors().create(controller, data);
         if (multiView) {
-            openIn(editor, R.id.main_right_view, "editor");
+            openIn(editors, R.id.main_right_view, "editor");
         } else {
-            openIn(editor, R.id.main_single_view, "editor");
+            openIn(editors, R.id.main_single_view, "editor");
         }
 
     }
@@ -208,8 +208,8 @@ public class Main extends AppCompatActivity implements
         if (null != viewer) {
             viewer.saveState(outState);
         }
-        if (null != editor) {
-            editor.saveState(outState);
+        if (null != editors) {
+            editors.saveState(outState);
         }
     }
 
@@ -219,34 +219,17 @@ public class Main extends AppCompatActivity implements
     }
 
     private void hideEditor(boolean confirm, final Runnable afterHide) {
-        if (null == editor) {
-            afterHide.run();
-            return;
-        }
         final Runnable doHide = new Runnable() {
             @Override
             public void run() {
                 if (multiView) { // Just remove from right view
-                    getSupportFragmentManager().beginTransaction().remove(editor).commit();
-                    editor = null;
+                    getSupportFragmentManager().beginTransaction().remove(editors).commit();
+                    editors = null;
                 }
                 afterHide.run();
             }
         };
-        if (!confirm || !editor.changed()) {
-            doHide.run();
-            return;
-        }
-        SuperActivity.showQuestionDialog(this, "Really exit?", "There are unsaved changes. Exit?", new Runnable() {
-            @Override
-            public void run() {
-                doHide.run();
-            }
-        }, new Runnable() {
-            @Override
-            public void run() {
-            }
-        });
+        doHide.run();
     }
 
     private int[] resizePaneIDs = {R.id.main_left_view, R.id.main_center_view, R.id.main_right_view};
@@ -270,7 +253,7 @@ public class Main extends AppCompatActivity implements
     }
 
     private void closeEditor(boolean confirm) {
-        final boolean haveEditor = editor != null;
+        final boolean haveEditor = editors != null;
         hideEditor(confirm, new Runnable() {
             @Override
             public void run() {
@@ -304,7 +287,7 @@ public class Main extends AppCompatActivity implements
     public void openFile(Bundle data, FileSystemItem item) {
         if (multiView) { // Show viever here
             showViewer(data);
-            if (null == editor) { // No editor now
+            if (null == editors) { // No editor now
                 setType(Tegmine.VIEW_TYPE_FILE);
             }
             return;
@@ -324,7 +307,7 @@ public class Main extends AppCompatActivity implements
     @Override
     public void openEditor(final Bundle data) {
         if (multiView) { // Show in center
-            if (null != editor) { // Have to check OK to replace or not and close
+            if (null != editors) { // Have to check OK to replace or not and close
                 hideEditor(true, new Runnable() {
                     @Override
                     public void run() {

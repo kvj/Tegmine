@@ -341,6 +341,9 @@ public class OneFileViewer extends Fragment implements ProgressListener {
             case R.id.menu_paste_text:
                 paste();
                 return true;
+            case R.id.menu_show_editors:
+                startEditor(null, null);
+                return true;
             case R.id.menu_show_numbers:
                 toggleLineNumbers();
                 return true;
@@ -452,7 +455,9 @@ public class OneFileViewer extends Fragment implements ProgressListener {
 
     private void startEditor(String editType, String tmpl) {
         Bundle bundle = new Bundle();
-        bundle.putString(Tegmine.BUNDLE_EDIT_TYPE, editType);
+        if (null != editType) { // Have it set
+            bundle.putString(Tegmine.BUNDLE_EDIT_TYPE, editType);
+        }
         if (null != tmpl) {
             bundle.putString(Tegmine.BUNDLE_EDIT_TEMPLATE, tmpl);
         }

@@ -1,19 +1,29 @@
 package kvj.tegmine.android.ui.fragment;
 
+import android.content.Context;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.text.Editable;
+import android.text.InputFilter;
+import android.text.Spannable;
 import android.text.SpannableStringBuilder;
+import android.text.Spanned;
+import android.text.TextWatcher;
+import android.text.style.CharacterStyle;
 import android.util.TypedValue;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import org.kvj.bravo7.SuperActivity;
 import org.kvj.bravo7.log.Logger;
 import org.kvj.bravo7.ng.App;
+import org.kvj.bravo7.util.Listeners;
 import org.kvj.bravo7.util.Tasks;
 
 import java.util.ArrayList;
@@ -27,15 +37,15 @@ import kvj.tegmine.android.data.def.FileSystemItem;
 import kvj.tegmine.android.data.model.EditorInfo;
 import kvj.tegmine.android.data.model.FileItemWatcher;
 import kvj.tegmine.android.data.model.LineMeta;
+import kvj.tegmine.android.data.model.ProgressListener;
 import kvj.tegmine.android.data.model.SyntaxDef;
 import kvj.tegmine.android.data.model.TemplateDef;
 
 /**
  * Created by kvorobyev on 5/5/15.
  */
-public class OneEditor extends Fragment {
+public class OneEditor extends Fragment implements ProgressListener {
 
-    private static final String BUNDLE_INDEX = "tab_index";
     private EditorInfo info = null;
 
     private TegmineController controller = App.controller();
@@ -48,6 +58,7 @@ public class OneEditor extends Fragment {
 
     private Logger logger = Logger.forInstance(this);
     private int index = -1;
+    private InputMethodManager imm = null;
 
     public OneEditor() {
         super();
@@ -72,6 +83,8 @@ public class OneEditor extends Fragment {
         if (null == item) { // Invalid
             return null;
         }
+        imm = (InputMethodManager) controller.context().getSystemService(
+            Context.INPUT_METHOD_SERVICE);
         info.view = this;
         View view = inflater.inflate(R.layout.fragment_one_editor, container, false);
         editor = (EditText) view.findViewById(R.id.editor_text);
@@ -89,9 +102,8 @@ public class OneEditor extends Fragment {
             loadContents(editor);
         } else {
             info2Editor();
+            enableEditorListeners();
         }
-        applyTheme();
-        /*
         watcher = new FileItemWatcher(controller, item) {
             @Override
             public void itemChanged(FileSystemItem item) {
@@ -100,45 +112,50 @@ public class OneEditor extends Fragment {
                 final boolean doEdit = info.mode == EditorInfo.Mode.Edit;
                 if (doEdit) {
                     // Makes sense - can ask for refresh
-                    SuperActivity
-                            .showQuestionDialog(getActivity(), "Reload editor?",
-                                    "File has been changed. Reload?",
-                                    new Runnable() {
-                                        @Override
-                                        public void run() {
-                                            loadContents(editor);
-                                        }
-                                    }, new Runnable() {
-                                        @Override
-                                        public void run() {
-                                        }
-                                    });
+                    SuperActivity.showQuestionDialog(getActivity(), null, "File has been changed. Reload?",
+                         new Runnable() {
+                             @Override
+                             public void run() {
+                                 loadContents(editor);
+                             }
+                         }, new Runnable() {
+                            @Override
+                            public void run() {
+                            }
+                        });
                 }
             }
         };
-        */
         return view;
     }
 
-    private void info2Editor() {
+    void info2Editor() {
         // Load text from info and set cursor
-        List<LineMeta> lines = new ArrayList<>();
-        controller.split(lines, info.text);
-        SpannableStringBuilder builder = new SpannableStringBuilder();
-        controller.linesForEditor(lines, builder, syntax);
-        text2Editor(builder, info.cursor);
+        final SpannableStringBuilder builder = new SpannableStringBuilder();
+        Tasks.SimpleTask<Void> task = new Tasks.SimpleTask<Void>() {
+            @Override
+            protected Void doInBackground() {
+                List<LineMeta> lines = new ArrayList<>();
+                controller.split(lines, info.text);
+                controller.linesForEditor(lines, builder, syntax);
+                return null;
+            }
+
+            @Override
+            protected void onPostExecute(Void aVoid) {
+                text2Editor(builder, info.selectionStart, info.selectionEnd);
+            }
+        };
+        task.exec();
     }
 
     @Override
     public void onSaveInstanceState(Bundle outState) {
-        if (null != info) { // Save to info
-            info.fromEditor(editor);
-            outState.putInt(BUNDLE_INDEX, index);
-        }
+        toInfo();
         super.onSaveInstanceState(outState);
     }
 
-    private boolean keyHandler(int key, KeyEvent keyEvent) {
+    private boolean keyHandler(final int key, final KeyEvent keyEvent) {
         if (keyEvent.getAction() != KeyEvent.ACTION_DOWN) {
             return false;
         }
@@ -156,11 +173,18 @@ public class OneEditor extends Fragment {
                 return true;
             }
         }
-        return false;
+        return !controller.editors().keyListeners.emit(new Listeners.ListenerEmitter<View.OnKeyListener>() {
+            @Override
+            public boolean emit(View.OnKeyListener listener) {
+                return listener.onKey(editor, key, keyEvent);
+            }
+        });
     }
 
     public void toInfo() {
-        info.fromEditor(editor);
+        if (null != info) {
+            info.fromEditor(editor);
+        }
     }
 
     public FileSystemItem item() {
@@ -169,6 +193,19 @@ public class OneEditor extends Fragment {
 
     public EditorInfo info() {
         return info;
+    }
+
+    @Override
+    public void activityStarted() {
+    }
+
+    @Override
+    public void activityStopped() {
+    }
+
+    @Override
+    public void themeChanged() {
+        applyTheme();
     }
 
     private class PositionInText {
@@ -252,6 +289,8 @@ public class OneEditor extends Fragment {
     }
 
     private void enableEditorListeners() {
+        editor.setFilters(new InputFilter[]{indentFilter});
+        editor.addTextChangedListener(coloringWatcher);
     }
 
     private void loadContents(final EditText editor) {
@@ -286,7 +325,7 @@ public class OneEditor extends Fragment {
                 logger.d("Loaded file contents", e, buffer.length());
                 if (null == e) { // Success
                     info.crc = EditorInfo.hash(buffer.toString()); // Save
-                    text2Editor(buffer, buffer.length());
+                    text2Editor(buffer, info.selectionStart, buffer.length());
                     enableEditorListeners();
                 } else {
                     logger.e(e, "Failed to load file contents");
@@ -297,19 +336,24 @@ public class OneEditor extends Fragment {
 
     }
 
-    private void text2Editor(SpannableStringBuilder text, int cursor) {
+    private void text2Editor(SpannableStringBuilder text, int selectionStart, int selectionEnd) {
         editor.setText(text);
-        if (cursor <= editor.getText().length() && cursor >= 0) {
-            editor.setSelection(cursor);
+        if (selectionStart <= editor.getText().length() && selectionStart >= 0) {
+            int selEnd = selectionStart;
+            if (selectionEnd > selectionStart && selectionEnd <= editor.getText().length()) {
+                selEnd = selectionEnd;
+            }
+            editor.setSelection(selectionStart, selEnd);
         } else {
             editor.setSelection(editor.getText().length());
         }
     }
 
-    private void applyTemplate(TemplateDef tmpl) {
+    void applyTemplate(TemplateDef tmpl) {
         TegmineController.TemplateApplyResult applyResult = controller.applyTemplate(editor.getText().toString(), tmpl);
         info.text = applyResult.value();
-        info.cursor = applyResult.cursor();
+        info.selectionStart = applyResult.cursor();
+        info.selectionEnd = -1;
     }
 
     private void applyTheme() {
@@ -321,26 +365,142 @@ public class OneEditor extends Fragment {
         editor.setTextSize(TypedValue.COMPLEX_UNIT_SP, controller.theme().editorTextSp());
         controller.applyHeaderStyle(title);
         titleIcon.setImageResource(doEdit ?
-                        controller.theme().fileEditIcon() :
-                        controller.theme().fileAddIcon()
+                                   controller.theme().fileEditIcon() :
+                                   controller.theme().fileAddIcon()
         );
     }
 
     @Override
-    public void onDetach() {
-        if (null != info) { // Save to info
-            toInfo();
-            info.view = null;
-        }
-        super.onDetach();
-    }
-
-    @Override
     public void onDestroy() {
-        if (null != info) { // Save to info
-            toInfo();
+        if (null != info) { // Break the link
             info.view = null;
         }
         super.onDestroy();
+    }
+
+    private static class ChangeMark {
+        private final int start;
+        private final int count;
+
+        private ChangeMark(int start, int count) {
+            this.start = start;
+            this.count = count;
+        }
+    }
+
+    private InputFilter indentFilter = new InputFilter() {
+        @Override
+        public CharSequence filter(CharSequence source, int start, int end,
+                                   Spanned spanned, int dstart, int dend) {
+//        logger.d("Filter:", source, start, end, dstart, dend);
+            if (controller == null) return null;
+            if (source.length() == 1 && source.charAt(0) == '\n') {
+                // New line
+                String line = findString(spanned.toString(), dstart).line;
+                int indent = controller.indent(line);
+                String sign = controller.signInLine(line);
+//            logger.d("Indent:", line, indent, sign);
+                StringBuilder builder = new StringBuilder(source);
+                controller.addIndent(builder, indent);
+                if (null != sign) {
+                    builder.append(sign);
+                    builder.append(' ');
+                }
+                return builder;
+            }
+            return null;
+        }
+    };
+
+    private TextWatcher coloringWatcher = new TextWatcher() {
+
+        private volatile boolean inChange = false;
+
+        private ChangeMark findMark(Spannable s) {
+            ChangeMark[] marks = s.getSpans(0, 1, ChangeMark.class);
+            if (marks.length > 0) { // Found
+                return marks[0];
+            }
+            return null;
+        }
+
+        @Override
+        public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+        }
+
+        @Override
+        public void onTextChanged(CharSequence s, int start, int before, int count) {
+            if (inChange) { // Ignore
+                return;
+            }
+            Spannable builder = (Spannable) s;
+            ChangeMark mark = findMark(builder);
+            if (null == mark && s.length() > 0) { // Add mark
+                builder.setSpan(new ChangeMark(start, count), 0, 1, SpannableStringBuilder.SPAN_EXCLUSIVE_EXCLUSIVE);
+            }
+        }
+
+        @Override
+        public void afterTextChanged(Editable s) {
+            if (null == syntax) { // Ignore
+                return;
+            }
+            if (inChange) { // Ignore
+                return;
+            }
+            SpannableStringBuilder builder = (SpannableStringBuilder) s;
+            ChangeMark mark = findMark(builder);
+            if (null == mark) { // In change
+                return;
+            }
+            inChange = true;
+            String txt = s.toString();
+            PositionInText startLine = findString(txt, mark.start);
+            PositionInText finishLine = findString(txt, mark.start + mark.count);
+            int startIndex = startLine.lineStarts;
+            int endIndex = finishLine.lineStarts + finishLine.line.length();
+            String part = txt.substring(startIndex, endIndex);
+            CharacterStyle[] spans = builder.getSpans(startIndex, endIndex, CharacterStyle.class);
+            for (CharacterStyle span : spans) { // Clear span
+                builder.removeSpan(span);
+            }
+            String[] parts = part.split("\n");
+            int index = startIndex;
+            for (int i = 0; i < parts.length; i++) { // Replace text
+                String line = parts[i];
+                SpannableStringBuilder lineBuilder = new SpannableStringBuilder();
+                controller.applyTheme(syntax, line, lineBuilder);
+                spans = lineBuilder.getSpans(0, lineBuilder.length(), CharacterStyle.class);
+                for (CharacterStyle span : spans) { // $COMMENT
+                    builder.setSpan(span,
+                                    lineBuilder.getSpanStart(span)+index,
+                                    lineBuilder.getSpanEnd(span)+index,
+                                    Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                }
+                index += line.length()+1;
+            }
+            builder.removeSpan(mark);
+            inChange = false;
+        }
+    };
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        controller.progressListeners().add(this);
+        applyTheme();
+        if (null != watcher) watcher.active(true);
+        if (null != editor) {
+            editor.requestFocus();
+            if (null != imm) imm.showSoftInput(editor, InputMethodManager.SHOW_IMPLICIT);
+        }
+    }
+
+    @Override
+    public void onPause() {
+        if (null != watcher) watcher.active(false);
+        controller.progressListeners().remove(this);
+        toInfo();
+        super.onPause();
     }
 }

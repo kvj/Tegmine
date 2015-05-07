@@ -43,7 +43,8 @@ public class EditorInfo {
     public String text = null;
     public String template = null;
     public Mode mode = Mode.None;
-    public int cursor = -1;
+    public int selectionStart = -1;
+    public int selectionEnd = -1;
     public final long id = System.currentTimeMillis();
 
     public void readFromPreferences(SharedPreferences pref, String prefix) {
@@ -52,23 +53,26 @@ public class EditorInfo {
             return;
         }
         itemURL = pref.getString(prefix+"url", null);
-        crc = pref.getLong(prefix+"hash", -1L);
-        text = pref.getString(prefix+"text", "");
-        cursor = pref.getInt(prefix+"cursor", -1);
+        crc = pref.getLong(prefix + "hash", -1L);
+        text = pref.getString(prefix + "text", "");
+        selectionStart = pref.getInt(prefix + "sel_start", -1);
+        selectionEnd = pref.getInt(prefix+"sel_end", -1);
     }
 
     public void writeToPreferences(SharedPreferences.Editor pref, String prefix) {
         pref.putString(prefix+"mode", mode.code());
         pref.putString(prefix+"url", itemURL);
-        pref.putLong(prefix+"hash", crc);
-        pref.putString(prefix+"text", text);
-        pref.putInt(prefix+"cursor", cursor);
+        pref.putLong(prefix + "hash", crc);
+        pref.putString(prefix + "text", text);
+        pref.putInt(prefix + "sel_start", selectionStart);
+        pref.putInt(prefix+"sel_start", selectionEnd);
     }
 
     public void fromEditor(EditText editor) {
         if (null != editor) { //
             text = editor.getText().toString().trim();
-            cursor = editor.getSelectionEnd();
+            selectionStart = editor.getSelectionStart();
+            selectionEnd = editor.getSelectionEnd();
         }
     }
 

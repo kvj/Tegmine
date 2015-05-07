@@ -37,7 +37,7 @@ import kvj.tegmine.android.ui.fragment.OneFileViewer;
 
 public class Main extends AppCompatActivity implements
         FileSystemBrowser.BrowserListener,
-        Editor.EditorListener,
+        Editors.EditorsListener,
         OneFileViewer.FileViewerListener,
         ProgressListener,
         SensorEventListener {
@@ -148,7 +148,13 @@ public class Main extends AppCompatActivity implements
     }
 
     private void showEditor(Bundle data) {
+        if (null != editors) {
+            // Add existing
+            editors.add(data);
+            return;
+        }
         editors = new Editors().create(controller, data);
+        editors.listeners().add(this);
         if (multiView) {
             openIn(editors, R.id.main_right_view, "editor");
         } else {
@@ -299,25 +305,10 @@ public class Main extends AppCompatActivity implements
     }
 
     @Override
-    public void onAfterSave() {
-        setResult(RESULT_OK);
-        closeEditor(false);
-    }
-
-    @Override
     public void openEditor(final Bundle data) {
         if (multiView) { // Show in center
-            if (null != editors) { // Have to check OK to replace or not and close
-                hideEditor(true, new Runnable() {
-                    @Override
-                    public void run() {
-                        showEditor(data);
-                    }
-                });
-            } else {
-                showEditor(data);
-                setType(Tegmine.VIEW_TYPE_EDITOR);
-            }
+            showEditor(data);
+            setType(Tegmine.VIEW_TYPE_EDITOR);
         } else {
             Intent intent = new Intent(this, Main.class);
             intent.putExtra(Tegmine.BUNDLE_VIEW_TYPE, Tegmine.VIEW_TYPE_EDITOR);
@@ -385,5 +376,11 @@ public class Main extends AppCompatActivity implements
     @Override
     public void onAccuracyChanged(Sensor sensor, int accuracy) {
 
+    }
+
+    @Override
+    public void onHide() {
+        setResult(RESULT_OK);
+        closeEditor(false);
     }
 }

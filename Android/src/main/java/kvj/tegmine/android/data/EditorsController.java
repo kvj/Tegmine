@@ -2,6 +2,9 @@ package kvj.tegmine.android.data;
 
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.view.View;
+
+import org.kvj.bravo7.util.Listeners;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,6 +22,8 @@ public class EditorsController {
     private final TegmineController controller;
     List<EditorInfo> tabs = new ArrayList<>();
     private int selected = 0;
+
+    public final Listeners<View.OnKeyListener> keyListeners = new Listeners<>();
 
     public EditorsController(TegmineController controller) {
         this.controller = controller;
@@ -52,7 +57,11 @@ public class EditorsController {
         SharedPreferences.Editor pref = controller.settings().edit();
         pref.putInt(controller.context().getString(R.string.p_tabs_size), tabs.size());
         for (int i = 0; i < tabs.size(); i++) { // Iterate
-            tab(i).writeToPreferences(pref, String.format("p_tab_%d_", i));
+            EditorInfo tab = tab(i);
+            if (tab.view != null) {
+                tab.view.toInfo();
+            }
+            tab.writeToPreferences(pref, String.format("p_tab_%d_", i));
         }
         pref.apply();
     }
@@ -114,7 +123,7 @@ public class EditorsController {
         if (selected > 0) { // Left tab
             return selected - 1;
         } else {
-            return selected+1; // Right tab
+            return selected + 1; // Right tab
         }
     }
 

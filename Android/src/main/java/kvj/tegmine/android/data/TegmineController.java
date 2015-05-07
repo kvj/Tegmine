@@ -738,7 +738,7 @@ public class TegmineController extends Controller {
 
     public TemplateDef templateFromKeyEvent(KeyEvent keyEvent) {
         String label = new String(""+keyEvent.getDisplayLabel()).toLowerCase();
-        logger.d("template key:", label);
+//        logger.d("template key:", label);
         for (TemplateDef tmpl : templates().values()) {
             if (tmpl.key() != null && tmpl.key().equals(label)) {
                 return tmpl;

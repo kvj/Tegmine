@@ -7,13 +7,19 @@ import android.support.v4.app.Fragment;
 import android.support.v4.view.PagerTitleStrip;
 import android.support.v4.view.ViewPager;
 import android.text.TextUtils;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
+import android.view.SubMenu;
 import android.view.View;
 import android.view.ViewGroup;
 
 import org.kvj.bravo7.SuperActivity;
 import org.kvj.bravo7.form.FormController;
 import org.kvj.bravo7.log.Logger;
+import org.kvj.bravo7.util.Listeners;
 import org.kvj.bravo7.util.Tasks;
 
 import java.io.OutputStream;
@@ -22,6 +28,7 @@ import kvj.tegmine.android.R;
 import kvj.tegmine.android.data.TegmineController;
 import kvj.tegmine.android.data.def.FileSystemException;
 import kvj.tegmine.android.data.model.EditorInfo;
+import kvj.tegmine.android.data.model.TemplateDef;
 import kvj.tegmine.android.ui.adapter.EditorsAdapter;
 import kvj.tegmine.android.ui.form.FileSystemItemWidgetAdapter;
 
@@ -30,9 +37,21 @@ import kvj.tegmine.android.ui.form.FileSystemItemWidgetAdapter;
  */
 public class Editors extends Fragment {
 
+    public EditorInfo add(Bundle data) {
+        EditorInfo info = controller.editors().fromBundle(data);// Loaded?
+        if (null != pager) {
+            // Switch to page
+            adapter.notifyDataSetChanged();
+            pager.setCurrentItem(controller.editors().selected());
+        }
+        return info;
+    }
+
     public interface EditorsListener {
         public void onHide();
     }
+
+    private Listeners<EditorsListener> listeners = new Listeners<>();
 
     private Logger logger = Logger.forInstance(this);
 
@@ -44,12 +63,17 @@ public class Editors extends Fragment {
 
     public Editors create(TegmineController controller, Bundle bundle) {
         this.controller = controller;
+        setHasOptionsMenu(true);
         form = new FormController(null);
         form.add(new FileSystemItemWidgetAdapter(controller), "select");
         form.add(new FileSystemItemWidgetAdapter(controller), "root");
         form.load(bundle);
-        EditorInfo info = controller.editors().fromBundle(bundle); // Loaded?
+        add(bundle);
         return this;
+    }
+
+    public Listeners<EditorsListener> listeners() {
+        return listeners;
     }
 
     @Nullable
@@ -66,7 +90,7 @@ public class Editors extends Fragment {
         adapter.registerDataSetObserver(new DataSetObserver() {
             @Override
             public void onChanged() {
-                pager.setVisibility(adapter.getCount() > 0? View.VISIBLE: View.GONE);
+                pager.setVisibility(adapter.getCount() > 0 ? View.VISIBLE : View.GONE);
             }
         });
         pager.setAdapter(adapter);
@@ -74,7 +98,8 @@ public class Editors extends Fragment {
         pager.setCurrentItem(controller.editors().selected());
         pager.setOnPageChangeListener(new ViewPager.OnPageChangeListener() {
             @Override
-            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
+            public void onPageScrolled(int position, float positionOffset,
+                                       int positionOffsetPixels) {
             }
 
             @Override
@@ -99,6 +124,59 @@ public class Editors extends Fragment {
             }
         });
         return view;
+    }
+
+    private View.OnKeyListener keyListener = new View.OnKeyListener() {
+        @Override
+        public boolean onKey(View view, int i, KeyEvent keyEvent) {
+            return keyHandler(i, keyEvent);
+        }
+    };
+
+    private boolean keyHandler(int key, KeyEvent keyEvent) {
+        if (keyEvent.isCtrlPressed() && key == KeyEvent.KEYCODE_S) {
+            saveSelected(true);
+            return false;
+        }
+        if (keyEvent.isCtrlPressed() && key == KeyEvent.KEYCODE_Q) {
+            closeSelected(true);
+            return false;
+        }
+        if (keyEvent.isCtrlPressed() && key == KeyEvent.KEYCODE_TAB) {
+            // Ctrl+Tab
+            if (!pager.arrowScroll(View.FOCUS_RIGHT)) {
+                pager.setCurrentItem(0);
+            }
+            return false;
+        }
+        return true;
+    }
+
+    private MenuItem.OnMenuItemClickListener templateListener(final TemplateDef tmpl) {
+        return new MenuItem.OnMenuItemClickListener() {
+            @Override
+            public boolean onMenuItemClick(MenuItem item) {
+                EditorInfo info = selected();
+                if (null != info && null != info.view) {
+                    info.view.applyTemplate(tmpl);
+                    info.view.info2Editor();
+                }
+                return true;
+            }
+        };
+    }
+
+    @Override
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+        inflater.inflate(R.menu.menu_editor, menu);
+        if (null != controller) { // OK
+            SubMenu subMenu = menu.findItem(R.id.menu_editor_templates).getSubMenu();
+            int idx = 0;
+            for (TemplateDef template : controller.templates().values()) {
+                MenuItem menuItem = subMenu.add(1, idx++, idx, template.label());
+                menuItem.setOnMenuItemClickListener(templateListener(template));
+            }
+        }
     }
 
     private EditorInfo selected() {
@@ -167,13 +245,24 @@ public class Editors extends Fragment {
         final Runnable closeTask = new Runnable() {
             @Override
             public void run() {
-                pager.setCurrentItem(controller.editors().nextSelected(), false);
+//                pager.setCurrentItem(controller.editors().nextSelected(), false);
                 controller.editors().remove(sel);
                 adapter.notifyDataSetChanged();
+                if (controller.editors().size() == 0) {
+                    // Report hide
+                    listeners.emit(new Listeners.ListenerEmitter<EditorsListener>() {
+                        @Override
+                        public boolean emit(EditorsListener listener) {
+                            listener.onHide();
+                            return true;
+                        }
+                    });
+                }
             }
         };
         if (confirm && selected.crc != EditorInfo.hash(selected.text)) { // Changed
             // Changed - show confirm
+            logger.d("Changed?", selected.crc, EditorInfo.hash(selected.text));
             SuperActivity.showQuestionDialog(getActivity(), null,
                     "Contents have been changed. Really close?",
                     new Runnable() {
@@ -194,5 +283,19 @@ public class Editors extends Fragment {
     public void saveState(Bundle outState) {
         controller.editors().saveState();
         form.save(outState);
+    }
+
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        controller.editors().keyListeners.add(keyListener);
+        super.onCreate(savedInstanceState);
+    }
+
+    @Override
+    public void onDestroy() {
+        logger.d("Destroy");
+        controller.editors().keyListeners.remove(keyListener);
+        controller.editors().saveState();
+        super.onDestroy();
     }
 }

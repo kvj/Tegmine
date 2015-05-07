@@ -219,7 +219,6 @@ public class OneFileViewer extends Fragment implements ProgressListener {
         }
         switch (key) {
             case KeyEvent.KEYCODE_R:
-                SuperActivity.notifyUser(getActivity(), "Refreshed");
                 refresh();
                 return true;
             case KeyEvent.KEYCODE_A:
@@ -227,6 +226,9 @@ public class OneFileViewer extends Fragment implements ProgressListener {
                 return true;
             case KeyEvent.KEYCODE_E:
                 startEditor(Tegmine.EDIT_TYPE_EDIT, null);
+                return true;
+            case KeyEvent.KEYCODE_Z:
+                startEditor(null, null); // Show editors
                 return true;
             case KeyEvent.KEYCODE_C:
                 copyAt(listView.getSelectedItemPosition());

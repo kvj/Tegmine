@@ -70,7 +70,7 @@ public class EditorInfo {
 
     public void fromEditor(EditText editor) {
         if (null != editor) { //
-            text = editor.getText().toString().trim();
+            text = editor.getText().toString();
             selectionStart = editor.getSelectionStart();
             selectionEnd = editor.getSelectionEnd();
         }

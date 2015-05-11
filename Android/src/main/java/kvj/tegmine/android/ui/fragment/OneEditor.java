@@ -8,6 +8,7 @@ import android.text.InputFilter;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
+import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.text.style.CharacterStyle;
 import android.util.TypedValue;
@@ -99,10 +100,11 @@ public class OneEditor extends Fragment implements ProgressListener {
         title.setText(item.details());
         titleIcon = (ImageView) view.findViewById(R.id.editor_title_icon);
         if (null == info.text) { // First time - load text
-            loadContents(editor);
+            loadContents();
         } else {
             info2Editor();
             enableEditorListeners();
+            appendTemplate();
         }
         watcher = new FileItemWatcher(controller, item) {
             @Override
@@ -116,7 +118,7 @@ public class OneEditor extends Fragment implements ProgressListener {
                          new Runnable() {
                              @Override
                              public void run() {
-                                 loadContents(editor);
+                                 loadContents();
                              }
                          }, new Runnable() {
                             @Override
@@ -293,24 +295,15 @@ public class OneEditor extends Fragment implements ProgressListener {
         editor.addTextChangedListener(coloringWatcher);
     }
 
-    private void loadContents(final EditText editor) {
+    private void loadContents() {
         final SpannableStringBuilder buffer = new SpannableStringBuilder();
-        if (info.mode == EditorInfo.Mode.Append) { //
-            TemplateDef tmpl = controller.templates().get(info.template);
-            if (null != tmpl) {
-                applyTemplate(tmpl);
-            } else {
-                info.text = ""; // Just empty
-            }
-            info.crc = EditorInfo.hash(info.text); // Save
-            info2Editor(); // Parse
-            enableEditorListeners();
-            return;
-        }
         Tasks.SimpleTask<FileSystemException> task = new Tasks.SimpleTask<FileSystemException>() {
             @Override
             protected FileSystemException doInBackground() {
                 try {
+                    if (info.mode == EditorInfo.Mode.Append) { // No load
+                        return null;
+                    }
                     List<LineMeta> lines = new ArrayList<>();
                     controller.loadFilePart(lines, item, 0, -1);
                     controller.linesForEditor(lines, buffer, syntax);
@@ -325,8 +318,9 @@ public class OneEditor extends Fragment implements ProgressListener {
                 logger.d("Loaded file contents", e, buffer.length());
                 if (null == e) { // Success
                     info.crc = EditorInfo.hash(buffer.toString()); // Save
-                    text2Editor(buffer, info.selectionStart, buffer.length());
+                    text2Editor(buffer, buffer.length(), -1);
                     enableEditorListeners();
+                    appendTemplate();
                 } else {
                     logger.e(e, "Failed to load file contents");
                 }
@@ -334,6 +328,11 @@ public class OneEditor extends Fragment implements ProgressListener {
         };
         task.exec();
 
+    }
+
+    public void appendTemplate() {
+        applyTemplate(controller.templates().get(info.template));
+        info.template = null; // Only once
     }
 
     private void text2Editor(SpannableStringBuilder text, int selectionStart, int selectionEnd) {
@@ -351,9 +350,15 @@ public class OneEditor extends Fragment implements ProgressListener {
 
     void applyTemplate(TemplateDef tmpl) {
         TegmineController.TemplateApplyResult applyResult = controller.applyTemplate(editor.getText().toString(), tmpl);
-        info.text = applyResult.value();
-        info.selectionStart = applyResult.cursor();
+        toInfo();
+        if (!TextUtils.isEmpty(info.text) && !info.text.endsWith("\n")) { // No new line at bottom
+            info.text += "\n";
+        }
+        int len = info.text.length();
+        info.text += applyResult.value();
+        info.selectionStart = len + applyResult.cursor();
         info.selectionEnd = -1;
+        info2Editor();
     }
 
     private void applyTheme() {
@@ -365,8 +370,8 @@ public class OneEditor extends Fragment implements ProgressListener {
         editor.setTextSize(TypedValue.COMPLEX_UNIT_SP, controller.theme().editorTextSp());
         controller.applyHeaderStyle(title);
         titleIcon.setImageResource(doEdit ?
-                                   controller.theme().fileEditIcon() :
-                                   controller.theme().fileAddIcon()
+                        controller.theme().fileEditIcon() :
+                        controller.theme().fileAddIcon()
         );
     }
 

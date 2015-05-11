@@ -159,7 +159,6 @@ public class Editors extends Fragment {
                 EditorInfo info = selected();
                 if (null != info && null != info.view) {
                     info.view.applyTemplate(tmpl);
-                    info.view.info2Editor();
                 }
                 return true;
             }

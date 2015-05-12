@@ -350,15 +350,17 @@ public class OneEditor extends Fragment implements ProgressListener {
 
     void applyTemplate(TemplateDef tmpl) {
         TegmineController.TemplateApplyResult applyResult = controller.applyTemplate(editor.getText().toString(), tmpl);
-        toInfo();
-        if (!TextUtils.isEmpty(info.text) && !info.text.endsWith("\n")) { // No new line at bottom
-            info.text += "\n";
+        if (null != applyResult) { // Nothing to add
+            toInfo();
+            if (!TextUtils.isEmpty(info.text) && !info.text.endsWith("\n")) { // No new line at bottom
+                info.text += "\n";
+            }
+            int len = info.text.length();
+            info.text += applyResult.value();
+            info.selectionStart = len + applyResult.cursor();
+            info.selectionEnd = -1;
+            info2Editor();
         }
-        int len = info.text.length();
-        info.text += applyResult.value();
-        info.selectionStart = len + applyResult.cursor();
-        info.selectionEnd = -1;
-        info2Editor();
     }
 
     private void applyTheme() {

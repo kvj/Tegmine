@@ -633,9 +633,11 @@ public class TegmineController extends Controller {
 
     private static Pattern tmplPattern = Pattern.compile("\\$\\{([^\\}]+?)\\}");
     public TemplateApplyResult applyTemplate(String text, TemplateDef tmpl) {
+        if (null == tmpl) { // No template
+            return null;
+        }
         Matcher m = tmplPattern.matcher(tmpl.template());
         StringBuffer buffer = new StringBuffer();
-        buffer.append(text);
         int cursor = -1;
         while (m.find()) {
             String value = m.group(1);

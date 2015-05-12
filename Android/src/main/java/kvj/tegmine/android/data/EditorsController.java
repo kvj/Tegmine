@@ -79,6 +79,9 @@ public class EditorsController {
                     // Want to add but editing now - edit
                     selected = i;
                     info.template = data.getString(Tegmine.BUNDLE_EDIT_TEMPLATE, null);
+                    if (null != info.view) { // Also have view
+                        info.view.appendTemplate();
+                    }
                     return info; // No load needed
                 }
             }

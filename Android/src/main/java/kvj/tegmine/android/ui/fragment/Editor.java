@@ -525,6 +525,9 @@ public class Editor extends Fragment implements InputFilter, ProgressListener {
     }
 
     private void applyTemplate(TemplateDef tmpl) {
+        if (null == tmpl) { // No template
+            return;
+        }
         TegmineController.TemplateApplyResult applyResult = controller.applyTemplate(editor.getText().toString(), tmpl);
         List<LineMeta> lines = new ArrayList<>();
         controller.split(lines, applyResult.value());

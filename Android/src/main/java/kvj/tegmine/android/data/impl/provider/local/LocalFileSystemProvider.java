@@ -1,6 +1,5 @@
 package kvj.tegmine.android.data.impl.provider.local;
 
-import android.os.Bundle;
 import android.text.TextUtils;
 
 import java.io.File;
@@ -14,7 +13,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
-import kvj.tegmine.android.Tegmine;
 import kvj.tegmine.android.data.def.FileSystemException;
 import kvj.tegmine.android.data.def.FileSystemItemType;
 import kvj.tegmine.android.data.def.FileSystemProvider;
@@ -65,10 +63,6 @@ public class LocalFileSystemProvider extends FileSystemProvider<LocalFileSystemI
             return null;
         }
         File file = path.startsWith("/") ? new File(path): new File(root.file, path);
-        if (!file.exists()) { // Invalid file
-            logger.w("Non existing file:", path, file.getAbsolutePath(), root.file.getAbsolutePath());
-            return null;
-        }
         if (file.equals(root.file)) {
             return root;
         }

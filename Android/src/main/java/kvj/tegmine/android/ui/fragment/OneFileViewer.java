@@ -6,7 +6,6 @@ import android.content.ClipDescription;
 import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
-import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.text.TextUtils;
@@ -414,19 +413,16 @@ public class OneFileViewer extends Fragment implements ProgressListener {
     }
 
     private MenuItem newLinkMenu(ContextMenu menu, final String url) {
-        MenuItem item = menu.add(url);
-        item.setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
+        MenuItem menuItem = menu.add(url);
+        menuItem.setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
             @Override
             public boolean onMenuItemClick(MenuItem menuItem) {
-                Intent browserIntent = new Intent(Intent.ACTION_VIEW);
-                browserIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                browserIntent.setData(Uri.parse(url));
-                startActivity(browserIntent);
+                controller.openLink(getActivity(), url, item);
 
                 return true;
             }
         });
-        return item;
+        return menuItem;
     }
 
     private void loadFileLayout() {

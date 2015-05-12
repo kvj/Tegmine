@@ -1,5 +1,7 @@
 package kvj.tegmine.android.data.def;
 
+import android.net.Uri;
+
 /**
  * Created by kvorobyev on 2/13/15.
  */
@@ -36,4 +38,8 @@ abstract public class FileSystemItem<T> {
     public String providerName() {
         return provider;
     }
+
+    abstract public String relativeURL(String location);
+
+    public abstract Uri toUri();
 }

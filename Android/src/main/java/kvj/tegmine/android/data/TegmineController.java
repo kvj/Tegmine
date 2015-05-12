@@ -1,13 +1,19 @@
 package kvj.tegmine.android.data;
 
+import android.app.Activity;
+import android.content.ActivityNotFoundException;
 import android.content.Context;
+import android.content.Intent;
 import android.content.res.Resources;
+import android.net.Uri;
 import android.os.Environment;
 import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.KeyEvent;
+import android.webkit.MimeTypeMap;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.lazydroid.autoupdateapk.AutoUpdateApk;
 
@@ -788,4 +794,30 @@ public class TegmineController extends Controller {
     public EditorsController editors() {
         return editors;
     }
+
+    public void openLink(Activity activity, String url, FileSystemItem item) {
+        Uri uri = Uri.parse(url);
+        if (url.startsWith("att://")) { // Attachment - read config
+            String attachmentFolder = objectString(config(), "attachment_folder", "");
+            String urlStr = item.relativeURL(String.format("%s%s", attachmentFolder, url.substring(6)));
+            uri = fromURL(urlStr).toUri();
+        }
+        Intent browserIntent = new Intent(Intent.ACTION_VIEW);
+        browserIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        if (uri.getScheme().equals("file")) { // Detect extension
+            String extension = MimeTypeMap.getFileExtensionFromUrl(uri.toString());
+            String mimetype = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension);
+            browserIntent.setDataAndType(uri, mimetype);
+        } else {
+            browserIntent.setData(uri);
+        }
+        try {
+            activity.startActivity(browserIntent);
+        } catch (ActivityNotFoundException e) {
+            logger.e(e, "Failed to open Activity");
+            Toast toast = Toast.makeText(context, "Failed to open attachment", Toast.LENGTH_LONG);
+            toast.show();
+        }
+    }
+
 }

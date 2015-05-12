@@ -1,7 +1,8 @@
 package kvj.tegmine.android.data.impl.provider.local;
 
+import android.net.Uri;
+
 import java.io.File;
-import java.util.Date;
 
 import kvj.tegmine.android.data.def.FileSystemException;
 import kvj.tegmine.android.data.def.FileSystemItem;
@@ -62,5 +63,16 @@ public class LocalFileSystemItem extends FileSystemItem<LocalFileSystemItem> {
     @Override
     public void commit() {
         markNotModified();
+    }
+
+    @Override
+    public String relativeURL(String location) {
+        String start = type == FileSystemItemType.Folder? toURL(): parent.toURL();
+        return String.format("%s/%s", start, location);
+    }
+
+    @Override
+    public Uri toUri() {
+        return Uri.parse(String.format("file://%s", file.getAbsolutePath()));
     }
 }

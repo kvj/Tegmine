@@ -65,9 +65,10 @@ public class TegmineController extends Controller {
     private Map<String, FileSystemProvider> fileSystemProviders = new LinkedHashMap<>();
     private Map<String, TemplateDef> templates = new LinkedHashMap<>();
     private FileSystemProvider defaultProvider = null;
-    private LightTheme theme = new LightTheme();
+    private LightTheme theme = new LightTheme(this);
     private Logger logger = Logger.forInstance(this);
     private Map<String, Object> config = new HashMap<>();
+    private Map<String, Integer> sizes = new HashMap<>();
     private Map<String, LightTheme> colorSchemes = new HashMap<>();
     private Map<String, SyntaxDef> syntaxes = new HashMap<>();
     private int watchSeconds = 60;
@@ -371,6 +372,7 @@ public class TegmineController extends Controller {
         colorSchemes.clear();
         syntaxes.clear();
         autoThemeChanger.clear();
+        sizes.clear();
         if (!fileSystemProviders.containsKey("sdcard")) { // Failsafe - should always be there
             FileSystemProvider provider = new LocalFileSystemProvider(Environment.getExternalStorageDirectory(), "sdcard");
             provider.label("SD Card");
@@ -379,7 +381,7 @@ public class TegmineController extends Controller {
         if (null == defaultProvider) { // No default provider
             defaultProvider = fileSystemProviders.get("sdcard");
         }
-        colorSchemes.put("default", new LightTheme());
+        colorSchemes.put("default", new LightTheme(this));
         selectedTheme = "default";
     }
 
@@ -389,6 +391,18 @@ public class TegmineController extends Controller {
         Map<String, Object> object = new HashMap<>();
         readObject(lines, 0, object, 0);
         return object;
+    }
+
+    private void reloadSizes() {
+        Map<String, Object> items = objectObject(config, "size");
+        if (null == items) {
+            return;
+        }
+        for (LightTheme.Size size: LightTheme.Size.values()) {
+            if (items.containsKey(size.code())) { // Found
+                sizes.put(size.code(), objectInteger(items, size.code(), size.def()));
+            }
+        }
     }
 
     private void reloadSyntaxes() {
@@ -439,7 +453,7 @@ public class TegmineController extends Controller {
                 }
                 try {
                     Map<String, Object> themeConfig = file2Object(fileItem);
-                    LightTheme newTheme = new LightTheme();
+                    LightTheme newTheme = new LightTheme(this);
                     newTheme.dark(objectBoolean(themeConfig, "dark", false));
                     for (Map.Entry<String, Object> oneThemeLine : themeConfig.entrySet()) {
                         String key = oneThemeLine.getKey();
@@ -492,6 +506,7 @@ public class TegmineController extends Controller {
             autoThemeChanger.setup(config);
             reloadColorSchemes();
             reloadSyntaxes();
+            reloadSizes();
         } catch (FileSystemException e) {
             ex = e;
         }
@@ -818,6 +833,14 @@ public class TegmineController extends Controller {
             Toast toast = Toast.makeText(context, "Failed to open attachment", Toast.LENGTH_LONG);
             toast.show();
         }
+    }
+
+    public int size(LightTheme.Size size) {
+        Integer value = sizes.get(size.code());
+        if (null != value) { // Found
+            return value;
+        }
+        return size.def();
     }
 
 }

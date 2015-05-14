@@ -6,21 +6,28 @@ import java.util.HashMap;
 import java.util.Map;
 
 import kvj.tegmine.android.R;
+import kvj.tegmine.android.data.TegmineController;
 
 /**
  * Created by kvorobyev on 2/14/15.
  */
 public class LightTheme {
 
+    private final TegmineController controller;
+
     public enum Size {
-        headerTextSp("headerText", 18), browserTextSp("browserText", 16), fileTextSp("fileText", 14),
-        fileIndentSp("fileIndent", 14), editorTextSp("editorText", 14), paddingDp("padding", 16);
+        headerTextSp("header_text", 18), browserTextSp("browser_text", 16), fileTextSp("file_text", 14),
+        fileIndentSp("file_indent", 14), editorTextSp("editor_text", 14), paddingDp("padding", 16);
 
         private final String code;
         private final int def;
         Size(String code, int def) {
             this.code = code;
             this.def = def;
+        }
+
+        public String code() {
+            return code;
         }
 
         public int def() {
@@ -63,6 +70,10 @@ public class LightTheme {
     protected Map<Colors, Integer> mappingColors = new HashMap<>();
     protected Map<Size, Integer> mappingSizes = new HashMap<>();
 
+    public LightTheme(TegmineController controller) {
+        this.controller = controller;
+    }
+
     public int color(Colors color, int defaultColor) {
         Integer colorInt = mappingColors.get(color);
         if (null == colorInt) {
@@ -77,7 +88,7 @@ public class LightTheme {
         if (null != custom) {
             return custom;
         }
-        return size.def();
+        return controller.size(size);
     }
 
     private boolean dark = false;

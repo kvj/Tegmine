@@ -115,6 +115,13 @@ public class TegmineController extends Controller {
         return defaultProvider;
     }
 
+    public FileSystemProvider fileSystemProvider(FileSystemItem item) {
+        if (null == item) { // Failsafe
+            return fileSystemProvider();
+        }
+        return fileSystemProvider(item.providerName());
+    }
+
     public FileSystemProvider fileSystemProvider(String name) {
         if (null == name) { // Default is requested:
             return fileSystemProvider();
@@ -841,6 +848,10 @@ public class TegmineController extends Controller {
             return value;
         }
         return size.def();
+    }
+
+    public boolean itemHasFeature(FileSystemItem item, FileSystemProvider.Features feature) {
+        return fileSystemProvider(item).hasFeature(item, feature);
     }
 
 }

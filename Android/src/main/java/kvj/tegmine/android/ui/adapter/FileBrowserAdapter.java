@@ -16,7 +16,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import kvj.tegmine.android.R;
-import kvj.tegmine.android.Tegmine;
 import kvj.tegmine.android.data.TegmineController;
 import kvj.tegmine.android.data.def.FileSystemException;
 import kvj.tegmine.android.data.def.FileSystemItem;
@@ -53,6 +52,11 @@ public class FileBrowserAdapter extends AnotherListAdapter<FileBrowserAdapter.It
     public void load(FileSystemItem rootItem, FileSystemItem expandTo) {
         root = new Item(rootItem.name);
         root.item = rootItem;
+        data.clear();
+        expandTo(expandTo);
+    }
+
+    public void select(FileSystemItem expandTo) {
         data.clear();
         expandTo(expandTo);
     }

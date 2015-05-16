@@ -75,4 +75,5 @@ public class LocalFileSystemItem extends FileSystemItem<LocalFileSystemItem> {
     public Uri toUri() {
         return Uri.parse(String.format("file://%s", file.getAbsolutePath()));
     }
+
 }

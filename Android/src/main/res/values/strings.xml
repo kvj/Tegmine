@@ -10,6 +10,11 @@
     <string name="p_config_file">p_config_file</string>
     <string name="p_tabs_size">p_tabs_size</string>
     <string name="menu_show_editors">Editors</string>
+    <string name="menu_rename">Rename...</string>
+    <string name="menu_remove">Remove...</string>
+    <string name="menu_open_folder">New window</string>
+    <string name="menu_new_file">New file...</string>
+    <string name="menu_new_folder">New folder...</string>
     <string-array name="shortcut_types">
         <item>Display file</item>
         <item>Append to</item>

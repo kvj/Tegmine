@@ -6,6 +6,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
@@ -138,5 +139,54 @@ public class LocalFileSystemProvider extends FileSystemProvider<LocalFileSystemI
     @Override
     public LocalFileSystemItem root() {
         return root;
+    }
+
+    @Override
+    protected boolean hasFeatureT(LocalFileSystemItem file, Features feature) {
+        return true; // All features
+    }
+
+    @Override
+    protected void renameT(LocalFileSystemItem item, String name) throws FileSystemException {
+        if (!item.file.exists()) { // Invalid
+            throw new FileSystemException("File does not exist");
+        }
+        boolean result = item.file.renameTo(new File(item.file.getParentFile(), name));
+        if (!result) { // Failed
+            throw new FileSystemException("Failed to rename");
+        }
+    }
+
+    @Override
+    protected void createT(FileSystemItemType type, LocalFileSystemItem folder, String name) throws FileSystemException {
+        if (!folder.file.exists() || !folder.file.isDirectory()) { // Invalid
+            throw new FileSystemException("Invalid folder");
+        }
+        File file = new File(folder.file, name);
+        if (type == FileSystemItemType.Folder) { // Mkdirs
+            if (!file.mkdirs()) { // Failed
+                throw new FileSystemException("Failed to create folder");
+            }
+        }
+        if (type == FileSystemItemType.File) { // Create new file
+            try {
+                if (!file.createNewFile()) { // Failed
+                    throw new FileSystemException("Failed to create folder");
+                }
+            } catch (IOException e) {
+                throw new FileSystemException(e.getMessage());
+            }
+        }
+    }
+
+    @Override
+    protected void removeT(LocalFileSystemItem item) throws FileSystemException {
+        if (!item.file.exists()) { // Invalid
+            return; // Already removed
+        }
+        boolean result = item.file.delete();
+        if (!result) { // Failed
+            throw new FileSystemException("Failed to remove");
+        }
     }
 }

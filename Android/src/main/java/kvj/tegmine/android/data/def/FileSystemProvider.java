@@ -14,6 +14,8 @@ import kvj.tegmine.android.data.model.util.Wrappers;
  */
 abstract public class FileSystemProvider<T extends FileSystemItem> {
 
+    public enum Features {CanRenameFile, CanRenameFolder, CanRemoveFolder, CanRemoveFile, CanCreateFolder, CanCreateFile};
+
     protected final String name;
     protected String label = null;
 
@@ -107,4 +109,21 @@ abstract public class FileSystemProvider<T extends FileSystemItem> {
     public void folderPattern(Wrappers.Tuple2<Pattern, Integer> folderPattern) {
         this.folderPattern = folderPattern;
     }
+
+    public final boolean hasFeature(FileSystemItem file, Features feature) {
+        return hasFeatureT((T)file, feature);
+    }
+
+    protected boolean hasFeatureT(T file, Features feature) {
+        return false;
+    }
+
+    public final void rename(FileSystemItem item, String name) throws FileSystemException {
+        renameT((T) item, name);
+    }
+
+    protected void renameT(T item, String name) throws FileSystemException {
+        throw new FileSystemException("Not implemented");
+    }
+
 }

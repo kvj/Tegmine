@@ -3,24 +3,32 @@ package kvj.tegmine.android.ui.fragment;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.widget.DrawerLayout;
+import android.text.TextUtils;
 import android.util.TypedValue;
+import android.view.ContextMenu;
 import android.view.Gravity;
 import android.view.LayoutInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 
 import org.kvj.bravo7.form.FormController;
 import org.kvj.bravo7.log.Logger;
+import org.kvj.bravo7.util.Tasks;
+import org.kvj.bravo7.widget.Dialogs;
 
 import kvj.tegmine.android.R;
 import kvj.tegmine.android.Tegmine;
 import kvj.tegmine.android.data.TegmineController;
+import kvj.tegmine.android.data.def.FileSystemException;
 import kvj.tegmine.android.data.def.FileSystemItem;
 import kvj.tegmine.android.data.def.FileSystemItemType;
+import kvj.tegmine.android.data.def.FileSystemProvider;
 import kvj.tegmine.android.data.model.ProgressListener;
 import kvj.tegmine.android.ui.adapter.FileBrowserAdapter;
 import kvj.tegmine.android.ui.adapter.StorageNavigationAdapter;
@@ -113,6 +121,7 @@ public class FileSystemBrowser extends Fragment implements ProgressListener {
         titleText = (TextView) view.findViewById(R.id.file_browser_title_text);
         titleIcon = (ImageView) view.findViewById(R.id.file_browser_title_icon);
         listView = (ListView) view.findViewById(android.R.id.list);
+        registerForContextMenu(listView);
         drawer = (DrawerLayout) view.findViewById(R.id.file_browser_drawer);
         drawerPane = view.findViewById(R.id.file_browser_navigation);
         storageList = (ListView) view.findViewById(R.id.file_browser_storage_list);
@@ -134,13 +143,14 @@ public class FileSystemBrowser extends Fragment implements ProgressListener {
         adapter = new FileBrowserAdapter(controller);
         adapter.load(form.getValue("root", FileSystemItem.class), form.getValue("select", FileSystemItem.class));
         listView.setAdapter(adapter);
-        listView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
-            @Override
-            public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
-                onLongItemClick(position);
-                return true;
-            }
-        });
+//        listView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+//            @Override
+//            public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
+//                onLongItemClick(position);
+//                return true;
+//            }
+//        });
+
         listView.setOnItemClickListener( new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int pos, long l) {
@@ -185,9 +195,8 @@ public class FileSystemBrowser extends Fragment implements ProgressListener {
         updateTitle();
     }
 
-    private void onLongItemClick(int position) {
-        FileSystemItem item = adapter.getFileSystemItem(position);
-        if (item.type == FileSystemItemType.Folder) { // Collapse/expand
+    private void openNewWindow(FileSystemItem item) {
+        if (item.type == FileSystemItemType.Folder) { // Call parent
             Bundle bundle = new Bundle();
             bundle.putString("root", item.toURL());
             if (null != listener) {
@@ -250,6 +259,149 @@ public class FileSystemBrowser extends Fragment implements ProgressListener {
         if (null != controller) {
             controller.progressListeners().add(this);
             applyTheme();
+        }
+    }
+
+    private void input(String title, String text, final Dialogs.Callback<String> callback) {
+        EditText input = Dialogs.inputTextDialog(getActivity(), title, new Dialogs.Callback<String>() {
+            @Override
+            public void run(String data) {
+                if (!TextUtils.isEmpty(data)) { // Have input
+                    callback.run(data);
+                }
+            }
+        });
+        input.setSelectAllOnFocus(true);
+        if (!TextUtils.isEmpty(text)) { // Have input
+            input.setText(text);
+        }
+    }
+
+    private void question(String title, Dialogs.Callback<Void> callback) {
+        Dialogs.questionDialog(getActivity(), null, title, callback);
+    }
+
+    private interface FileSystemOperation {
+
+        public void exec(FileSystemItem item, FileSystemProvider provider) throws FileSystemException;
+    }
+
+    private void executeOperation(final FileSystemItem item, final FileSystemOperation op) {
+        Tasks.SimpleTask<FileSystemException> task = new Tasks.SimpleTask<FileSystemException>() {
+            @Override
+            protected FileSystemException doInBackground() {
+                FileSystemProvider provider = controller.fileSystemProvider(item);
+                try {
+                    op.exec(item, provider);
+                } catch (FileSystemException e) {
+                    return e;
+                }
+                return null;
+            }
+
+            @Override
+            protected void onPostExecute(FileSystemException e) {
+                if (null != e) { // Have error
+                    logger.e(e, "Operation error");
+                    Dialogs.toast(getActivity(), e.getMessage());
+                } else {
+                    adapter.select(item);
+                }
+            }
+        };
+        task.exec();
+    }
+
+    @Override
+    public boolean onContextItemSelected(MenuItem menuItem) {
+        AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo)menuItem.getMenuInfo();
+        final FileSystemItem item = adapter.getFileSystemItem(info.position);
+        logger.d("Context item", item.name, info.position, menuItem.getItemId());
+        switch (menuItem.getItemId()) {
+            case R.id.context_open_folder:
+                openNewWindow(item);
+                return true;
+            case R.id.context_rename:
+                input("Enter new name:", item.name, new Dialogs.Callback<String>() {
+                    @Override
+                    public void run(final String data) {
+                        executeOperation(item, new FileSystemOperation() {
+                            @Override
+                            public void exec(FileSystemItem item, FileSystemProvider provider) throws FileSystemException {
+                                provider.rename(item, data);
+                            }
+                        });
+                    }
+                });
+                return true;
+            case R.id.context_new_file:
+                input("New file name:", "File", new Dialogs.Callback<String>() {
+                    @Override
+                    public void run(final String data) {
+                        executeOperation(item, new FileSystemOperation() {
+                            @Override
+                            public void exec(FileSystemItem item, FileSystemProvider provider) throws FileSystemException {
+                                provider.create(FileSystemItemType.File, item, data);
+                            }
+                        });
+                    }
+                });
+                return true;
+            case R.id.context_new_folder:
+                input("New folder name:", "Folder", new Dialogs.Callback<String>() {
+                    @Override
+                    public void run(final String data) {
+                        executeOperation(item, new FileSystemOperation() {
+                            @Override
+                            public void exec(FileSystemItem item, FileSystemProvider provider) throws FileSystemException {
+                                provider.create(FileSystemItemType.Folder, item, data);
+                            }
+                        });
+                    }
+                });
+                return true;
+            case R.id.context_remove:
+                question(String.format("Sure want to remove '%s'?", item.name), new Dialogs.Callback<Void>() {
+                    @Override
+                    public void run(Void data) {
+                        executeOperation(item, new FileSystemOperation() {
+                            @Override
+                            public void exec(FileSystemItem item, FileSystemProvider provider) throws FileSystemException {
+                                provider.remove(item);
+                            }
+                        });
+                    }
+                });
+                return true;
+        }
+        return false;
+    }
+
+    @Override
+    public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
+        if (null == adapter || v != listView) { // Not OK to show
+            return;
+        }
+        menu.clear();
+        AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo)menuInfo;
+        FileSystemItem item = adapter.getFileSystemItem(info.position);
+        if (item.type == FileSystemItemType.Folder) { // Folder mode
+            getActivity().getMenuInflater().inflate(R.menu.context_folder, menu);
+            menu.findItem(R.id.context_new_file).setVisible(
+                    controller.itemHasFeature(item, FileSystemProvider.Features.CanCreateFile));
+            menu.findItem(R.id.context_new_folder).setVisible(
+                    controller.itemHasFeature(item, FileSystemProvider.Features.CanCreateFolder));
+            menu.findItem(R.id.context_rename).setVisible(
+                    controller.itemHasFeature(item, FileSystemProvider.Features.CanRenameFolder));
+            menu.findItem(R.id.context_remove).setVisible(
+                    controller.itemHasFeature(item, FileSystemProvider.Features.CanRemoveFolder));
+        }
+        if (item.type == FileSystemItemType.File) { // Folder mode
+            getActivity().getMenuInflater().inflate(R.menu.context_file, menu);
+            menu.findItem(R.id.context_rename).setVisible(
+                    controller.itemHasFeature(item, FileSystemProvider.Features.CanRenameFile));
+            menu.findItem(R.id.context_remove).setVisible(
+                    controller.itemHasFeature(item, FileSystemProvider.Features.CanRemoveFile));
         }
     }
 }

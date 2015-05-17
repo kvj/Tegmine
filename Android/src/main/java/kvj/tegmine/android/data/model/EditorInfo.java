@@ -41,6 +41,7 @@ public class EditorInfo {
     public String itemURL = "";
     public long crc = -1L;
     public String text = null;
+    public String findText = "";
     public String template = null;
     public Mode mode = Mode.None;
     public int selectionStart = -1;
@@ -55,6 +56,7 @@ public class EditorInfo {
         itemURL = pref.getString(prefix+"url", null);
         crc = pref.getLong(prefix + "hash", -1L);
         text = pref.getString(prefix + "text", "");
+        findText = pref.getString(prefix + "find", "");
         selectionStart = pref.getInt(prefix + "sel_start", -1);
         selectionEnd = pref.getInt(prefix+"sel_end", -1);
     }
@@ -64,6 +66,7 @@ public class EditorInfo {
         pref.putString(prefix+"url", itemURL);
         pref.putLong(prefix + "hash", crc);
         pref.putString(prefix + "text", text);
+        pref.putString(prefix + "find", findText);
         pref.putInt(prefix + "sel_start", selectionStart);
         pref.putInt(prefix+"sel_start", selectionEnd);
     }

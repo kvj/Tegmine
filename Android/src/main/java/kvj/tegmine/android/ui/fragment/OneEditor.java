@@ -26,6 +26,7 @@ import org.kvj.bravo7.log.Logger;
 import org.kvj.bravo7.ng.App;
 import org.kvj.bravo7.util.Listeners;
 import org.kvj.bravo7.util.Tasks;
+import org.kvj.bravo7.widget.Dialogs;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -56,6 +57,8 @@ public class OneEditor extends Fragment implements ProgressListener {
     private SyntaxDef syntax = null;
     private FileItemWatcher watcher = null;
     private ImageView titleIcon = null;
+    private ViewGroup findWidget = null;
+    private EditText findEdit = null;
 
     private Logger logger = Logger.forInstance(this);
     private int index = -1;
@@ -88,6 +91,14 @@ public class OneEditor extends Fragment implements ProgressListener {
             Context.INPUT_METHOD_SERVICE);
         info.view = this;
         View view = inflater.inflate(R.layout.fragment_one_editor, container, false);
+        findWidget = (ViewGroup) view.findViewById(R.id.editor_find);
+        findEdit = (EditText) view.findViewById(R.id.editor_find_text);
+        findEdit.setOnKeyListener(new View.OnKeyListener() {
+            @Override
+            public boolean onKey(View v, int keyCode, KeyEvent event) {
+                return findKeyHandler(keyCode, event);
+            }
+        });
         editor = (EditText) view.findViewById(R.id.editor_text);
         title = (TextView) view.findViewById(R.id.editor_title_text);
         editor.setOnKeyListener(new View.OnKeyListener() {
@@ -128,7 +139,78 @@ public class OneEditor extends Fragment implements ProgressListener {
                 }
             }
         };
+        view.findViewById(R.id.editor_do_find).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                searchNext();
+            }
+        });
+        view.findViewById(R.id.editor_do_close_find).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                closeFindDialog();
+            }
+        });
+        if (!TextUtils.isEmpty(info.findText)) { // Have findtext
+            showFindDialog(info.findText, false);
+        }
         return view;
+    }
+
+    private boolean searchWithin(final int from, int to) {
+        String searchIn = editor.getText().subSequence(from, to).toString().toLowerCase();
+        final String lookFor = findEdit.getText().toString().trim().toLowerCase();
+        if (TextUtils.isEmpty(lookFor)) { // Empty string - already found
+            return true;
+        }
+        final int index = searchIn.indexOf(lookFor);
+        if (-1 == index) { // Not found
+            return false;
+        }
+        editor.requestFocus();
+        editor.setSelection(from + index, from + index + lookFor.length());
+        return true;
+    }
+
+    private void searchNext() {
+        // Search forward
+        if (!searchWithin(editor.getSelectionEnd(), editor.getText().length())) { // Not found
+            if (!searchWithin(0, editor.getSelectionStart())) { // Not found
+                Dialogs.toast(getActivity(), "Not found");
+            } else {
+                Dialogs.toast(getActivity(), "Search from top");
+            }
+        }
+    }
+
+    void showFindDialog(String loadText, boolean focus) {
+        findWidget.setVisibility(View.VISIBLE);
+        if (!TextUtils.isEmpty(loadText)) { // Have smth. to load
+            findEdit.setText(loadText);
+        }
+        if (focus) {
+            findEdit.requestFocus();
+        }
+    }
+
+    boolean closeFindDialog() {
+        if (findWidget.getVisibility() != View.VISIBLE) { // Not visible already
+            return false;
+        }
+        findWidget.setVisibility(View.GONE);
+        editor.requestFocus();
+        return true;
+    }
+
+    private boolean findKeyHandler(int keyCode, KeyEvent event) {
+        if (event.getAction() != KeyEvent.ACTION_DOWN) {
+            return false;
+        }
+        if (keyCode == KeyEvent.KEYCODE_F && event.isCtrlPressed()) { // Ctrl+F
+            searchNext();
+            return true;
+        }
+        return false;
     }
 
     void info2Editor() {
@@ -167,6 +249,14 @@ public class OneEditor extends Fragment implements ProgressListener {
                 return true;
             }
         }
+        if (keyEvent.isCtrlPressed() && key == KeyEvent.KEYCODE_F) {
+            if (!findVisible()) { // Show
+                showFindDialog("", true);
+            } else { // Search next
+                searchNext();
+            }
+            return true;
+        }
         if (keyEvent.isCtrlPressed()) {
             // Ctrl + template key
             TemplateDef tmpl = controller.templateFromKeyEvent(keyEvent);
@@ -183,9 +273,18 @@ public class OneEditor extends Fragment implements ProgressListener {
         });
     }
 
+    boolean findVisible() {
+        return findWidget.getVisibility() == View.VISIBLE;
+    }
+
     public void toInfo() {
         if (null != info) {
             info.fromEditor(editor);
+            if (findVisible()) {
+                info.findText = findEdit.getText().toString().trim();
+            } else {
+                info.findText = "";
+            }
         }
     }
 
@@ -370,6 +469,8 @@ public class OneEditor extends Fragment implements ProgressListener {
         boolean doEdit = info.mode == EditorInfo.Mode.Edit;
         editor.setTextColor(controller.theme().textColor());
         editor.setTextSize(TypedValue.COMPLEX_UNIT_SP, controller.theme().editorTextSp());
+        findEdit.setTextColor(controller.theme().textColor());
+        findEdit.setTextSize(TypedValue.COMPLEX_UNIT_SP, controller.theme().editorTextSp());
         controller.applyHeaderStyle(title);
         titleIcon.setImageResource(doEdit ?
                         controller.theme().fileEditIcon() :

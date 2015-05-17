@@ -7,4 +7,10 @@
         app:showAsAction="ifRoom">
         <menu/>
     </item>
+    <item
+        android:id="@+id/menu_editor_find"
+        android:title="Find in text"
+        app:showAsAction="never">
+        <menu/>
+    </item>
 </menu>

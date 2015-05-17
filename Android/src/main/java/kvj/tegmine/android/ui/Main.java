@@ -29,7 +29,6 @@ import kvj.tegmine.android.Tegmine;
 import kvj.tegmine.android.data.TegmineController;
 import kvj.tegmine.android.data.def.FileSystemItem;
 import kvj.tegmine.android.data.model.ProgressListener;
-import kvj.tegmine.android.ui.fragment.Editor;
 import kvj.tegmine.android.ui.fragment.Editors;
 import kvj.tegmine.android.ui.fragment.FileSystemBrowser;
 import kvj.tegmine.android.ui.fragment.OneFileViewer;
@@ -260,6 +259,9 @@ public class Main extends AppCompatActivity implements
 
     private void closeEditor(boolean confirm) {
         final boolean haveEditor = editors != null;
+        if (haveEditor && editors.closeFindDialog()) { // Closed find dialog
+            return;
+        }
         hideEditor(confirm, new Runnable() {
             @Override
             public void run() {

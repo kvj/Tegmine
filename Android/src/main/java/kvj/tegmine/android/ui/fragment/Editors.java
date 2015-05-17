@@ -47,6 +47,13 @@ public class Editors extends Fragment {
         return info;
     }
 
+    public boolean closeFindDialog() {
+        if (selected() == null) { // No editor
+            return false;
+        }
+        return selected().view.closeFindDialog();
+    }
+
     public interface EditorsListener {
         public void onHide();
     }
@@ -163,6 +170,18 @@ public class Editors extends Fragment {
                 return true;
             }
         };
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.menu_editor_find:
+                if (null != selected()) { // Have selected
+                    selected().view.showFindDialog("", true);
+                }
+                return true;
+        }
+        return super.onOptionsItemSelected(item);
     }
 
     @Override
@@ -286,15 +305,18 @@ public class Editors extends Fragment {
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
-        controller.editors().keyListeners.add(keyListener);
+        if (null != controller) {
+            controller.editors().keyListeners.add(keyListener);
+        }
         super.onCreate(savedInstanceState);
     }
 
     @Override
     public void onDestroy() {
-        logger.d("Destroy");
-        controller.editors().keyListeners.remove(keyListener);
-        controller.editors().saveState();
+        if (null != controller) {
+            controller.editors().keyListeners.remove(keyListener);
+            controller.editors().saveState();
+        }
         super.onDestroy();
     }
 }

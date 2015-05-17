@@ -25,6 +25,36 @@
             android:text="Hi Korea!"
             android:padding="@dimen/textPadding"/>
     </LinearLayout>
+    <LinearLayout
+        android:id="@+id/editor_find"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_weight="0"
+        android:orientation="horizontal"
+        android:visibility="gone">
+        <android.support.v7.widget.AppCompatEditText
+            android:id="@+id/editor_find_text"
+            android:layout_weight="1"
+            android:inputType="text"
+            android:imeOptions="actionSearch"
+            android:selectAllOnFocus="true"
+            android:fontFamily="monospace"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"/>
+        <android.support.v7.widget.AppCompatButton
+            android:id="@+id/editor_do_find"
+            android:focusable="true"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Find"/>
+        <android.support.v7.widget.AppCompatButton
+            android:id="@+id/editor_do_close_find"
+            android:focusable="true"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Close"/>
+    </LinearLayout>
     <android.support.v7.widget.AppCompatEditText
         android:id="@+id/editor_text"
         android:layout_weight="1"

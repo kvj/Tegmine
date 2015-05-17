@@ -205,43 +205,43 @@ public class OneFileViewer extends Fragment implements ProgressListener {
     }
 
     private boolean keyHandler(int key, KeyEvent keyEvent) {
-        if (keyEvent.getAction() != KeyEvent.ACTION_UP) {
+        if (keyEvent.getAction() != KeyEvent.ACTION_DOWN) {
             return false;
         }
         if (keyEvent.isCtrlPressed()) {
+            switch (key) {
+                case KeyEvent.KEYCODE_R:
+                    refresh();
+                    return true;
+                case KeyEvent.KEYCODE_A:
+                    startEditor(Tegmine.EDIT_TYPE_ADD, null);
+                    return true;
+                case KeyEvent.KEYCODE_E:
+                    startEditor(Tegmine.EDIT_TYPE_EDIT, null);
+                    return true;
+                case KeyEvent.KEYCODE_Z:
+                    startEditor(null, null); // Show editors
+                    return true;
+                case KeyEvent.KEYCODE_C:
+                    copyAt(listView.getSelectedItemPosition());
+                    return true;
+                case KeyEvent.KEYCODE_V:
+                    paste();
+                    return true;
+                case KeyEvent.KEYCODE_W:
+                    toggleWrapLines();
+                    return true;
+                case KeyEvent.KEYCODE_N:
+                    toggleLineNumbers();
+                    getActivity().invalidateOptionsMenu();
+                    return true;
+            }
             // Ctrl + template key
             TemplateDef tmpl = controller.templateFromKeyEvent(keyEvent);
             if (null != tmpl) {
                 startEditor(Tegmine.EDIT_TYPE_ADD, tmpl.code());
                 return true;
             }
-        }
-        switch (key) {
-            case KeyEvent.KEYCODE_R:
-                refresh();
-                return true;
-            case KeyEvent.KEYCODE_A:
-                startEditor(Tegmine.EDIT_TYPE_ADD, null);
-                return true;
-            case KeyEvent.KEYCODE_E:
-                startEditor(Tegmine.EDIT_TYPE_EDIT, null);
-                return true;
-            case KeyEvent.KEYCODE_Z:
-                startEditor(null, null); // Show editors
-                return true;
-            case KeyEvent.KEYCODE_C:
-                copyAt(listView.getSelectedItemPosition());
-                return true;
-            case KeyEvent.KEYCODE_P:
-                paste();
-                return true;
-            case KeyEvent.KEYCODE_W:
-                toggleWrapLines();
-                return true;
-            case KeyEvent.KEYCODE_N:
-                toggleLineNumbers();
-                getActivity().invalidateOptionsMenu();
-                return true;
         }
         return false;
     }
@@ -250,7 +250,7 @@ public class OneFileViewer extends Fragment implements ProgressListener {
 
     private void changeButtonsDim(View buttonsPane, ListView listView) {
         boolean dimButtons = listView.getCount() == listView.getLastVisiblePosition()+1 && listView.getFirstVisiblePosition()>0;
-        logger.d("Scroll state:", listView.getCount(), listView.getFirstVisiblePosition(), listView.getLastVisiblePosition(), dimButtons);
+//        logger.d("Scroll state:", listView.getCount(), listView.getFirstVisiblePosition(), listView.getLastVisiblePosition(), dimButtons);
         if (dimButtons != buttonsDimmed) { // State changed
             ObjectAnimator anim = ObjectAnimator.ofFloat(buttonsPane, "alpha", dimButtons ? 1f : 0.3f, dimButtons ? 0.3f : 1f);
             anim.setDuration(300);

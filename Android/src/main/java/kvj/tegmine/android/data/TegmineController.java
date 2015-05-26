@@ -301,20 +301,34 @@ public class TegmineController extends Controller {
         }
     }
 
-    private static Pattern urlPattern = Pattern.compile("^tegmine\\+([a-z0-9_]+)://(.*)$");
+    private static final String TEGMINE_SCHEME = "tegmine+";
 
     public FileSystemItem fromURL(String url) {
         if (TextUtils.isEmpty(url)) {
             return null;
         }
-        Matcher m = urlPattern.matcher(url);
-        if (!m.find()) { // Not found
-            logger.w("Failed to load item from URL:", url);
-            return null;
-        }
         try {
-            logger.d("fromURL", m.group(1), m.group(2), fileSystemProviders.containsKey(m.group(1)));
-            return fileSystemProvider(m.group(1)).fromURL(m.group(2));
+            Uri uri = Uri.parse(url);
+            String path = uri.getAuthority()+uri.getPath();
+            if (uri.getScheme().equals("conf")) { // Relative to config file
+                FileSystemItem item = configFile();
+                if (null == item) { // No configuration
+                    logger.w("No configuration", url);
+                    return null;
+                }
+                return fromURL(item.relativeURL(path));
+            }
+            if (!uri.getScheme().startsWith(TEGMINE_SCHEME)) { // Not supported
+                logger.w("Not supported type:", url, uri.getScheme());
+                return null;
+            }
+            String providerName = uri.getScheme().substring(TEGMINE_SCHEME.length());
+            logger.d("fromURL",
+                    providerName, uri.getPath(),
+                    uri.getAuthority(),
+                    path,
+                    url);
+            return fileSystemProvider(providerName).fromURL(path);
         } catch (FileSystemException e) {
             e.printStackTrace();
             return null;
@@ -484,15 +498,19 @@ public class TegmineController extends Controller {
         }
     }
 
+    private FileSystemItem configFile() {
+        String path = settingsString(R.string.p_config_file, "");
+        if (TextUtils.isEmpty(path)) { // Not set
+            return null;
+        }
+        return fromURL(path);
+    }
+
     public void reloadConfig() throws FileSystemException {
         FileSystemException ex = null;
         setupFailsave();
         try {
-            String path = settingsString(R.string.p_config_file, "");
-            if (TextUtils.isEmpty(path)) { // Not set
-                throw new FileSystemException("Config file not set");
-            }
-            FileSystemItem configItem = fromURL(path);
+            FileSystemItem configItem = configFile();
             if (null == configItem) { // Invalid
                 throw new FileSystemException("Failed to read config file");
             }

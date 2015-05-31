@@ -1,20 +1,23 @@
 package kvj.tegmine.android.ui.fragment;
 
 import android.os.Bundle;
+import android.support.design.widget.NavigationView;
 import android.support.v4.app.Fragment;
 import android.support.v4.widget.DrawerLayout;
+import android.support.v7.internal.view.menu.MenuBuilder;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.ContextMenu;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
+import android.view.SubMenu;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
 import android.widget.EditText;
 import android.widget.ImageView;
-import android.widget.ListView;
 import android.widget.TextView;
 
 import org.kvj.bravo7.form.FormController;
@@ -31,7 +34,6 @@ import kvj.tegmine.android.data.def.FileSystemItemType;
 import kvj.tegmine.android.data.def.FileSystemProvider;
 import kvj.tegmine.android.data.model.ProgressListener;
 import kvj.tegmine.android.ui.adapter.FileBrowserAdapter;
-import kvj.tegmine.android.ui.adapter.StorageNavigationAdapter;
 import kvj.tegmine.android.ui.form.FileSystemItemWidgetAdapter;
 
 /**
@@ -39,11 +41,9 @@ import kvj.tegmine.android.ui.form.FileSystemItemWidgetAdapter;
  */
 public class FileSystemBrowser extends Fragment implements ProgressListener {
 
-    private ListView listView = null;
+    private RecyclerView listView = null;
     private DrawerLayout drawer = null;
-    private View drawerPane = null;
-    private ListView storageList = null;
-    private StorageNavigationAdapter storageListAdapter = null;
+    private NavigationView drawerPane = null;
     private ImageView titleIcon = null;
 
     @Override
@@ -108,7 +108,6 @@ public class FileSystemBrowser extends Fragment implements ProgressListener {
         titleIcon.setImageResource(controller.theme().folderIcon());
         drawerPane.setBackgroundColor(controller.theme().backgroundColor());
         adapter.notifyDataSetChanged();
-        storageListAdapter.notifyDataSetChanged();
     }
 
     @Override
@@ -120,63 +119,43 @@ public class FileSystemBrowser extends Fragment implements ProgressListener {
         form.setView(view);
         titleText = (TextView) view.findViewById(R.id.file_browser_title_text);
         titleIcon = (ImageView) view.findViewById(R.id.file_browser_title_icon);
-        listView = (ListView) view.findViewById(android.R.id.list);
+        listView = (RecyclerView) view.findViewById(android.R.id.list);
+        listView.setLayoutManager(new LinearLayoutManager(container.getContext()));
         registerForContextMenu(listView);
         drawer = (DrawerLayout) view.findViewById(R.id.file_browser_drawer);
-        drawerPane = view.findViewById(R.id.file_browser_navigation);
-        storageList = (ListView) view.findViewById(R.id.file_browser_storage_list);
-        storageList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+        drawerPane = (NavigationView) view.findViewById(R.id.file_browser_navigation);
+        drawerPane.setNavigationItemSelectedListener(new NavigationView.OnNavigationItemSelectedListener() {
             @Override
-            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-                selectStorage(storageListAdapter.getItem(i));
+            public boolean onNavigationItemSelected(MenuItem menuItem) {
+                return navigationHandler(menuItem);
             }
         });
-        storageListAdapter = new StorageNavigationAdapter(controller) {
+        adapter = new FileBrowserAdapter(controller) {
 
             @Override
-            public boolean selected(String name) {
-                return adapter.root().providerName().equals(name);
+            public void onClick(int position) {
+                onListItemClick(position);
+            }
+
+            @Override
+            public void onCreateContextMenu(ContextMenu menu, int position) {
+                FileSystemBrowser.this.onCreateContextMenu(menu, position);
+            }
+
+            @Override
+            protected boolean onMenuItemClick(MenuItem item, int position) {
+                return FileSystemBrowser.this.onContextItemSelected(item, position);
             }
         };
-        storageList.setAdapter(storageListAdapter);
-        storageListAdapter.refresh();
-        adapter = new FileBrowserAdapter(controller);
         adapter.load(form.getValue("root", FileSystemItem.class), form.getValue("select", FileSystemItem.class));
         listView.setAdapter(adapter);
-//        listView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
-//            @Override
-//            public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
-//                onLongItemClick(position);
-//                return true;
-//            }
-//        });
-
-        listView.setOnItemClickListener( new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> adapterView, View view, int pos, long l) {
-                onListItemClick(pos);
-            }
-        });
-        drawer.setDrawerListener(new DrawerLayout.DrawerListener() {
-            @Override
-            public void onDrawerSlide(View drawerView, float slideOffset) {
-            }
-
-            @Override
-            public void onDrawerOpened(View drawerView) {
-                storageListAdapter.refresh();
-            }
-
-            @Override
-            public void onDrawerClosed(View drawerView) {
-            }
-
-            @Override
-            public void onDrawerStateChanged(int newState) {
-            }
-        });
         updateTitle();
+        refresh();
         return view;
+    }
+
+    private boolean navigationHandler(MenuItem menuItem) {
+        return true;
     }
 
     private void updateTitle() {
@@ -193,6 +172,7 @@ public class FileSystemBrowser extends Fragment implements ProgressListener {
         adapter.load(form.getValue("root", FileSystemItem.class), null);
         drawer.closeDrawer(Gravity.LEFT);
         updateTitle();
+        refresh(); // Update menu
     }
 
     private void openNewWindow(FileSystemItem item) {
@@ -240,9 +220,32 @@ public class FileSystemBrowser extends Fragment implements ProgressListener {
     }
 
     public void refresh() {
-        if (null != storageListAdapter) {
-            storageListAdapter.refresh();
+        if (null == controller) {
+            return;
         }
+        MenuBuilder mb = (MenuBuilder) drawerPane.getMenu();
+        SubMenu menu = mb.findItem(R.id.menu_storages).getSubMenu();
+        int index = 1;
+        menu.clear();
+        for (final String name : controller.fileSystemProviders()) {
+            MenuItem item = menu.add(
+                    R.id.menu_storages_group,
+                    R.id.menu_storages+index,
+                    index,
+                    controller.fileSystemProvider(name).label());
+            item.setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
+                @Override
+                public boolean onMenuItemClick(MenuItem item) {
+                    selectStorage(name);
+                    return true;
+                }
+            });
+            item.setCheckable(true);
+            item.setChecked(name.equals(adapter.root().providerName()));
+            index++;
+        }
+        menu.setGroupCheckable(R.id.menu_storages_group, true, true);
+        mb.onItemsChanged(true);
     }
 
     @Override
@@ -312,11 +315,9 @@ public class FileSystemBrowser extends Fragment implements ProgressListener {
         task.exec();
     }
 
-    @Override
-    public boolean onContextItemSelected(MenuItem menuItem) {
-        AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo)menuItem.getMenuInfo();
-        final FileSystemItem item = adapter.getFileSystemItem(info.position);
-        logger.d("Context item", item.name, info.position, menuItem.getItemId());
+    public boolean onContextItemSelected(MenuItem menuItem, int position) {
+        final FileSystemItem item = adapter.getFileSystemItem(position);
+//        logger.d("Context item", item.name, menuItem.getItemId());
         switch (menuItem.getItemId()) {
             case R.id.context_open_folder:
                 openNewWindow(item);
@@ -377,14 +378,12 @@ public class FileSystemBrowser extends Fragment implements ProgressListener {
         return false;
     }
 
-    @Override
-    public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
-        if (null == adapter || v != listView) { // Not OK to show
+    public void onCreateContextMenu(ContextMenu menu, int position) {
+        if (null == adapter) { // Not OK to show
             return;
         }
         menu.clear();
-        AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo)menuInfo;
-        FileSystemItem item = adapter.getFileSystemItem(info.position);
+        FileSystemItem item = adapter.getFileSystemItem(position);
         if (item.type == FileSystemItemType.Folder) { // Folder mode
             getActivity().getMenuInflater().inflate(R.menu.context_folder, menu);
             menu.findItem(R.id.context_new_file).setVisible(

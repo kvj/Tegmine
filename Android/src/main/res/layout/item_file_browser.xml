@@ -2,7 +2,11 @@
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:padding="@dimen/textPadding">
+    android:clickable="true"
+    android:longClickable="true"
+    android:focusable="true"
+    android:padding="@dimen/textPadding"
+    android:background="?android:attr/selectableItemBackground" >
     <LinearLayout
         android:id="@+id/file_browser_item"
         android:orientation="horizontal"

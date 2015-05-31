@@ -1,12 +1,15 @@
 package kvj.tegmine.android.ui.adapter;
 
+import android.support.v7.widget.RecyclerView;
 import android.util.TypedValue;
+import android.view.ContextMenu;
+import android.view.LayoutInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import org.kvj.bravo7.adapter.AnotherListAdapter;
 import org.kvj.bravo7.log.Logger;
 import org.kvj.bravo7.util.Tasks;
 
@@ -26,7 +29,82 @@ import kvj.tegmine.android.data.model.util.Wrappers;
 /**
  * Created by kvorobyev on 2/15/15.
  */
-public class FileBrowserAdapter extends AnotherListAdapter<FileBrowserAdapter.Item> {
+public abstract class FileBrowserAdapter extends RecyclerView.Adapter<FileBrowserAdapter.Holder> {
+
+    @Override
+    public Holder onCreateViewHolder(ViewGroup viewGroup, int i) {
+        View v = LayoutInflater.from(viewGroup.getContext())
+                .inflate(R.layout.item_file_browser, viewGroup, false);
+        return new Holder(v);
+    }
+
+    @Override
+    public void onBindViewHolder(Holder holder, final int position) {
+        Item item = data.get(position);
+        holder.text.setText(item.name);
+        holder.text.setTextColor(controller.theme().textColor());
+        holder.text.setTextSize(TypedValue.COMPLEX_UNIT_SP, controller.theme().browserTextSp());
+        holder.image.setImageResource(item.item.type == FileSystemItemType.Folder?
+                controller.theme().folderIcon():
+                controller.theme().fileIcon());
+        int leftPadding = 0;
+        if (item.level > 1) { // Need padding
+            leftPadding = (int) (controller.dp2px(controller.theme().paddingDp()) * (item.level - 1));
+        }
+        holder.group.setPadding(leftPadding, 0, 0, 0);
+
+    }
+
+    @Override
+    public int getItemCount() {
+        return data.size();
+    }
+
+    class Holder extends RecyclerView.ViewHolder
+            implements MenuItem.OnMenuItemClickListener,
+            View.OnClickListener,
+            View.OnLongClickListener,
+            View.OnCreateContextMenuListener {
+        private final TextView text;
+        private final ImageView image;
+        private final ViewGroup group;
+        public final View root;
+
+        public Holder(View view) {
+            super(view);
+            root = view;
+            text = (TextView) view.findViewById(R.id.file_browser_item_text);
+            image = (ImageView) view.findViewById(R.id.file_browser_item_icon);
+            group = (ViewGroup) view.findViewById(R.id.file_browser_item);
+            root.setOnClickListener(this);
+            root.setOnLongClickListener(this);
+            root.setOnCreateContextMenuListener(this);
+        }
+
+        @Override
+        public boolean onMenuItemClick(MenuItem item) {
+            return FileBrowserAdapter.this.onMenuItemClick(item, getAdapterPosition());
+        }
+
+        @Override
+        public void onClick(View v) {
+            FileBrowserAdapter.this.onClick(getAdapterPosition());
+        }
+
+        @Override
+        public boolean onLongClick(View v) {
+            root.showContextMenu();
+            return true;
+        }
+
+        @Override
+        public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
+            FileBrowserAdapter.this.onCreateContextMenu(menu, getAdapterPosition());
+            for (int i = 0; i < menu.size(); i++) {
+                menu.getItem(i).setOnMenuItemClickListener(this);
+            }
+        }
+    }
 
     class Item {
         final String name;
@@ -43,9 +121,10 @@ public class FileBrowserAdapter extends AnotherListAdapter<FileBrowserAdapter.It
     private final TegmineController controller;
     private static Logger logger = Logger.forClass(FileBrowserAdapter.class);
     private Item root = new Item("");
+    private final List<Item> data = new ArrayList<>();
 
     public FileBrowserAdapter(TegmineController controller) {
-        super(new ArrayList<Item>(), R.layout.item_file_browser);
+        super();
         this.controller = controller;
     }
 
@@ -53,11 +132,13 @@ public class FileBrowserAdapter extends AnotherListAdapter<FileBrowserAdapter.It
         root = new Item(rootItem.name);
         root.item = rootItem;
         data.clear();
+        notifyDataSetChanged();
         expandTo(expandTo);
     }
 
     public void select(FileSystemItem expandTo) {
         data.clear();
+        notifyDataSetChanged();
         expandTo(expandTo);
     }
 
@@ -73,27 +154,8 @@ public class FileBrowserAdapter extends AnotherListAdapter<FileBrowserAdapter.It
         expand(root, parents);
     }
 
-    @Override
-    public void customize(View view, int position) {
-        Item item = getItem(position);
-        TextView text = (TextView) view.findViewById(R.id.file_browser_item_text);
-        text.setText(item.name);
-        text.setTextColor(controller.theme().textColor());
-        text.setTextSize(TypedValue.COMPLEX_UNIT_SP, controller.theme().browserTextSp());
-        ImageView image = (ImageView) view.findViewById(R.id.file_browser_item_icon);
-        image.setImageResource(item.item.type == FileSystemItemType.Folder?
-                controller.theme().folderIcon():
-                controller.theme().fileIcon());
-        ViewGroup group = (ViewGroup) view.findViewById(R.id.file_browser_item);
-        int leftPadding = 0;
-        if (item.level > 1) { // Need padding
-            leftPadding = (int) (controller.dp2px(controller.theme().paddingDp()) * (item.level - 1));
-        }
-        group.setPadding(leftPadding, 0, 0, 0);
-    }
-
     public void collapseExpand(int position) {
-        Item item = getItem(position);
+        Item item = data.get(position);
         if (item.expanded) { // Collapse
             collapse(item);
         } else { // Expand
@@ -108,17 +170,18 @@ public class FileBrowserAdapter extends AnotherListAdapter<FileBrowserAdapter.It
         synchronized (data) {
             int index = data.indexOf(item);
             if (index != -1) { // Found
+
                 while (index < data.size()-1) {
                     Item child = data.get(index+1);
                     if (child.parent == item) { // This is parent
                         collapse(child);
-                        data.remove(index+1);
+                        data.remove(index + 1);
+                        notifyItemRemoved(index + 1);
                     } else {
                         break;
                     }
                 }
                 item.expanded = false;
-                notifyDataSetChanged();
             }
         }
     }
@@ -170,6 +233,7 @@ public class FileBrowserAdapter extends AnotherListAdapter<FileBrowserAdapter.It
                             // Add to bottom
                             data.addAll(items);
                         }
+                        notifyItemRangeInserted(index+1, items.size());
                         item.expanded = true;
                         for (Item item1 : items) {
                             if (selection.contains(item1.item)) { // Have it in selection
@@ -177,7 +241,6 @@ public class FileBrowserAdapter extends AnotherListAdapter<FileBrowserAdapter.It
                                 return;
                             }
                         }
-                        notifyDataSetChanged();
                     }
                 }
             }
@@ -185,8 +248,12 @@ public class FileBrowserAdapter extends AnotherListAdapter<FileBrowserAdapter.It
         task.exec();
     }
 
+    abstract public void onClick(int position);
+    public abstract void onCreateContextMenu(ContextMenu menu, int position);
+    protected abstract boolean onMenuItemClick(MenuItem item, int position);
+
     public FileSystemItem getFileSystemItem(int pos) {
-        return getItem(pos).item;
+        return data.get(pos).item;
     }
 
     public FileSystemItem root() {

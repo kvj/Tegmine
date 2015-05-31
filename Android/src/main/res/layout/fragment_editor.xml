@@ -36,8 +36,4 @@
             android:layout_width="match_parent"
             android:layout_height="0dp"/>
     </LinearLayout>
-    <ImageButton
-        android:id="@+id/editor_do_save"
-        android:src="@drawable/icn_file_save_light"
-        style="@style/CircleButton.BottomRight"/>
 </RelativeLayout>

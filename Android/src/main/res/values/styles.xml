@@ -4,11 +4,13 @@
     <style name="AppThemeLight" parent="Theme.AppCompat.Light">
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
+        <item name="colorAccent">#CDDC39</item>
     </style>
 
     <style name="AppThemeDark" parent="Theme.AppCompat">
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
+        <item name="colorAccent">#CDDC39</item>
     </style>
 
     <style name="AppDialogLight" parent="Theme.AppCompat.Light.Dialog">
@@ -18,10 +20,7 @@
     </style>
 
     <style name="CircleButton">
-        <item name="android:layout_width">56dp</item>
-        <item name="android:layout_height">56dp</item>
-        <!--<item name="android:elevation">10dp</item>-->
-        <item name="android:background">@drawable/circle</item>
+        <item name="elevation">@dimen/button_elevation</item>
     </style>
     <style name="CircleButton.BottomRight">
         <item name="android:layout_alignParentBottom">true</item>

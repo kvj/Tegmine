@@ -15,6 +15,7 @@
     <string name="menu_open_folder">New window</string>
     <string name="menu_new_file">New file...</string>
     <string name="menu_new_folder">New folder...</string>
+    <string name="action_storages">Storages</string>
     <string-array name="shortcut_types">
         <item>Display file</item>
         <item>Append to</item>

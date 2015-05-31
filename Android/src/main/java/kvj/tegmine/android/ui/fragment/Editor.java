@@ -304,12 +304,6 @@ public class Editor extends Fragment implements InputFilter, ProgressListener {
         title.setText(item.details());
         titleIcon = (ImageView) view.findViewById(R.id.editor_title_icon);
         loadContents(editor);
-        view.findViewById(R.id.editor_do_save).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                save();
-            }
-        });
         return view;
     }
 

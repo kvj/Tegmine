@@ -60,6 +60,12 @@ public class FileSystemBrowser extends Fragment implements ProgressListener {
         applyTheme();
     }
 
+    public void requestFocus() {
+        if (null != listView) {
+            listView.requestFocus();
+        }
+    }
+
     public static interface BrowserListener {
 
         public void openNewWindow(Bundle data);
@@ -382,7 +388,6 @@ public class FileSystemBrowser extends Fragment implements ProgressListener {
         if (null == adapter) { // Not OK to show
             return;
         }
-        menu.clear();
         FileSystemItem item = adapter.getFileSystemItem(position);
         if (item.type == FileSystemItemType.Folder) { // Folder mode
             getActivity().getMenuInflater().inflate(R.menu.context_folder, menu);

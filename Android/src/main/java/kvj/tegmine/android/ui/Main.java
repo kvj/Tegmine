@@ -227,7 +227,7 @@ public class Main extends AppCompatActivity implements
         final Runnable doHide = new Runnable() {
             @Override
             public void run() {
-                if (multiView) { // Just remove from right view
+                if (multiView && null != editors) { // Just remove from right view
                     getSupportFragmentManager().beginTransaction().remove(editors).commit();
                     editors = null;
                 }
@@ -257,7 +257,19 @@ public class Main extends AppCompatActivity implements
         }
     }
 
+    private boolean isType(String type) {
+        return type.equals(form.getValue(Tegmine.BUNDLE_VIEW_TYPE));
+    }
+
     private void closeEditor(boolean confirm) {
+        if (multiView && isType(Tegmine.VIEW_TYPE_FILE)) {
+            // Close
+            getSupportFragmentManager().beginTransaction().remove(viewer).commit();
+            viewer = null;
+            setType(Tegmine.VIEW_TYPE_BROWSER);
+            browser.requestFocus();
+            return;
+        }
         final boolean haveEditor = editors != null;
         if (haveEditor && editors.closeFindDialog()) { // Closed find dialog
             return;

@@ -1,9 +1,11 @@
 package kvj.tegmine.android.ui.adapter;
 
 import android.content.Context;
+import android.support.v7.widget.RecyclerView;
 import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
 import android.util.TypedValue;
+import android.view.ContextMenu;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -17,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
@@ -31,7 +34,51 @@ import kvj.tegmine.android.data.model.util.Wrappers;
 /**
  * Created by kvorobyev on 2/17/15.
  */
-public class OneFileAdapter extends BaseAdapter {
+public abstract class OneFileAdapter extends RecyclerView.Adapter<OneFileAdapter.Holder> {
+
+    class Holder extends RecyclerView.ViewHolder implements View.OnClickListener,
+                                                            View.OnLongClickListener,
+                                                            View.OnCreateContextMenuListener {
+
+        private final View border;
+        private final TextView text;
+        private final TextView lineno;
+
+        public Holder(View view) {
+            super(view);
+            border = view.findViewById(R.id.one_file_item_border);
+            text = (TextView) view.findViewById(R.id.one_file_item_text);
+            lineno = (TextView) view.findViewById(R.id.one_file_item_lineno);
+            view.setOnClickListener(this);
+            view.setOnLongClickListener(this);
+            view.setOnCreateContextMenuListener(this);
+            border.setBackgroundColor(controller.theme().markColor());
+            text.setTextSize(TypedValue.COMPLEX_UNIT_SP, controller.theme().fileTextSp());
+            text.setTextColor(controller.theme().textColor());
+            lineno.setTextSize(TypedValue.COMPLEX_UNIT_SP, controller.theme().fileTextSp());
+            lineno.setTextColor(controller.theme().markColor());
+            lineno.setTextSize(TypedValue.COMPLEX_UNIT_SP, controller.theme().fileTextSp());
+        }
+
+        @Override
+        public void onClick(View view) {
+            OneFileAdapter.this.onClick(getAdapterPosition());
+        }
+
+        @Override
+        public boolean onLongClick(View view) {
+            return false;
+        }
+
+        @Override
+        public void onCreateContextMenu(ContextMenu contextMenu, View view,
+                                        ContextMenu.ContextMenuInfo contextMenuInfo) {
+            OneFileAdapter.this.onContextMenu(contextMenu, getAdapterPosition());
+        }
+    }
+
+    protected abstract void onClick(int position);
+    protected abstract void onContextMenu(ContextMenu menu, int position);
 
     private static final int MAX_LINES = 30;
     private final SyntaxDef syntax;
@@ -57,7 +104,7 @@ public class OneFileAdapter extends BaseAdapter {
     private final FileSystemItem item;
 
     private final List<LineMeta> lines = new ArrayList<>(MAX_LINES);
-    private final List<Integer> visibleLines = new ArrayList<>();
+    private final LinkedList<Integer> visibleLines = new LinkedList<>();
     private int fromLine = 0;
 
     public OneFileAdapter(TegmineController controller, FileSystemItem item) {
@@ -74,7 +121,7 @@ public class OneFileAdapter extends BaseAdapter {
                 protected Boolean doInBackground() {
                     lines.clear(); // From start
                     try {
-                        logger.d("Will load from:", offset, linesCount);
+//                        logger.d("Will load from:", offset, linesCount);
                         controller.loadFilePart(lines, item, offset, linesCount);
                         int linesTotal = lines.size();
                         int digits = 1;
@@ -109,20 +156,50 @@ public class OneFileAdapter extends BaseAdapter {
         }
     }
 
-
     @Override
-    public int getCount() {
-        return visibleLines.size();
+    public Holder onCreateViewHolder(ViewGroup parent, int viewType) {
+        View v = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_one_file, parent,
+                                                                  false);
+        return new Holder(v);
     }
 
     @Override
-    public String getItem(int position) {
-        return line(position).data();
+    public void onBindViewHolder(Holder holder, int position) {
+        LineMeta line = line(position);
+        if (null == line) { // Invalid line
+            holder.text.setText("");
+        } else {
+            holder.border.setVisibility(line.folded()? View.VISIBLE: View.GONE);
+            int indent = line.indent();
+            SpannableStringBuilder builder = new SpannableStringBuilder();
+            controller.applyTheme(syntax, line.data(), builder, SyntaxDef.Feature.Shrink);
+            holder.text.setText(builder);
+            int leftIndent = (int) controller.sp2px(indent * controller.theme().fileIndentSp());
+            holder.text.setPadding(leftIndent, 0, 0, 0);
+            if (wrapLines) {
+                holder.text.setSingleLine(false);
+                holder.text.setEllipsize(TextUtils.TruncateAt.MIDDLE);
+            } else {
+                holder.text.setSingleLine(true);
+            }
+            if (showNumbers) {
+                holder.lineno.setText(String.format(showNumbersFormat, visibleLines.get(position)+1));
+                holder.lineno.setVisibility(View.VISIBLE);
+            } else {
+                holder.lineno.setVisibility(View.GONE);
+            }
+        }
+
     }
 
     @Override
     public long getItemId(int position) {
         return position;
+    }
+
+    @Override
+    public int getItemCount() {
+        return visibleLines.size();
     }
 
     public LineMeta line(final int position) {
@@ -152,57 +229,6 @@ public class OneFileAdapter extends BaseAdapter {
         return result;
     }
 
-    @Override
-    public View getView(int position, View convertView, ViewGroup parent) {
-//        logger.d("Render line:", position);
-        TextView text = null;
-        TextView lineno = null;
-        View border = null;
-        if (null == convertView) { // inflate
-            LayoutInflater inflater = (LayoutInflater) parent.getContext()
-                    .getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-            convertView = inflater.inflate(R.layout.item_one_file, parent, false);
-            border = convertView.findViewById(R.id.one_file_item_border);
-            border.setBackgroundColor(controller.theme().markColor());
-            text = (TextView) convertView.findViewById(R.id.one_file_item_text);
-            lineno = (TextView) convertView.findViewById(R.id.one_file_item_lineno);
-            text.setTextSize(TypedValue.COMPLEX_UNIT_SP, controller.theme().fileTextSp());
-            text.setTextColor(controller.theme().textColor());
-            lineno.setTextSize(TypedValue.COMPLEX_UNIT_SP, controller.theme().fileTextSp());
-            lineno.setTextColor(controller.theme().markColor());
-            lineno.setTextSize(TypedValue.COMPLEX_UNIT_SP, controller.theme().fileTextSp());
-        } else {
-            border = convertView.findViewById(R.id.one_file_item_border);
-            text = (TextView) convertView.findViewById(R.id.one_file_item_text);
-            lineno = (TextView) convertView.findViewById(R.id.one_file_item_lineno);
-        }
-        LineMeta line = line(position);
-        if (null == line) { // Invalid line
-            text.setText("");
-        } else {
-            border.setVisibility(line.folded()? View.VISIBLE: View.GONE);
-            int indent = line.indent();
-            SpannableStringBuilder builder = new SpannableStringBuilder();
-            controller.applyTheme(syntax, line.data(), builder, SyntaxDef.Feature.Shrink);
-            text.setText(builder);
-            int leftIndent = (int) controller.sp2px(indent * controller.theme().fileIndentSp());
-            text.setPadding(leftIndent, 0, 0, 0);
-            if (wrapLines) {
-                text.setSingleLine(false);
-                text.setEllipsize(TextUtils.TruncateAt.MIDDLE);
-            } else {
-                text.setSingleLine(true);
-            }
-            if (showNumbers) {
-                lineno.setText(String.format(showNumbersFormat, visibleLines.get(position)+1));
-                lineno.setVisibility(View.VISIBLE);
-            } else {
-                lineno.setVisibility(View.GONE);
-            }
-        }
-        return convertView;
-    }
-
     public String partString(int position) {
         if (position >= visibleLines.size() || position<0) { // Invalid position
             return null;
@@ -218,25 +244,45 @@ public class OneFileAdapter extends BaseAdapter {
             }
             startLine.folded(!startLine.folded());
             int index = visibleLines.get(position)+1;
+            boolean insert = false;
+            int lastIndex = lines.size(); // Last line
             int folded = 0;
+            List<Integer> lineNos = new ArrayList<>();
             while (index < lines.size()) {
                 LineMeta line = lines.get(index);
                 if (line.indent()>startLine.indent() || line.indent() == -1) { // Fold
                     folded++;
                     line.visible(!startLine.folded());
-                    if (line.visible() && line.folded()) { // Has been folded before
-                        line.folded(false); // Unfold - too hard to skip at this moment
-                    }
+                    line.folded(false);
+                    lineNos.add(index);
                 } else {
+                    insert = true;
+                    lastIndex = index;
                     break;
                 }
                 index++;
             }
+            notifyItemChanged(position);
             if (folded == 0) {
                 // Nothing to fold
                 startLine.folded(false);
+                return;
             }
-            updateVisible();
+            if (startLine.folded()) {
+                // Remove
+                while (position + 1 < visibleLines.size() && visibleLines.get(position + 1) < lastIndex) {
+                    visibleLines.remove(position + 1);
+                    notifyItemRemoved(position + 1);
+                }
+            } else {
+                // Add
+                if (insert) {
+                    visibleLines.addAll(position+1, lineNos);
+                } else {
+                    visibleLines.addAll(lineNos);
+                }
+                notifyItemRangeInserted(position+1, lineNos.size());
+            }
         }
     }
 

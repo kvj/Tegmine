@@ -31,14 +31,13 @@
                         android:padding="@dimen/textPadding"/>
             </LinearLayout>
         </FrameLayout>
-        <ListView
-            android:id="@android:id/list"
-            android:divider="#000000"
-            android:dividerHeight="0px"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:drawSelectorOnTop="false"/>
+        <android.support.v7.widget.RecyclerView
+                android:id="@android:id/list"
+                android:layout_weight="1"
+                android:scrollbars="vertical"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent">
+        </android.support.v7.widget.RecyclerView>
     </LinearLayout>
     <RelativeLayout
             android:id="@+id/one_file_buttons"

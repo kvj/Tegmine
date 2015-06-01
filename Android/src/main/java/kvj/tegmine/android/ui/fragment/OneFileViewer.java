@@ -8,6 +8,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.ContextMenu;
@@ -54,7 +56,7 @@ import kvj.tegmine.android.ui.form.FileSystemItemWidgetAdapter;
  */
 public class OneFileViewer extends Fragment implements ProgressListener {
 
-    private ListView listView = null;
+    private RecyclerView listView = null;
     private ImageView titleIcon = null;
 
     public void requestFocus() {
@@ -106,15 +108,17 @@ public class OneFileViewer extends Fragment implements ProgressListener {
         titleText.setTextSize(TypedValue.COMPLEX_UNIT_SP, controller.theme().headerTextSp());
         titleText.setTextColor(controller.theme().textColor());
         titleIcon.setImageResource(controller.theme().fileIcon());
-        listView.deferNotifyDataSetChanged();
+        adapter.notifyDataSetChanged();
     }
 
     public OneFileViewer create(final TegmineController controller, Bundle bundle) {
         this.controller = controller;
         form.add(new FileSystemItemWidgetAdapter(controller), "select");
         form.add(new FileSystemItemWidgetAdapter(controller), "root");
-        form.add(new TransientAdapter<>(new BooleanBundleAdapter(), controller.showNumbers()), "showNumbers");
-        form.add(new TransientAdapter<>(new BooleanBundleAdapter(), controller.wrapLines()), "wrapLines");
+        form.add(new TransientAdapter<>(new BooleanBundleAdapter(), controller.showNumbers()),
+                 "showNumbers");
+        form.add(new TransientAdapter<>(new BooleanBundleAdapter(), controller.wrapLines()),
+                 "wrapLines");
         form.load(bundle);
         item = form.getValue("select", FileSystemItem.class);
         logger.d("new FileViewer:", item, bundle, controller.showNumbers(), controller.wrapLines());
@@ -154,30 +158,31 @@ public class OneFileViewer extends Fragment implements ProgressListener {
                 startEditor(Tegmine.EDIT_TYPE_EDIT, null);
             }
         });
-        listView = (ListView) view.findViewById(android.R.id.list);
-        adapter = new OneFileAdapter(controller, item);
-        adapter.showNumbers(form.getValue("showNumbers", Boolean.class));
-        adapter.wrapLines(form.getValue("wrapLines", Boolean.class));
-        listView.setAdapter(adapter);
-        registerForContextMenu(listView);
-        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+        listView = (RecyclerView) view.findViewById(android.R.id.list);
+        listView.setLayoutManager(new LinearLayoutManager(container.getContext()));
+        adapter = new OneFileAdapter(controller, item) {
+
             @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+            public void onClick(int position) {
                 onListItemClick(position);
-            }
-        });
-        final View buttonsPane = view.findViewById(R.id.one_file_buttons);
-        listView.setOnScrollListener(new AbsListView.OnScrollListener() {
-            @Override
-            public void onScrollStateChanged(AbsListView absListView, int state) {
-                if (state == SCROLL_STATE_IDLE) {
-                    // Stopped
-                    changeButtonsDim(buttonsPane, listView);
-                }
             }
 
             @Override
-            public void onScroll(AbsListView absListView, int i, int i2, int i3) {
+            protected void onContextMenu(ContextMenu menu, int position) {
+                onItemContextMenu(menu, position);
+            }
+        };
+        adapter.showNumbers(form.getValue("showNumbers", Boolean.class));
+        adapter.wrapLines(form.getValue("wrapLines", Boolean.class));
+        listView.setAdapter(adapter);
+        final View buttonsPane = view.findViewById(R.id.one_file_buttons);
+        listView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrollStateChanged(RecyclerView recyclerView, int state) {
+                if (state == RecyclerView.SCROLL_STATE_IDLE) {
+                    // Stopped
+                    changeButtonsDim(buttonsPane, listView);
+                }
             }
         });
         listView.setOnKeyListener(new View.OnKeyListener() {
@@ -190,8 +195,8 @@ public class OneFileViewer extends Fragment implements ProgressListener {
         adapter.setBounds(0, -1, new Runnable() {
             @Override
             public void run() {
-                if (controller.scrollToBottom()) {
-                    listView.setSelection(adapter.getCount() - 1);
+                if (controller.scrollToBottom() && adapter.getItemCount() > 0) {
+                    listView.scrollToPosition(adapter.getItemCount()-1);
                     listView.post(new Runnable() {
                         @Override
                         public void run() {
@@ -223,7 +228,7 @@ public class OneFileViewer extends Fragment implements ProgressListener {
                     startEditor(null, null); // Show editors
                     return true;
                 case KeyEvent.KEYCODE_C:
-                    copyAt(listView.getSelectedItemPosition());
+//                    copyAt(listView.getSelectedItemPosition());
                     return true;
                 case KeyEvent.KEYCODE_V:
                     paste();
@@ -248,9 +253,9 @@ public class OneFileViewer extends Fragment implements ProgressListener {
 
     private boolean buttonsDimmed = false;
 
-    private void changeButtonsDim(View buttonsPane, ListView listView) {
-        boolean dimButtons = listView.getCount() == listView.getLastVisiblePosition()+1 && listView.getFirstVisiblePosition()>0;
-//        logger.d("Scroll state:", listView.getCount(), listView.getFirstVisiblePosition(), listView.getLastVisiblePosition(), dimButtons);
+    private void changeButtonsDim(View buttonsPane, RecyclerView listView) {
+        boolean dimButtons = (listView.computeVerticalScrollOffset() + listView.computeVerticalScrollExtent() >= listView.computeVerticalScrollRange())
+                             && (listView.computeVerticalScrollRange() >= listView.getHeight());
         if (dimButtons != buttonsDimmed) { // State changed
             ObjectAnimator anim = ObjectAnimator.ofFloat(buttonsPane, "alpha", dimButtons ? 1f : 0.3f, dimButtons ? 0.3f : 1f);
             anim.setDuration(300);
@@ -289,7 +294,7 @@ public class OneFileViewer extends Fragment implements ProgressListener {
 
             @Override
             protected void onPostExecute(FileSystemException e) {
-                logger.d("Save result:", e);
+//                logger.d("Save result:", e);
                 if (null == e) { // Saved
                     refresh();
                     if (null != afterFinish) afterFinish.run();
@@ -358,6 +363,7 @@ public class OneFileViewer extends Fragment implements ProgressListener {
     public void onListItemClick(int position) {
         if (null != adapter) { // Toggle folding
             adapter.toggle(position);
+            listView.requestFocus();
         }
     }
 
@@ -385,27 +391,26 @@ public class OneFileViewer extends Fragment implements ProgressListener {
         return true;
     }
 
-    @Override
-    public boolean onContextItemSelected(MenuItem item) {
-        AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo)item.getMenuInfo();
-        switch (item.getItemId()) {
-            case R.id.context_share:
-                shareAt(info.position);
-                return true;
-            case R.id.context_copy_cboard:
-                copyAt(info.position);
-                return true;
-        }
-        return false;
-    }
-
-    @Override
-    public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
-        if (null != adapter && v == listView) { // OK to show
-            menu.clear();
+    private void onItemContextMenu(ContextMenu menu, final int position) {
+        if (null != adapter) { // OK to show
             getActivity().getMenuInflater().inflate(R.menu.context_one_file, menu);
-            AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo)menuInfo;
-            Collection<Wrappers.Pair<String>> links = adapter.features(info.position, "link");
+            menu.findItem(R.id.context_share).setOnMenuItemClickListener(
+                new MenuItem.OnMenuItemClickListener() {
+                    @Override
+                    public boolean onMenuItemClick(MenuItem menuItem) {
+                        shareAt(position);
+                        return true;
+                    }
+                });
+            menu.findItem(R.id.context_copy_cboard).setOnMenuItemClickListener(
+                new MenuItem.OnMenuItemClickListener() {
+                    @Override
+                    public boolean onMenuItemClick(MenuItem menuItem) {
+                        copyAt(position);
+                        return true;
+                    }
+                });
+            Collection<Wrappers.Pair<String>> links = adapter.features(position, "link");
             for (Wrappers.Pair<String> link : links) {
                 newLinkMenu(menu, link.v2());
             }

@@ -370,10 +370,16 @@ public class TegmineController extends Controller {
                 lineStr = lineStr.substring(0, lineStr.length()-2);
             }
             if (objStart) { // Object will start from here
-                Map<String, Object> values = new LinkedHashMap<>();
+                Map<String, Object> values = objectObject(to, lineStr);
+                if (null == values) { // Create new
+                    values = new LinkedHashMap<>();
+                }
                 i = readObject(lines, i+1, values, indent+1);
                 if (arrayMode) {
-                    List<String> valuesList = new ArrayList<>();
+                    List<String> valuesList = objectList(to, String.class, lineStr);
+                    if (null == valuesList) {
+                        valuesList = new ArrayList<>();
+                    }
                     valuesList.addAll(values.keySet());
                     to.put(lineStr, valuesList);
                 } else {
@@ -407,9 +413,12 @@ public class TegmineController extends Controller {
     }
 
     private Map<String, Object> file2Object(FileSystemItem item) throws FileSystemException {
+        Map<String, Object> object = new HashMap<>();
+        return file2Object(item, object);
+    }
+    private Map<String, Object> file2Object(FileSystemItem item, Map<String, Object> object) throws FileSystemException {
         List<LineMeta> lines = new ArrayList<>();
         loadFilePart(lines, item, 0, -1);
-        Map<String, Object> object = new HashMap<>();
         readObject(lines, 0, object, 0);
         return object;
     }
@@ -461,6 +470,25 @@ public class TegmineController extends Controller {
         }
         logger.w("No syntax found:", item.name);
         return null;
+    }
+
+    private void loadIncludes(Map<String, Object> config) {
+        List<String> list = objectList(config, String.class, "include");
+        if (null == list) { // Not found
+            return;
+        }
+        for (String url : list) { // Parse and extend config
+            FileSystemItem fileItem = fromURL(url);
+            if (null == fileItem) {
+                logger.w("Failed to load color scheme:", url);
+                continue;
+            }
+            try {
+                file2Object(fileItem, config);
+            } catch (FileSystemException e) {
+                logger.e(e, "Failed to read include:", url, fileItem);
+            }
+        }
     }
 
     private void reloadColorSchemes() {
@@ -519,6 +547,9 @@ public class TegmineController extends Controller {
             config = new HashMap<>();
             readObject(lines, 0, config, 0);
             defaultProvider = null;
+            reloadStorage(config);
+            loadIncludes(config);
+
             newLineBefore = objectBoolean(config, "newLineBefore", newLineBefore);
             newLineAfter = objectBoolean(config, "newLineAfter", newLineAfter);
             scrollToBottom = objectBoolean(config, "scrollToBottom", true);
@@ -526,7 +557,6 @@ public class TegmineController extends Controller {
             clientName = objectString(config, "client", clientName);
             showNumbers = objectBoolean(config, "showNumbers", showNumbers);
             wrapLines = objectBoolean(config, "wrapLines", wrapLines);
-            reloadStorage(config);
             reloadTemplates(config);
             autoThemeChanger.setup(config);
             reloadColorSchemes();
@@ -619,7 +649,15 @@ public class TegmineController extends Controller {
 
     public static <T> List<T> objectList(Map<String, Object> obj, Class<T> cls, String name) {
         Object value = obj.get(name);
-        if (null == value || !(value instanceof List)) {
+        if (null == value) { // Not found
+            return null;
+        }
+        if (cls.isAssignableFrom(value.getClass())) { // Single value
+            List<T> list = new ArrayList<>();
+            list.add((T) value);
+            return list;
+        }
+        if (!(value instanceof List)) {
             return null;
         }
         return (List) value;

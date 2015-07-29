@@ -121,7 +121,6 @@ public class OneEditor extends Fragment implements ProgressListener {
             @Override
             public void itemChanged(FileSystemItem item) {
                 // File has been changed - ask for reload
-                item.commit(); // Change detected
                 final boolean doEdit = info.mode == EditorInfo.Mode.Edit;
                 if (doEdit) {
                     // Makes sense - can ask for refresh
@@ -309,6 +308,10 @@ public class OneEditor extends Fragment implements ProgressListener {
         applyTheme();
     }
 
+    public void resetWatcher() {
+        watcher.reset();
+    }
+
     private class PositionInText {
 
         int lineStarts;
@@ -420,6 +423,7 @@ public class OneEditor extends Fragment implements ProgressListener {
                     text2Editor(buffer, buffer.length(), -1);
                     enableEditorListeners();
                     appendTemplate();
+                    watcher.reset();
                 } else {
                     logger.e(e, "Failed to load file contents");
                 }

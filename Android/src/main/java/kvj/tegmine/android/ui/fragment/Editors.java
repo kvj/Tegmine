@@ -230,7 +230,7 @@ public class Editors extends Fragment {
                         stream = controller.fileSystemProvider().append(selected.view.item());
                     }
                     controller.writeEdited(stream, selected.text, doEdit);
-                    selected.view.item().commit();
+                    selected.view.resetWatcher();
                 } catch (FileSystemException e) {
                     return e;
                 }

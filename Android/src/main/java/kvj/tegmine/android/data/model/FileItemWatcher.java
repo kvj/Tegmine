@@ -5,6 +5,9 @@ import android.os.Message;
 
 import org.kvj.bravo7.log.Logger;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import kvj.tegmine.android.data.TegmineController;
 import kvj.tegmine.android.data.def.FileSystemItem;
 
@@ -19,6 +22,7 @@ public abstract class FileItemWatcher {
     private final Handler handler;
     private boolean active = false;
     private final FileSystemItem[] items;
+    private List<String> versions = new ArrayList<>();
 
     public FileItemWatcher(TegmineController controller, FileSystemItem... items) {
         handler = new Handler(new Handler.Callback() {
@@ -33,6 +37,7 @@ public abstract class FileItemWatcher {
         });
         this.controller = controller;
         this.items = items;
+        reset();
     }
 
     public void active(boolean active) {
@@ -55,13 +60,21 @@ public abstract class FileItemWatcher {
 
     private void run() {
         // Check watched
-        for (FileSystemItem item : items) {
-//            logger.d("File changed:", item.hasBeenChanged(), item.name);
-            if (item.hasBeenChanged()) {
+        for (int i = 0; i < items.length; i++) {
+            FileSystemItem item = items[i];
+            String version = controller.fileSystemProvider(item).version(item);
+            if (version.equals(versions.get(i))) {
+                versions.set(i, version);
                 itemChanged(item);
             }
         }
     }
 
     abstract public void itemChanged(FileSystemItem item);
+
+    public void reset() {
+        for (FileSystemItem item : items) {
+            versions.add(controller.fileSystemProvider(item).version(item));
+        }
+    }
 }

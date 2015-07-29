@@ -126,4 +126,10 @@ abstract public class FileSystemProvider<T extends FileSystemItem> {
         throw new FileSystemException("Not implemented");
     }
 
+    public final String version(FileSystemItem file) {
+        return versionT((T)file);
+    }
+
+    abstract protected String versionT(T file);
+
 }

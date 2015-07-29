@@ -31,10 +31,6 @@ abstract public class FileSystemItem<T> {
         return false; // Override it in order to detect
     }
 
-    public void commit() {
-        // Called when IO operation is done
-    }
-
     public String providerName() {
         return provider;
     }

@@ -2,6 +2,9 @@ package kvj.tegmine.android.data.impl.provider.local;
 
 import android.text.TextUtils;
 
+import org.kvj.bravo7.log.Logger;
+
+import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -9,6 +12,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -155,6 +159,43 @@ public class LocalFileSystemProvider extends FileSystemProvider<LocalFileSystemI
         if (!result) { // Failed
             throw new FileSystemException("Failed to rename");
         }
+    }
+
+    public static String MD5Hex(InputStream stream) {
+        final int BUFFER_SIZE = 8192;
+        byte[] buf = new byte[BUFFER_SIZE];
+        int length;
+        try {
+            BufferedInputStream bis = new BufferedInputStream(stream);
+            MessageDigest md = java.security.MessageDigest.getInstance("MD5");
+            while( (length = bis.read(buf)) != -1 ) {
+                md.update(buf, 0, length);
+            }
+
+            byte[] array = md.digest();
+            StringBuffer sb = new StringBuffer();
+            for (int i = 0; i < array.length; ++i) {
+                sb.append(Integer.toHexString((array[i] & 0xFF) | 0x100).substring(1,3));
+            }
+            bis.close();
+            return sb.toString();
+        } catch (Exception e) {
+            Logger.forClass(LocalFileSystemProvider.class).e(e, "MD5 sum error");
+        }
+        return "md5bad";
+    }
+
+    @Override
+    protected String versionT(LocalFileSystemItem file) {
+        if (file.file.exists() && file.file.isFile()) {
+            // Calculate hash
+            try {
+                return MD5Hex(new FileInputStream(file.file));
+            } catch (FileNotFoundException e) {
+                logger.e(e, "Failed to read file");
+            }
+        }
+        return "";
     }
 
     @Override

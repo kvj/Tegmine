@@ -61,11 +61,6 @@ public class LocalFileSystemItem extends FileSystemItem<LocalFileSystemItem> {
     }
 
     @Override
-    public void commit() {
-        markNotModified();
-    }
-
-    @Override
     public String relativeURL(String location) {
         String start = type == FileSystemItemType.Folder? toURL(): parent.toURL();
         return String.format("%s/%s", start, location);

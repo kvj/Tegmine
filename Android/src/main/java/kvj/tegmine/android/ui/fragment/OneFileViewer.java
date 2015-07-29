@@ -130,7 +130,7 @@ public class OneFileViewer extends Fragment implements ProgressListener {
             @Override
             public void itemChanged(FileSystemItem item) {
                 refresh();
-                item.commit(); // Change detected
+                watcher.reset();
             }
         };
         return this;
@@ -285,7 +285,7 @@ public class OneFileViewer extends Fragment implements ProgressListener {
                 try {
                     stream = controller.fileSystemProvider().append(item);
                     controller.writeEdited(stream, text.toString().trim(), false);
-                    item.commit();
+                    watcher.reset();
                 } catch (FileSystemException e) {
                     return e;
                 }

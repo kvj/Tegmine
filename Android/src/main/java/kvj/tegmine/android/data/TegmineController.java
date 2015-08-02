@@ -527,7 +527,7 @@ public class TegmineController extends Controller {
     }
 
     private FileSystemItem configFile() {
-        String path = settingsString(R.string.p_config_file, "");
+        String path = settings().settingsString(R.string.p_config_file, "");
         if (TextUtils.isEmpty(path)) { // Not set
             return null;
         }

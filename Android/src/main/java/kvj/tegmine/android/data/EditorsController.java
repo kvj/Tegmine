@@ -41,11 +41,10 @@ public class EditorsController {
 
     private void loadState() {
         tabs.clear();
-        SharedPreferences pref = controller.settings();
-        int size = pref.getInt(controller.context().getString(R.string.p_tabs_size), 0);
+        int size = controller.settings().settingsInt(R.string.p_tabs_size, 0);
         for (int i = 0; i < size; i++) { // $COMMENT
             EditorInfo tab = new EditorInfo();
-            tab.readFromPreferences(pref, String.format("p_tab_%d_", i));
+            tab.readFromPreferences(controller.preferences(null), String.format("p_tab_%d_", i));
             if (tab.mode != EditorInfo.Mode.None) { // Not first not empty
                 loadTitle(tab);
                 tabs.add(tab);
@@ -54,7 +53,7 @@ public class EditorsController {
     }
 
     public void saveState() {
-        SharedPreferences.Editor pref = controller.settings().edit();
+        SharedPreferences.Editor pref = controller.preferences(null).edit();
         pref.putInt(controller.context().getString(R.string.p_tabs_size), tabs.size());
         for (int i = 0; i < tabs.size(); i++) { // Iterate
             EditorInfo tab = tab(i);

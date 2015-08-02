@@ -63,7 +63,7 @@ public abstract class FileItemWatcher {
         for (int i = 0; i < items.length; i++) {
             FileSystemItem item = items[i];
             String version = controller.fileSystemProvider(item).version(item);
-            if (version.equals(versions.get(i))) {
+            if (!version.equals(versions.get(i))) {
                 versions.set(i, version);
                 itemChanged(item);
             }

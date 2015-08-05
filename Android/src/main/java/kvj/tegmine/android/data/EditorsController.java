@@ -41,7 +41,7 @@ public class EditorsController {
 
     private void loadState() {
         tabs.clear();
-        int size = controller.settings().settingsInt(R.string.p_tabs_size, 0);
+        int size = controller.preferences(null).getInt(controller.context().getString(R.string.p_tabs_size), 0);
         for (int i = 0; i < size; i++) { // $COMMENT
             EditorInfo tab = new EditorInfo();
             tab.readFromPreferences(controller.preferences(null), String.format("p_tab_%d_", i));

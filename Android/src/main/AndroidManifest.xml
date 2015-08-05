@@ -31,6 +31,12 @@
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
+        <provider
+                android:authorities="kvj.tegmine.contents"
+                android:name=".data.content.FileItemProvider"
+                android:exported="true">
+
+        </provider>
     </application>
 
 </manifest>

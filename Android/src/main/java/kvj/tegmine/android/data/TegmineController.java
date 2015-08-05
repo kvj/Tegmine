@@ -181,6 +181,45 @@ public class TegmineController extends Controller {
         }
     }
 
+    public int foldEnd(List<LineMeta> buffer, int line) {
+        int indent = buffer.get(line).indent();
+        if (indent == -1) {
+            return -1;
+        }
+        for (int i = line+1; i < buffer.size(); i++) {
+            if (buffer.get(i).indent() <= indent) {
+                return i;
+            }
+        }
+        return buffer.size();
+    }
+
+    public Wrappers.Pair<Integer> findIn(List<LineMeta> buffer, String def) {
+        int start = 0;
+        int len = buffer.size();
+        if (!TextUtils.isEmpty(def)) {
+            if (def.startsWith("?")) {
+                // Search backwards
+                int sstart = buffer.size() - 1;
+                int ssend = -1;
+                int sdir = -1;
+                String lookFor = def.substring(1);
+                for (int i = sstart; i != ssend; i += sdir) {
+                    if (buffer.get(i).data().indexOf(lookFor) != -1) {
+                        // Found
+                        int indented = foldEnd(buffer, i);
+                        if (-1 != indented) {
+                            return new Wrappers.Pair<>(i, indented - i);
+                        }
+                        break; // Found
+                    }
+                }
+            }
+            return new Wrappers.Pair<>(start, 0);
+        }
+        return new Wrappers.Pair<>(start, len);
+    }
+
     public void loadFilePart(List<LineMeta> buffer, FileSystemItem item, long from, int lines) throws FileSystemException {
         try {
             InputStream stream = fileSystemProvider().read(item);

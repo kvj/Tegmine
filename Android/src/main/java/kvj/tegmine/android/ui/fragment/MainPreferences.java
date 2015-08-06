@@ -33,37 +33,41 @@ public class MainPreferences extends PreferenceFragment {
     public MainPreferences() {
     }
 
+    private void reloadConfig() {
+        Tasks.SimpleTask<FileSystemException> task = new Tasks.SimpleTask<FileSystemException>() {
+            @Override
+            protected FileSystemException doInBackground() {
+                try {
+                    controller.reloadConfig();
+                } catch (FileSystemException e) {
+                    logger.e(e, "Failed to load config");
+                    return e;
+                }
+                return null;
+            }
+
+            @Override
+            protected void onPostExecute(FileSystemException e) {
+                if (null != e) { // Error loading config
+                    SuperActivity.notifyUser(getActivity(), e.getMessage());
+                }
+            }
+        };
+        task.exec();
+    }
+
     private void setupConfigReloadPreference(String name) {
         Preference pref = getPreferenceScreen().findPreference(name);
         pref.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
             @Override
             public boolean onPreferenceClick(Preference preference) {
-                Tasks.SimpleTask<FileSystemException> task = new Tasks.SimpleTask<FileSystemException>() {
-                    @Override
-                    protected FileSystemException doInBackground() {
-                        try {
-                            controller.reloadConfig();
-                        } catch (FileSystemException e) {
-                            logger.e(e, "Failed to load config");
-                            return e;
-                        }
-                        return null;
-                    }
-
-                    @Override
-                    protected void onPostExecute(FileSystemException e) {
-                        if (null != e) { // Error loading config
-                            SuperActivity.notifyUser(getActivity(), e.getMessage());
-                        }
-                    }
-                };
-                task.exec();
+                reloadConfig();
                 return true;
             }
         });
     }
 
-    private Preference setupConfigFilePreference(final String name) {
+    private Preference setupConfigFilePreference(final String name, final String revert_name) {
         final Preference configFile = getPreferenceScreen().findPreference(name);
         final Preference.OnPreferenceChangeListener listener = new Preference.OnPreferenceChangeListener() {
             @Override
@@ -81,10 +85,22 @@ public class MainPreferences extends PreferenceFragment {
                 FileChooser.newDialog(controller, new FileChooser.FileChooserListener() {
                     @Override
                     public void onFile(FileSystemItem item) {
-                        getPreferenceManager().getSharedPreferences().edit().putString(name, item.toURL()).commit();
+                        getPreferenceManager().getSharedPreferences().edit()
+                            .putString(name, item.toURL()).commit();
                         listener.onPreferenceChange(configFile, item.toURL());
                     }
                 }).show(supportFragmentManager, "dialog");
+                return true;
+            }
+        });
+        Preference pref = getPreferenceScreen().findPreference(revert_name);
+        pref.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
+            @Override
+            public boolean onPreferenceClick(Preference preference) {
+                String url = getString(R.string.p_config_file_default);
+                getPreferenceManager().getSharedPreferences().edit().putString(name, url).commit();
+                listener.onPreferenceChange(configFile, url);
+                reloadConfig();
                 return true;
             }
         });
@@ -95,7 +111,8 @@ public class MainPreferences extends PreferenceFragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         addPreferencesFromResource(R.xml.main_settings);
-        setupConfigFilePreference("p_config_file");
-        setupConfigReloadPreference("p_config_reload");
+        setupConfigFilePreference("p_config_file", getString(R.string.p_config_revert));
+        setupConfigReloadPreference(getString(R.string.p_config_reload));
     }
+
 }

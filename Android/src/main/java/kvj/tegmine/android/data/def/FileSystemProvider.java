@@ -18,6 +18,7 @@ abstract public class FileSystemProvider<T extends FileSystemItem> {
 
     protected final String name;
     protected String label = null;
+    protected boolean hidden = false;
 
     protected Wrappers.Tuple2<Pattern, Integer> filePattern = null;
     protected Wrappers.Tuple2<Pattern, Integer> folderPattern = null;
@@ -132,4 +133,7 @@ abstract public class FileSystemProvider<T extends FileSystemItem> {
 
     abstract protected String versionT(T file);
 
+    public boolean hidden() {
+        return hidden;
+    }
 }

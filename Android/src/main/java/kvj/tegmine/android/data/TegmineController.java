@@ -44,6 +44,7 @@ import kvj.tegmine.android.R;
 import kvj.tegmine.android.data.def.FileSystemException;
 import kvj.tegmine.android.data.def.FileSystemItem;
 import kvj.tegmine.android.data.def.FileSystemProvider;
+import kvj.tegmine.android.data.impl.provider.asset.AssetFileSystemProvider;
 import kvj.tegmine.android.data.impl.provider.local.LocalFileSystemProvider;
 import kvj.tegmine.android.data.model.AutoThemeChanger;
 import kvj.tegmine.android.data.model.LineMeta;
@@ -70,7 +71,7 @@ public class TegmineController extends Controller {
     private Map<String, Object> config = new HashMap<>();
     private Map<String, Integer> sizes = new HashMap<>();
     private Map<String, LightTheme> colorSchemes = new HashMap<>();
-    private Map<String, SyntaxDef> syntaxes = new HashMap<>();
+    private Map<String, SyntaxDef> syntaxes = new LinkedHashMap<>();
     private int watchSeconds = 60;
 
     private boolean newLineBefore = true;
@@ -112,6 +113,7 @@ public class TegmineController extends Controller {
     }
 
     public FileSystemProvider fileSystemProvider() {
+        logger.d("Default provider:", defaultProvider);
         return defaultProvider;
     }
 
@@ -222,7 +224,7 @@ public class TegmineController extends Controller {
 
     public void loadFilePart(List<LineMeta> buffer, FileSystemItem item, long from, int lines) throws FileSystemException {
         try {
-            InputStream stream = fileSystemProvider().read(item);
+            InputStream stream = fileSystemProvider(item).read(item);
             long skipped = stream.skip(from);
             if (from != skipped) { // Invalid offset
                 stream.close();
@@ -439,20 +441,23 @@ public class TegmineController extends Controller {
         syntaxes.clear();
         autoThemeChanger.clear();
         sizes.clear();
+        defaultProvider = null;
         if (!fileSystemProviders.containsKey("sdcard")) { // Failsafe - should always be there
             FileSystemProvider provider = new LocalFileSystemProvider(Environment.getExternalStorageDirectory(), "sdcard");
             provider.label("SD Card");
             fileSystemProviders.put("sdcard", provider);
         }
-        if (null == defaultProvider) { // No default provider
-            defaultProvider = fileSystemProviders.get("sdcard");
+        if (!fileSystemProviders.containsKey("assets")) { // Failsafe - should always be there
+            FileSystemProvider provider = new AssetFileSystemProvider("assets", context);
+            fileSystemProviders.put("assets", provider);
         }
+        defaultProvider = fileSystemProviders.get("sdcard");
         colorSchemes.put("default", new LightTheme(this));
         selectedTheme = "default";
     }
 
     private Map<String, Object> file2Object(FileSystemItem item) throws FileSystemException {
-        Map<String, Object> object = new HashMap<>();
+        Map<String, Object> object = new LinkedHashMap<>();
         return file2Object(item, object);
     }
     private Map<String, Object> file2Object(FileSystemItem item, Map<String, Object> object) throws FileSystemException {
@@ -566,7 +571,7 @@ public class TegmineController extends Controller {
     }
 
     private FileSystemItem configFile() {
-        String path = settings().settingsString(R.string.p_config_file, "");
+        String path = settings().settingsString(R.string.p_config_file, context.getString(R.string.p_config_file_default));
         if (TextUtils.isEmpty(path)) { // Not set
             return null;
         }
@@ -585,7 +590,7 @@ public class TegmineController extends Controller {
             loadFilePart(lines, configItem, 0, -1);
             config = new HashMap<>();
             readObject(lines, 0, config, 0);
-            defaultProvider = null;
+            logger.d("Config:", lines, config);
             reloadStorage(config);
             loadIncludes(config);
 

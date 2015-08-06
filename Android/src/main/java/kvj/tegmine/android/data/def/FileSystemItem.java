@@ -10,7 +10,7 @@ abstract public class FileSystemItem<T> {
     public String name = "";
     public FileSystemItemType type = FileSystemItemType.Folder;
     public T parent = null;
-    private String provider = null;
+    protected String provider = null;
 
     protected FileSystemItem(String provider) {
         this.provider = provider;

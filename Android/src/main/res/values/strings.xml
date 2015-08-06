@@ -16,6 +16,9 @@
     <string name="menu_new_file">New file...</string>
     <string name="menu_new_folder">New folder...</string>
     <string name="action_storages">Storages</string>
+    <string name="p_config_file_default">tegmine+assets://tegmine.conf</string>
+    <string name="p_config_revert">p_config_revert</string>
+    <string name="p_config_reload">p_config_reload</string>
     <string-array name="shortcut_types">
         <item>Display file</item>
         <item>Append to</item>

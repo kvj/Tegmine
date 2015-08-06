@@ -1,7 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
     <PreferenceCategory android:title="Main preferences">
-        <Preference android:title="Select configuration file" android:key="p_config_file"/>
-        <Preference android:title="Reload configuration" android:key="p_config_reload"/>
+        <Preference
+                android:title="Select configuration file"
+                android:key="@string/p_config_file"
+                android:defaultValue="@string/p_config_file_default"/>
+        <Preference android:title="Revert to default" android:key="@string/p_config_revert"/>
+        <Preference android:title="Reload configuration" android:key="@string/p_config_reload"/>
     </PreferenceCategory>
 </PreferenceScreen>

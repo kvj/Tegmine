@@ -234,11 +234,15 @@ public class FileSystemBrowser extends Fragment implements ProgressListener {
         int index = 1;
         menu.clear();
         for (final String name : controller.fileSystemProviders()) {
+            if (controller.fileSystemProvider(name).hidden()) {
+                continue;
+            }
+            String label = controller.fileSystemProvider(name).label();
             MenuItem item = menu.add(
                     R.id.menu_storages_group,
                     R.id.menu_storages+index,
                     index,
-                    controller.fileSystemProvider(name).label());
+                    label);
             item.setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
                 @Override
                 public boolean onMenuItemClick(MenuItem item) {

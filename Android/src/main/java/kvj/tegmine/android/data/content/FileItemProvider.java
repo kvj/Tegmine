@@ -6,6 +6,9 @@ import android.content.UriMatcher;
 import android.database.Cursor;
 import android.database.MatrixCursor;
 import android.net.Uri;
+import android.os.Parcel;
+import android.text.SpannableStringBuilder;
+import android.text.TextUtils;
 
 import org.kvj.bravo7.log.Logger;
 import org.kvj.bravo7.ng.App;
@@ -17,6 +20,7 @@ import kvj.tegmine.android.data.TegmineController;
 import kvj.tegmine.android.data.def.FileSystemException;
 import kvj.tegmine.android.data.def.FileSystemItem;
 import kvj.tegmine.android.data.model.LineMeta;
+import kvj.tegmine.android.data.model.SyntaxDef;
 import kvj.tegmine.android.data.model.util.Wrappers;
 
 /**
@@ -60,6 +64,7 @@ public class FileItemProvider extends ContentProvider {
             logger.e("Item not found:", url);
             throw new IllegalArgumentException("Item not found:" + url+", "+uri);
         }
+        SyntaxDef syntax = controller.findSyntax(item);
         List<LineMeta> buffer = new ArrayList<>();
         try {
             controller.loadFilePart(buffer, item, 0, -1);
@@ -72,16 +77,31 @@ public class FileItemProvider extends ContentProvider {
         int index = 0;
         Wrappers.Pair<Integer> frame = controller.findIn(buffer, condition);
         logger.d("Result:", frame.v1(), frame.v2());
+        int indent = 0;
+        if (frame.v2() > 0) {
+            indent = buffer.get(frame.v1()).indent();
+        }
         for (int idx = frame.v1(); idx < frame.v1()+frame.v2(); idx++) {
             LineMeta line = buffer.get(idx);
             Object[] row = new Object[fields.length];
+            StringBuilder sb = new StringBuilder();
+            controller.addIndent(sb, line.indent() - indent);
+            sb.append(line.data());
             for (int i = 0; i < fields.length; i++) {
                 Object value = null;
                 if ("id".equals(fields[i])) {
                     value = index++;
                 }
                 if ("text".equals(fields[i])) {
-                    value = line.data();
+                    value = sb.toString();
+                }
+                if ("colored".equals(fields[i])) {
+                    SpannableStringBuilder b = new SpannableStringBuilder();
+                    controller.applyTheme(syntax, sb.toString(), b, SyntaxDef.Feature.Shrink);
+                    Parcel p = Parcel.obtain();
+                    TextUtils.writeToParcel(b, p, 0);
+                    p.setDataPosition(0);
+                    value = p.marshall();
                 }
                 row[i] = value;
             }

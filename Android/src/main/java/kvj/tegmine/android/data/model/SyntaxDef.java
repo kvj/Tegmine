@@ -6,7 +6,9 @@ import android.text.TextUtils;
 import android.text.style.BackgroundColorSpan;
 import android.text.style.CharacterStyle;
 import android.text.style.ForegroundColorSpan;
+import android.text.style.StrikethroughSpan;
 import android.text.style.StyleSpan;
+import android.text.style.UnderlineSpan;
 
 import org.kvj.bravo7.log.Logger;
 
@@ -149,7 +151,14 @@ public class SyntaxDef {
             }
             for (SyntaxBlock syntaxBlock : patternDefs) {
                 for (String feature : syntaxBlock.pattern.features) {
-                    result.add(new Wrappers.Pair<String>(feature, data.substring(syntaxBlock.pair.v1(), syntaxBlock.pair.v2())));
+                    String text = data.substring(syntaxBlock.pair.v1(), syntaxBlock.pair.v2());
+                    if (syntaxBlock.pattern.featureGroup > 0) {
+                        Matcher m = syntaxBlock.pattern.pattern.matcher(text);
+                        if (m.find()) {
+                            text = m.group(syntaxBlock.pattern.featureGroup);
+                        }
+                    }
+                    result.add(new Wrappers.Pair<String>(feature, text));
                 }
             }
             return result;
@@ -169,7 +178,6 @@ public class SyntaxDef {
 
         public void span(LightTheme theme, SpannableStringBuilder builder, Feature... features) {
             // Make spans
-            int spanShift = 0;
             for (Wrappers.Pair<Integer> startFinish : layout()) {
                 if (startFinish.v1() == startFinish.v2()) {
                     continue;
@@ -177,6 +185,9 @@ public class SyntaxDef {
                 LightTheme.Colors bg = null;
                 LightTheme.Colors fg = null;
                 Boolean bold = null;
+                Boolean italic = null;
+                Boolean underline = null;
+                Boolean strike = null;
                 int start = builder.length();
                 int finish = start + startFinish.v2() - startFinish.v1();
                 String text = data.substring(startFinish.v1(), startFinish.v2());
@@ -185,33 +196,56 @@ public class SyntaxDef {
                     bg = SyntaxDef.plus(bg, block.pattern.bg);
                     fg = SyntaxDef.plus(fg, block.pattern.fg);
                     bold = SyntaxDef.plus(bold, block.pattern.bold);
-                    if (hasFeature(Feature.Shrink, features)
-                            && block.pattern.shrink > 0
-                            && (finish - start > block.pattern.shrink)) {
-                        text = text.substring(0, block.pattern.shrink) + "…";
-                        finish = start + text.length();
+                    italic = SyntaxDef.plus(italic, block.pattern.italic);
+                    underline = SyntaxDef.plus(underline, block.pattern.underline);
+                    strike = SyntaxDef.plus(strike, block.pattern.strike);
+                    if (hasFeature(Feature.Shrink, features)) {
+                        if (block.pattern.shrink > 0 && (finish - start > block.pattern.shrink)) {
+                            text = text.substring(0, block.pattern.shrink) + "…";
+                            finish = start + text.length();
+                        }
+                        if (block.pattern.shrinkGroup > 0) {
+                            // Group level
+                            Matcher m = block.pattern.pattern.matcher(text);
+                            if (m.find()) {
+                                text = m.group(block.pattern.shrinkGroup);
+                                finish = start + text.length();
+                            }
+                        }
                     }
                 }
 //                logger.d("pair", start, finish, bg, fg, data, text);
                 builder.append(text);
                 if (Boolean.TRUE.equals(bold)) { // Bold text
                     CharacterStyle span = new StyleSpan(Typeface.BOLD);
-                    builder.setSpan(span, spanShift+start, spanShift+finish,
+                    builder.setSpan(span, start, finish,
                                     SpannableStringBuilder.SPAN_EXCLUSIVE_EXCLUSIVE);
                 }
+                if (Boolean.TRUE.equals(italic)) { // Italic text
+                    CharacterStyle span = new StyleSpan(Typeface.ITALIC);
+                    builder.setSpan(span, start, finish,
+                                    SpannableStringBuilder.SPAN_EXCLUSIVE_EXCLUSIVE);
+                }
+                if (Boolean.TRUE.equals(underline)) { // Underline text
+                    CharacterStyle span = new UnderlineSpan();
+                    builder.setSpan(span, start, finish, SpannableStringBuilder.SPAN_EXCLUSIVE_EXCLUSIVE);
+                }
+                if (Boolean.TRUE.equals(strike)) { // Strike text
+                    CharacterStyle span = new StrikethroughSpan();
+                    builder.setSpan(span, start, finish, SpannableStringBuilder.SPAN_EXCLUSIVE_EXCLUSIVE);
+                }
+
                 if (null != bg) { // Have color
                     CharacterStyle
                         span =
                         new BackgroundColorSpan(theme.color(bg, theme.backgroundColor()));
-                    builder.setSpan(span, spanShift+start, spanShift+finish,
-                                    SpannableStringBuilder.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    builder.setSpan(span, start, finish, SpannableStringBuilder.SPAN_EXCLUSIVE_EXCLUSIVE);
                 }
                 if (null != fg) { // Have color
                     CharacterStyle
                         span =
                         new ForegroundColorSpan(theme.color(fg, theme.textColor()));
-                    builder.setSpan(span, spanShift+start, spanShift+finish,
-                                    SpannableStringBuilder.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    builder.setSpan(span, start, finish, SpannableStringBuilder.SPAN_EXCLUSIVE_EXCLUSIVE);
                 }
             }
         }
@@ -229,21 +263,38 @@ public class SyntaxDef {
         LightTheme.Colors bg = null;
         LightTheme.Colors fg = null;
         Boolean bold = null;
+        Boolean italic = null;
+        Boolean strike = null;
+        Boolean underline = null;
         int shrink = 0;
+        int shrinkGroup = 0;
+        int featureGroup = 0;
         Set<String> features = new HashSet<>();
     }
 
     private final String code;
-    private final Pattern filePattern;
+    private final List<Pattern> filePattern = new ArrayList<>();
     private List<PatternDef> patterns = new ArrayList<>();
 
-    public SyntaxDef(Pattern filePattern, String code) {
-        this.filePattern = filePattern;
+    public SyntaxDef(List<String> patterns, String code) {
         this.code = code;
+        for (String p : patterns) {
+            try {
+                Pattern pattern = Pattern.compile(p);
+                filePattern.add(pattern);
+            } catch (Exception e) {
+                logger.w(e, "Failed to compile:", p);
+            }
+        }
     }
 
-    public Pattern filePattern() {
-        return filePattern;
+    public boolean matches(String text) {
+        for (Pattern p : filePattern) {
+            if (p.matcher(text).find()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public void read(Map<String, Object> data) {
@@ -271,6 +322,8 @@ public class SyntaxDef {
                 }
             }
             p.shrink = TegmineController.objectInteger(ruleConfig, "shrink", 0);
+            p.shrinkGroup = TegmineController.objectInteger(ruleConfig, "shrink_group", 0);
+            p.featureGroup = TegmineController.objectInteger(ruleConfig, "feature_group", 0);
             rulesMap.put(p.name, p);
         }
         Map<String, List<String>> groupsData = new LinkedHashMap<>();
@@ -297,6 +350,15 @@ public class SyntaxDef {
                 p.fg = inObject(mappingConfig, "fg");
                 if (mappingConfig.containsKey("bold")) {
                     p.bold = TegmineController.objectBoolean(mappingConfig, "bold", false);
+                }
+                if (mappingConfig.containsKey("italic")) {
+                    p.italic = TegmineController.objectBoolean(mappingConfig, "italic", false);
+                }
+                if (mappingConfig.containsKey("underline")) {
+                    p.underline = TegmineController.objectBoolean(mappingConfig, "underline", false);
+                }
+                if (mappingConfig.containsKey("strike")) {
+                    p.strike = TegmineController.objectBoolean(mappingConfig, "strike", false);
                 }
                 if (null != p.includesStr) {
                     for (String name : p.includesStr) {

@@ -411,7 +411,7 @@ public class TegmineController extends Controller {
                 lineStr = lineStr.substring(0, lineStr.length()-2);
             }
             if (objStart) { // Object will start from here
-                Map<String, Object> values = objectObject(to, lineStr);
+                Map<String, Object> values = objectObject(to, lineStr); // Extend existing?
                 if (null == values) { // Create new
                     values = new LinkedHashMap<>();
                 }
@@ -488,8 +488,8 @@ public class TegmineController extends Controller {
             String key = oneBlock.getKey();
             Map<String, Object> keyConfig = objectObject(items, key);
             try {
-                Pattern pattern = Pattern.compile(String.format("^%s$", objectString(keyConfig, "pattern", "")));
-                SyntaxDef sy = new SyntaxDef(pattern, key);
+                List<String> patterns = objectList(keyConfig, String.class, "pattern");
+                SyntaxDef sy = new SyntaxDef(patterns, key);
                 FileSystemItem syntaxFile = fromURL(objectString(keyConfig, "file", null));
                 if (null == syntaxFile) {
                     logger.w("Failed to load color scheme:", key, keyConfig);
@@ -507,8 +507,7 @@ public class TegmineController extends Controller {
 
     public SyntaxDef findSyntax(FileSystemItem item) {
         for (SyntaxDef sy : syntaxes.values()) {
-            if (sy.filePattern().matcher(item.name).find()) {
-                logger.d("Find syntax for:", item.name, sy.filePattern());
+            if (sy.matches(item.name)) {
                 return sy;
             }
         }

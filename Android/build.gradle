@@ -31,7 +31,6 @@ android {
 
     dependencies {
         compile project(':Lima1')
-        compile project(':AutoUpdateApk')
         compile 'com.android.support:appcompat-v7:+'
         compile 'com.android.support:support-v4:+'
         compile 'com.android.support:recyclerview-v7:+'
@@ -53,6 +52,9 @@ android {
         debug {
             signingConfig signingConfigs.debug
             debuggable true
+            dependencies {
+                debugCompile project(':AutoUpdateApk')
+            }
         }
         release {
             signingConfig signingConfigs.release

@@ -24,6 +24,7 @@ import org.kvj.bravo7.form.impl.widget.TransientAdapter;
 import org.kvj.bravo7.log.Logger;
 import org.kvj.bravo7.ng.App;
 
+import kvj.tegmine.android.BuildConfig;
 import kvj.tegmine.android.R;
 import kvj.tegmine.android.Tegmine;
 import kvj.tegmine.android.data.TegmineController;
@@ -111,6 +112,7 @@ public class Main extends AppCompatActivity implements
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu_main, menu);
+        menu.findItem(R.id.menu_check_updates).setVisible(BuildConfig.DEBUG);
         return true;
     }
 
@@ -122,7 +124,7 @@ public class Main extends AppCompatActivity implements
                 startActivity(new Intent(this, Settings.class));
                 break;
             case R.id.menu_check_updates:
-                controller.autoUpdate().checkUpdatesManually();
+                controller.checkForUpdates();
                 break;
         }
         return super.onOptionsItemSelected(item);

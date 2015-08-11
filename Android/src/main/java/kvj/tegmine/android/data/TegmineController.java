@@ -15,8 +15,6 @@ import android.webkit.MimeTypeMap;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.lazydroid.autoupdateapk.AutoUpdateApk;
-
 import org.kvj.bravo7.log.Logger;
 import org.kvj.bravo7.ng.Controller;
 import org.kvj.bravo7.util.Listeners;
@@ -40,6 +38,7 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import kvj.tegmine.android.BuildConfig;
 import kvj.tegmine.android.R;
 import kvj.tegmine.android.data.def.FileSystemException;
 import kvj.tegmine.android.data.def.FileSystemItem;
@@ -61,7 +60,7 @@ public class TegmineController extends Controller {
 
     private static final int SPACES_IN_TAB = 2;
     private final AutoThemeChanger autoThemeChanger;
-    private final AutoUpdateApk apk;
+    private ApkUpdater updater = null;
     private final EditorsController editors;
     private Map<String, FileSystemProvider> fileSystemProviders = new LinkedHashMap<>();
     private Map<String, TemplateDef> templates = new LinkedHashMap<>();
@@ -86,8 +85,9 @@ public class TegmineController extends Controller {
 
     public TegmineController(Context context) {
         super(context, "Tegmine:");
-        apk = new AutoUpdateApk(context);
-        apk.setUpdateInterval(AutoUpdateApk.DAYS);
+        if (BuildConfig.DEBUG) {
+            updater = new ApkUpdater(context);
+        }
         autoThemeChanger = new AutoThemeChanger() {
 
             @Override
@@ -736,8 +736,8 @@ public class TegmineController extends Controller {
         return fileSystemProvider(item.providerName()).root().equals(item);
     }
 
-    public AutoUpdateApk autoUpdate() {
-        return apk;
+    public void checkForUpdates() {
+        updater.checkForUpdates();
     }
 
     public static class TemplateApplyResult {

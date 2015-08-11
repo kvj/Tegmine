@@ -1,13 +1,21 @@
 ### Another deeper heading
 
-Paragraphs are separated
-by a blank line.
-
-Leave 2 spaces at the end of a line to do a  
-line break
+Paragraphs are separated by a blank line.
 
 Text attributes *italic*, **bold**,
 `monospace`, ~~strikethrough~~ .
+
+- [ ] a bigger project
+  - [X] first subtask #1234
+- [ ] a separate task
+
+# The largest heading (an <h1> tag)
+…
+###### The 6th largest heading (an <h6> tag)
+
+In the words of Abraham Lincoln:
+
+> Pardon my french
 
 A [link](http://example.com).
 
@@ -36,18 +44,3 @@ function test() {
 | ------------- | ------------- |
 | Content Cell  | Content Cell  |
 | Content Cell  | Content Cell  |
-
-- [ ] a bigger project
-  - [ ] first subtask #1234
-  - [ ] follow up subtask #4321
-  - [ ] final subtask cc @mention
-- [ ] a separate task
-
-# The largest heading (an <h1> tag)
-## The second largest heading (an <h2> tag)
-…
-###### The 6th largest heading (an <h6> tag)
-
-In the words of Abraham Lincoln:
-
-> Pardon my french

@@ -11,8 +11,9 @@ import android.widget.Spinner;
 
 import org.kvj.bravo7.SuperActivity;
 import org.kvj.bravo7.form.FormController;
+import org.kvj.bravo7.form.impl.ViewFinder;
 import org.kvj.bravo7.form.impl.widget.SpinnerIntegerAdapter;
-import org.kvj.bravo7.form.impl.widget.TextViewStringAdapter;
+import org.kvj.bravo7.form.impl.widget.TextViewCharSequenceAdapter;
 import org.kvj.bravo7.log.Logger;
 import org.kvj.bravo7.ng.App;
 
@@ -34,7 +35,7 @@ public class ShortcutCreator extends AppCompatActivity implements FileSystemBrow
     private Logger logger = Logger.forInstance(this);
     private Spinner typeSpinner = null;
     private Spinner templateSpinner = null;
-    private FormController form = null;
+    private FormController form = new FormController(new ViewFinder.ActivityViewFinder(this));
     private TegmineController controller = App.controller();
 
     @Override
@@ -42,10 +43,9 @@ public class ShortcutCreator extends AppCompatActivity implements FileSystemBrow
         setTheme(controller.theme().dark() ? R.style.AppDialogDark : R.style.AppDialogLight);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_shortcut);
-        form = new FormController(findViewById(R.id.shortcut_root));
         form.add(new SpinnerIntegerAdapter(R.id.shortcut_type_spinner, 0), "type");
         form.add(new SpinnerIntegerAdapter(R.id.shortcut_template_spinner, 0), "template");
-        form.add(new TextViewStringAdapter(R.id.shortcut_title, ""), "title");
+        form.add(new TextViewCharSequenceAdapter(R.id.shortcut_title, ""), "title");
         typeSpinner = (Spinner) findViewById(R.id.shortcut_type_spinner);
         ArrayAdapter<CharSequence> typeAdapter =
             ArrayAdapter.createFromResource(this, R.array.shortcut_types, android.R.layout.simple_spinner_item);
@@ -111,9 +111,8 @@ public class ShortcutCreator extends AppCompatActivity implements FileSystemBrow
     public void onController() {
         form.add(new FileSystemItemWidgetAdapter(controller), "selected");
         findViewById(R.id.shortcut_file_selector).setBackgroundColor(controller.theme().backgroundColor());
-        Bundle data = new Bundle();
         FileSystemBrowser
-            browser = new FileSystemBrowser().create(controller, data).setListener(this);
+            browser = new FileSystemBrowser().create(this, controller, null).setListener(this);
         getSupportFragmentManager().beginTransaction().replace(R.id.shortcut_file_selector, browser).commit();
         ArrayAdapter<CharSequence> templateAdapter =
             new ArrayAdapter<CharSequence>(this, android.R.layout.simple_spinner_item);
@@ -123,7 +122,7 @@ public class ShortcutCreator extends AppCompatActivity implements FileSystemBrow
             templateAdapter.add(tmpl.getValue().label());
         }
         templateSpinner.setAdapter(templateAdapter);
-        form.load(this, data);
+        form.load(this, new Bundle());
     }
 
     @Override

@@ -45,7 +45,7 @@ public class FileChooser extends DialogFragment implements FileSystemBrowser.Bro
         }
         Bundle data = new Bundle();
         data.putString(Tegmine.BUNDLE_PROVIDER, "sdcard");
-        FileSystemBrowser browser = new FileSystemBrowser().create(controller, data).setListener(this);
+        FileSystemBrowser browser = new FileSystemBrowser().create(getActivity(), controller, data).setListener(this);
         View v = inflater.inflate(R.layout.dialog_settings, container, false);
         v.findViewById(R.id.settings_frame).setBackgroundColor(controller.theme().backgroundColor());
         getChildFragmentManager().beginTransaction().addToBackStack("browser").replace(R.id.settings_frame, browser, "browser").commit();

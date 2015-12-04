@@ -44,7 +44,7 @@ public class LightTheme {
         }
     };
 
-    public enum Colors {Base0("base0"), Base1("base1"), Base2("base2"), Base3("base3"),
+    public enum Colors {Base0("base0"), Base1("base1"),Base2("base2"), Base3("base3"),
         Yellow("yellow"), Orange("orange"), Red("red"), Magenta("magenta"),
         Violet("violet"), Blue("blue"), Cyan("cyan"), Green("green");
         private final String code;
@@ -113,8 +113,8 @@ public class LightTheme {
         return color(Colors.Base3, dark? Color.BLACK: Color.WHITE);
     }
 
-    public int selectedColor() {
-        return color(Colors.Base2, markColor());
+    public int altTextColor() {
+        return color(Colors.Base1, markColor());
     }
 
     public int headerTextSp() {

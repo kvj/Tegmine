@@ -1,5 +1,6 @@
 package kvj.tegmine.android.ui.fragment;
 
+import android.app.Activity;
 import android.database.DataSetObserver;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
@@ -18,6 +19,7 @@ import android.view.ViewGroup;
 
 import org.kvj.bravo7.SuperActivity;
 import org.kvj.bravo7.form.FormController;
+import org.kvj.bravo7.form.impl.ViewFinder;
 import org.kvj.bravo7.log.Logger;
 import org.kvj.bravo7.util.Listeners;
 import org.kvj.bravo7.util.Tasks;
@@ -25,6 +27,7 @@ import org.kvj.bravo7.util.Tasks;
 import java.io.OutputStream;
 
 import kvj.tegmine.android.R;
+import kvj.tegmine.android.Tegmine;
 import kvj.tegmine.android.data.TegmineController;
 import kvj.tegmine.android.data.def.FileSystemException;
 import kvj.tegmine.android.data.model.EditorInfo;
@@ -68,14 +71,14 @@ public class Editors extends Fragment {
     private EditorsAdapter adapter = null;
     private FormController form = null;
 
-    public Editors create(TegmineController controller, Bundle bundle) {
+    public Editors create(Activity activity, TegmineController controller, Bundle bundle) {
         this.controller = controller;
         setHasOptionsMenu(true);
-        form = new FormController(null);
+        form = new FormController(new ViewFinder.ActivityViewFinder(activity));
         form.add(new FileSystemItemWidgetAdapter(controller), "select");
-        form.add(new FileSystemItemWidgetAdapter(controller), "root");
-        form.load(bundle);
-        add(bundle);
+        form.add(new FileSystemItemWidgetAdapter(controller).bundleProviderKey(Tegmine.BUNDLE_PROVIDER), "root");
+        Bundle data = form.load(activity, bundle);
+        add(data);
         return this;
     }
 

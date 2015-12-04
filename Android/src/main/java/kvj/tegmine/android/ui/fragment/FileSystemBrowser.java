@@ -1,10 +1,11 @@
 package kvj.tegmine.android.ui.fragment;
 
+import android.app.Activity;
 import android.os.Bundle;
 import android.support.design.widget.NavigationView;
 import android.support.v4.app.Fragment;
 import android.support.v4.widget.DrawerLayout;
-import android.support.v7.internal.view.menu.MenuBuilder;
+import android.support.v7.view.menu.MenuBuilder;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.TextUtils;
@@ -21,6 +22,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import org.kvj.bravo7.form.FormController;
+import org.kvj.bravo7.form.impl.ViewFinder;
 import org.kvj.bravo7.log.Logger;
 import org.kvj.bravo7.util.Tasks;
 import org.kvj.bravo7.widget.Dialogs;
@@ -77,7 +79,7 @@ public class FileSystemBrowser extends Fragment implements ProgressListener {
     private TextView titleText = null;
     private FileBrowserAdapter adapter = null;
     private Logger logger = Logger.forInstance(this);
-    private FormController form = new FormController(null);
+    private FormController form = null;
 
     private BrowserListener listener = null;
 
@@ -96,11 +98,12 @@ public class FileSystemBrowser extends Fragment implements ProgressListener {
         super.onDestroyView();
     }
 
-    public FileSystemBrowser create(TegmineController controller, Bundle bundle) {
+    public FileSystemBrowser create(Activity activity, TegmineController controller, Bundle bundle) {
         this.controller = controller;
-        form.add(new FileSystemItemWidgetAdapter(controller, controller.fileSystemProvider(bundle.getString(Tegmine.BUNDLE_PROVIDER)).root()), "root");
+        form = new FormController(new ViewFinder.ActivityViewFinder(activity));
+        form.add(new FileSystemItemWidgetAdapter(controller, null).bundleProviderKey(Tegmine.BUNDLE_PROVIDER), "root");
         form.add(new FileSystemItemWidgetAdapter(controller), "select");
-        form.load(bundle);
+        form.load(activity, bundle);
         logger.d("Will create view", controller, bundle);
         return this;
     }
@@ -122,7 +125,6 @@ public class FileSystemBrowser extends Fragment implements ProgressListener {
             return null;
         }
         View view = inflater.inflate(R.layout.fragment_file_browser, container, false);
-        form.setView(view);
         titleText = (TextView) view.findViewById(R.id.file_browser_title_text);
         titleIcon = (ImageView) view.findViewById(R.id.file_browser_title_icon);
         listView = (RecyclerView) view.findViewById(android.R.id.list);

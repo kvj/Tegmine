@@ -1,6 +1,7 @@
 package kvj.tegmine.android.ui.fragment;
 
 import android.animation.ObjectAnimator;
+import android.app.Activity;
 import android.content.ClipData;
 import android.content.ClipDescription;
 import android.content.ClipboardManager;
@@ -111,19 +112,19 @@ public class OneFileViewer extends Fragment implements ProgressListener {
         adapter.notifyDataSetChanged();
     }
 
-    public OneFileViewer create(final TegmineController controller, Bundle bundle) {
+    public OneFileViewer create(Activity activity, final TegmineController controller, Bundle bundle) {
         this.controller = controller;
         form.add(new FileSystemItemWidgetAdapter(controller), "select");
-        form.add(new FileSystemItemWidgetAdapter(controller), "root");
+        form.add(new FileSystemItemWidgetAdapter(controller).bundleProviderKey(Tegmine.BUNDLE_PROVIDER), "root");
         form.add(new TransientAdapter<>(new BooleanBundleAdapter(), controller.showNumbers()),
                  "showNumbers");
         form.add(new TransientAdapter<>(new BooleanBundleAdapter(), controller.wrapLines()),
                  "wrapLines");
-        form.load(bundle);
+        form.load(activity, bundle);
         item = form.getValue("select", FileSystemItem.class);
         logger.d("new FileViewer:", item, bundle, controller.showNumbers(), controller.wrapLines());
         if (null == item) {
-            SuperActivity.notifyUser(controller.context(), "File not found");
+            controller.messageShort("File not found");
             return null;
         }
         watcher = new FileItemWatcher(controller, item) {

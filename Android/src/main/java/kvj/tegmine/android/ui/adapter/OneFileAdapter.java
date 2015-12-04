@@ -56,7 +56,7 @@ public abstract class OneFileAdapter extends RecyclerView.Adapter<OneFileAdapter
             text.setTextSize(TypedValue.COMPLEX_UNIT_SP, controller.theme().fileTextSp());
             text.setTextColor(controller.theme().textColor());
             lineno.setTextSize(TypedValue.COMPLEX_UNIT_SP, controller.theme().fileTextSp());
-            lineno.setTextColor(controller.theme().markColor());
+            lineno.setTextColor(controller.theme().altTextColor());
             lineno.setTextSize(TypedValue.COMPLEX_UNIT_SP, controller.theme().fileTextSp());
         }
 

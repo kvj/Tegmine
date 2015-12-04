@@ -1,12 +1,14 @@
 package kvj.tegmine.android.ui;
 
 import android.animation.LayoutTransition;
+import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.Intent;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentTransaction;
@@ -19,10 +21,12 @@ import android.view.View;
 import android.widget.LinearLayout;
 
 import org.kvj.bravo7.form.FormController;
+import org.kvj.bravo7.form.impl.ViewFinder;
 import org.kvj.bravo7.form.impl.bundle.StringBundleAdapter;
 import org.kvj.bravo7.form.impl.widget.TransientAdapter;
 import org.kvj.bravo7.log.Logger;
 import org.kvj.bravo7.ng.App;
+import org.kvj.bravo7.util.Compat;
 
 import kvj.tegmine.android.BuildConfig;
 import kvj.tegmine.android.R;
@@ -48,8 +52,7 @@ public class Main extends AppCompatActivity implements
     private TegmineController controller = App.controller();
     private Toolbar toolbar;
     private Logger logger = Logger.forInstance(this);
-    private Bundle bundle = new Bundle();
-    private FormController form = null;
+    private FormController form = new FormController(new ViewFinder.ActivityViewFinder(this));
     private boolean multiView = false;
     private LinearLayout multiPane = null;
 
@@ -59,40 +62,33 @@ public class Main extends AppCompatActivity implements
     private ContentLoadingProgressBar progressBar = null;
     private SensorManager mSensorManager = null;
 
-    protected void initBundle(Bundle savedInstanceState) {
-        if (null != savedInstanceState) {
-            this.bundle = savedInstanceState;
-            return;
-        }
-        if (null != getIntent() && null != getIntent().getExtras()) { // Have intent extras
-            this.bundle = getIntent().getExtras();
-        }
-    }
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         setTheme(controller.theme().dark() ? R.style.AppThemeDark : R.style.AppThemeLight);
         super.onCreate(savedInstanceState);
         mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
-        initBundle(savedInstanceState);
         setContentView(R.layout.activity_main);
         toolbar = (Toolbar) findViewById(R.id.main_toolbar);
         progressBar = (ContentLoadingProgressBar)findViewById(R.id.main_progress_bar);
         setSupportActionBar(toolbar);
         setupToolbar(toolbar);
-        form = new FormController(null);
-        form.setView(findViewById(R.id.main_root));
         form.add(new TransientAdapter<String>(new StringBundleAdapter(), Tegmine.VIEW_TYPE_BROWSER), Tegmine.BUNDLE_VIEW_TYPE);
         multiPane = (LinearLayout) findViewById(R.id.main_view);
         multiView = multiPane != null;
         if (multiView) {
-            LayoutTransition transition = new LayoutTransition();
-            transition.enableTransitionType(LayoutTransition.CHANGING);
-            transition.setDuration(200);
-            multiPane.setLayoutTransition(transition);
+            Compat.levelAware(Build.VERSION_CODES.JELLY_BEAN, new Runnable() {
+                @TargetApi(Build.VERSION_CODES.JELLY_BEAN)
+                @Override
+                public void run() {
+                    LayoutTransition transition = new LayoutTransition();
+                    transition.enableTransitionType(LayoutTransition.CHANGING);
+                    transition.setDuration(200);
+                    multiPane.setLayoutTransition(transition);
+                }
+            });
         }
-        form.load(bundle);
-        onController();
+        form.load(this, savedInstanceState);
+        onController(savedInstanceState);
     }
 
     private void setupToolbar(Toolbar toolbar) {
@@ -130,8 +126,8 @@ public class Main extends AppCompatActivity implements
         return super.onOptionsItemSelected(item);
     }
 
-    private void showBrowser() {
-        browser = new FileSystemBrowser().setListener(this).create(controller, bundle);
+    private void showBrowser(Bundle bundle) {
+        browser = new FileSystemBrowser().setListener(this).create(this, controller, bundle);
         if (multiView) { // Load to first cell
             openIn(browser, R.id.main_left_view, "file_browser");
         } else {
@@ -140,7 +136,7 @@ public class Main extends AppCompatActivity implements
     }
 
     private void showViewer(Bundle data) {
-        viewer = new OneFileViewer().setListener(this).create(controller, data);
+        viewer = new OneFileViewer().setListener(this).create(this, controller, data);
         if (multiView) {
             openIn(viewer, R.id.main_center_view, "one_file");
         } else {
@@ -154,7 +150,7 @@ public class Main extends AppCompatActivity implements
             editors.add(data);
             return;
         }
-        editors = new Editors().create(controller, data);
+        editors = new Editors().create(this, controller, data);
         editors.listeners().add(this);
         if (multiView) {
             openIn(editors, R.id.main_right_view, "editor");
@@ -168,25 +164,25 @@ public class Main extends AppCompatActivity implements
         findViewById(R.id.main_root).setBackgroundColor(controller.theme().backgroundColor());
     }
 
-    public void onController() {
+    public void onController(Bundle savedInstanceState) {
         applyTheme();
         String mode = form.getValue(Tegmine.BUNDLE_VIEW_TYPE, String.class);
 
         if (Tegmine.VIEW_TYPE_BROWSER.equals(mode)) { // Open single browser
-            showBrowser();
+            showBrowser(savedInstanceState);
         }
         if (Tegmine.VIEW_TYPE_FILE.equals(mode)) { // Open one file viewer
             if (multiView) {
-                showBrowser();
+                showBrowser(savedInstanceState);
             }
-            showViewer(bundle);
+            showViewer(savedInstanceState);
         }
         if (Tegmine.VIEW_TYPE_EDITOR.equals(mode)) { // Open editor
             if (multiView) {
-                showBrowser();
-                showViewer(bundle);
+                showBrowser(savedInstanceState);
+                showViewer(savedInstanceState);
             }
-            showEditor(bundle);
+            showEditor(savedInstanceState);
         }
         resizeMultiPane();
         controller.progressListeners().add(this);

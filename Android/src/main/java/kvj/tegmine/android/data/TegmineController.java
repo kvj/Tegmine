@@ -65,7 +65,6 @@ public class TegmineController extends Controller {
     private Map<String, FileSystemProvider> fileSystemProviders = new LinkedHashMap<>();
     private Map<String, TemplateDef> templates = new LinkedHashMap<>();
     private FileSystemProvider defaultProvider = null;
-    private LightTheme theme = new LightTheme(this);
     private Logger logger = Logger.forInstance(this);
     private Map<String, Object> config = new HashMap<>();
     private Map<String, Integer> sizes = new HashMap<>();
@@ -171,14 +170,25 @@ public class TegmineController extends Controller {
         }
     }
 
+    private static String ltrim(String s) {
+        int start = 0, last = s.length() - 1;
+        while ((start <= last) && (s.charAt(start) <= ' ')) {
+            start++;
+        }
+        if (start == 0) {
+            return s;
+        }
+        return s.substring(start);
+    }
+
     public void split(List<LineMeta> lines, String text) {
         if (TextUtils.isEmpty(text)) { // No lines
             return;
         }
         String[] lineStrs = text.split("\n");
-        for (String line : lineStrs) { // $COMMENT
+        for (String line : lineStrs) {
             LineMeta meta = new LineMeta(indent(line, false), -1);
-            meta.data(line.trim());
+            meta.data(ltrim(line));
             lines.add(meta);
         }
     }
@@ -800,6 +810,7 @@ public class TegmineController extends Controller {
         if (-1 == cursor) { // Not set yet
             cursor = buffer.length();
         }
+        logger.d("Template:", tmpl.template(), String.format("[%s]", buffer.toString()), buffer.length(), cursor);
         return new TemplateApplyResult(buffer.toString(), cursor);
     }
 

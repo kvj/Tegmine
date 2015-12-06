@@ -2,6 +2,8 @@ package kvj.tegmine.android.ui.theme;
 
 import android.graphics.Color;
 
+import org.kvj.bravo7.log.Logger;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -14,6 +16,7 @@ import kvj.tegmine.android.data.TegmineController;
 public class LightTheme {
 
     private final TegmineController controller;
+    private Logger logger = Logger.forInstance(this);
 
     public enum Size {
         headerTextSp("header_text", 18), browserTextSp("browser_text", 16), fileTextSp("file_text", 14),
@@ -42,7 +45,7 @@ public class LightTheme {
             }
             return null;
         }
-    };
+    }
 
     public enum Colors {Base0("base0"), Base1("base1"),Base2("base2"), Base3("base3"),
         Yellow("yellow"), Orange("orange"), Red("red"), Magenta("magenta"),
@@ -163,10 +166,61 @@ public class LightTheme {
 
     public boolean loadColor(Colors col, String color) {
         if (null != col) {
+            int attr = key2attr(color);
+            if (-1 != attr) { // Parsed
+                try {
+                    int colorVal = controller.context().getResources().getColor(attr);
+                    mappingColors.put(col, colorVal);
+                } catch (Exception e) {
+                    logger.w("Not resolved:", color, attr);
+                }
+
+            }
+            if (!color.startsWith("#")) { // Ignore
+                return false;
+            }
             mappingColors.put(col, Color.parseColor(color));
             return true;
         }
         return false;
+    }
+
+    private int key2attr(String key) {
+        if (!key.startsWith("attr_")) { // Invalid
+            return -1;
+        }
+        String name = key.substring(5);
+        if ("textDark".equals(name)) {
+            return android.support.v7.appcompat.R.color.primary_text_default_material_dark;
+        }
+        if ("textLight".equals(name)) {
+            return android.support.v7.appcompat.R.color.primary_text_default_material_light;
+        }
+        if ("bgDark".equals(name)) {
+            return android.support.v7.appcompat.R.color.background_material_dark;
+        }
+        if ("bgLight".equals(name)) {
+            return android.support.v7.appcompat.R.color.background_material_light;
+        }
+        if ("bgDarkAlt".equals(name)) {
+            return android.support.v7.appcompat.R.color.background_floating_material_dark;
+        }
+        if ("bgLightAlt".equals(name)) {
+            return android.support.v7.appcompat.R.color.background_floating_material_light;
+        }
+        if ("fgDark".equals(name)) {
+            return android.support.v7.appcompat.R.color.foreground_material_dark;
+        }
+        if ("fgLight".equals(name)) {
+            return android.support.v7.appcompat.R.color.foreground_material_light;
+        }
+        if ("textDarkAlt".equals(name)) {
+            return android.support.v7.appcompat.R.color.secondary_text_default_material_dark;
+        }
+        if ("textLightAlt".equals(name)) {
+            return android.support.v7.appcompat.R.color.secondary_text_default_material_light;
+        }
+        return -1;
     }
 
     public boolean loadSize(String key, int value) {

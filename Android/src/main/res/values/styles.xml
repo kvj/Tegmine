@@ -13,10 +13,14 @@
         <item name="colorAccent">#CDDC39</item>
     </style>
 
-    <style name="AppDialogLight" parent="Theme.AppCompat.Light.Dialog">
+    <style name="AppDialogLight" parent="Theme.AppCompat.Light.DialogWhenLarge">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
     </style>
 
-    <style name="AppDialogDark" parent="Theme.AppCompat.Dialog">
+    <style name="AppDialogDark" parent="Theme.AppCompat.DialogWhenLarge">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
     </style>
 
     <style name="CircleButton">

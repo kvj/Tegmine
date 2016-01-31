@@ -8,4 +8,8 @@
         <Preference android:title="Revert to default" android:key="@string/p_config_revert"/>
         <Preference android:title="Reload configuration" android:key="@string/p_config_reload"/>
     </PreferenceCategory>
+    <PreferenceCategory android:title="Assist shortcut">
+        <Preference android:title="Set shortcut" android:key="@string/p_config_assist_set"/>
+        <Preference android:title="Reset to default" android:key="@string/p_config_assist_reset"/>
+    </PreferenceCategory>
 </PreferenceScreen>

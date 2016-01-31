@@ -4,6 +4,12 @@
               android:orientation="vertical"
               android:layout_width="match_parent"
               android:layout_height="match_parent">
+    <android.support.v7.widget.Toolbar
+        android:id="@+id/main_toolbar"
+        android:background="?attr/colorPrimary"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_weight="0" />
     <FrameLayout
             android:id="@+id/shortcut_file_selector"
             android:layout_weight="1"
@@ -18,19 +24,23 @@
         android:layout_margin="5dp"
         android:layout_weight="0">
         <Spinner
+            android:layout_marginTop="3dp"
+            style="@style/Base.Widget.AppCompat.Spinner.Underlined"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:id="@+id/shortcut_type_spinner"/>
         <Spinner
+            android:layout_marginTop="3dp"
+            style="@style/Base.Widget.AppCompat.Spinner.Underlined"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:id="@+id/shortcut_template_spinner"/>
         <EditText
+            android:layout_marginTop="3dp"
             android:hint="Shortcut name"
             android:selectAllOnFocus="true"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:gravity="fill_vertical"
             android:id="@+id/shortcut_title"/>
 
     </LinearLayout>

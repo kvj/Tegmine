@@ -6,7 +6,7 @@
     <string name="menu_paste_text">Append from Clipboard</string>
     <string name="menu_share">Share...</string>
     <string name="menu_copy_clipboard">Copy to Clipboard</string>
-    <string name="menu_view_options">View options</string>
+    <string name="menu_view_options">View</string>
     <string name="p_config_file">p_config_file</string>
     <string name="p_tabs_size">p_tabs_size</string>
     <string name="menu_show_editors">Editors</string>
@@ -19,6 +19,9 @@
     <string name="p_config_file_default">tegmine+assets://tegmine.conf</string>
     <string name="p_config_revert">p_config_revert</string>
     <string name="p_config_reload">p_config_reload</string>
+    <string name="p_config_assist_set">p_config_assist_set</string>
+    <string name="p_config_assist_reset">p_config_assist_reset</string>
+    <string name="p_config_assist">p_config_assist</string>
     <string-array name="shortcut_types">
         <item>Display file</item>
         <item>Append to</item>

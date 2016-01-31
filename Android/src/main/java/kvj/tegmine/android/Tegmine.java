@@ -10,6 +10,7 @@ import kvj.tegmine.android.data.TegmineController;
 public class Tegmine extends App<TegmineController> {
 
     public static final String BUNDLE_VIEW_TYPE = "view_type";
+    public static final String BUNDLE_SELECT = "select";
     public static final String BUNDLE_FILE_LOCATION = "file_location";
     public static final String VIEW_TYPE_BROWSER = "browser";
     public static final String VIEW_TYPE_FILE = "file";
@@ -19,6 +20,8 @@ public class Tegmine extends App<TegmineController> {
     public static final String EDIT_TYPE_ADD = "edit_add";
     public static final String EDIT_TYPE_EDIT = "edit_edit";
     public static final String BUNDLE_PROVIDER = "provider";
+    public static final int REQUEST_FILE = 3;
+    public static final int REQUEST_SHORTCUT = 4;
 
     @Override
     protected TegmineController create() {

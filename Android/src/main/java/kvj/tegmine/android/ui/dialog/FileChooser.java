@@ -1,11 +1,8 @@
 package kvj.tegmine.android.ui.dialog;
 
+import android.content.Intent;
 import android.os.Bundle;
-import android.support.annotation.Nullable;
-import android.support.v4.app.DialogFragment;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
+import android.support.v7.app.AppCompatActivity;
 
 import org.kvj.bravo7.log.Logger;
 
@@ -18,38 +15,27 @@ import kvj.tegmine.android.ui.fragment.FileSystemBrowser;
 /**
  * Created by kvorobyev on 2/26/15.
  */
-public class FileChooser extends DialogFragment implements FileSystemBrowser.BrowserListener {
-
-    private FileChooserListener listener = null;
+public class FileChooser extends AppCompatActivity implements FileSystemBrowser.BrowserListener {
 
     public static interface FileChooserListener {
         public void onFile(FileSystemItem item);
     }
 
-    private TegmineController controller = null;
+    private TegmineController controller = Tegmine.controller();
     private Logger logger = Logger.forInstance(this);
 
-    public static FileChooser newDialog(TegmineController controller, FileChooserListener listener) {
-        FileChooser instance = new FileChooser();
-        instance.setShowsDialog(false);
-        instance.setStyle(DialogFragment.STYLE_NO_TITLE, instance.getTheme());
-        instance.controller = controller;
-        instance.listener = listener;
-        return instance;
-    }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        if (null == controller) { // Not initialised
-            return null;
-        }
+    public void onCreate(Bundle savedInstanceState) {
+        setTheme(controller.theme().dark() ? R.style.AppDialogDark : R.style.AppDialogLight);
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.dialog_settings);
         Bundle data = new Bundle();
         data.putString(Tegmine.BUNDLE_PROVIDER, "sdcard");
-        FileSystemBrowser browser = new FileSystemBrowser().create(getActivity(), controller, data).setListener(this);
-        View v = inflater.inflate(R.layout.dialog_settings, container, false);
-        v.findViewById(R.id.settings_frame).setBackgroundColor(controller.theme().backgroundColor());
-        getChildFragmentManager().beginTransaction().addToBackStack("browser").replace(R.id.settings_frame, browser, "browser").commit();
-        return v;
+        final FileSystemBrowser
+                browser = new FileSystemBrowser().create(this, controller, data).setListener(this);
+        browser.setupToolbar(this).setSubtitle("Choose a file");
+        getSupportFragmentManager().beginTransaction().replace(R.id.settings_frame, browser).commit();
     }
 
     @Override
@@ -59,9 +45,12 @@ public class FileChooser extends DialogFragment implements FileSystemBrowser.Bro
 
     @Override
     public void openFile(Bundle data, FileSystemItem item) {
-        dismiss();
-        if (null != listener) { // OK
-            listener.onFile(item);
-        }
+        setResult(RESULT_OK, new Intent(item.toURL()));
+        finish();
+    }
+
+    @Override
+    public void updateBrowserTitle(String title) {
+        // TODO: Update title
     }
 }

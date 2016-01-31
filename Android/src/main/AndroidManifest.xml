@@ -20,8 +20,14 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.ASSIST" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
         </activity>
-        <activity android:name=".ui.Settings">
+        <activity android:name=".ui.Settings" android:theme="@style/AppThemeDark">
+        </activity>
+        <activity android:name=".ui.dialog.FileChooser">
         </activity>
         <activity android:name=".ui.ShortcutCreator">
             <intent-filter>

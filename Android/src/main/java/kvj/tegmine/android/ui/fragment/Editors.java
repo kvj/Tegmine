@@ -40,8 +40,28 @@ import kvj.tegmine.android.ui.form.FileSystemItemWidgetAdapter;
  */
 public class Editors extends Fragment {
 
+    private ViewPager.OnPageChangeListener pageListener = new ViewPager.OnPageChangeListener() {
+        @Override
+        public void onPageScrolled(int position, float positionOffset,
+                                   int positionOffsetPixels) {
+        }
+
+        @Override
+        public void onPageSelected(int position) {
+            logger.d("Page selected:", position);
+            if (-1 == position) { // Invalid
+                return;
+            }
+            controller.editors().selected(position);
+        }
+
+        @Override
+        public void onPageScrollStateChanged(int state) {
+        }
+    };
+
     public EditorInfo add(Bundle data) {
-        EditorInfo info = controller.editors().fromBundle(data);// Loaded?
+        final EditorInfo info = controller.editors().fromBundle(data);// Loaded?
         if (null != pager) {
             // Switch to page
             adapter.notifyDataSetChanged();
@@ -55,6 +75,11 @@ public class Editors extends Fragment {
             return false;
         }
         return selected().view.closeFindDialog();
+    }
+
+    public Editors addListener(EditorsListener listener) {
+        listeners.add(listener);
+        return this;
     }
 
     public interface EditorsListener {
@@ -92,7 +117,6 @@ public class Editors extends Fragment {
         if (null == controller) {
             return null;
         }
-        logger.d("New editors");
         View view = inflater.inflate(R.layout.fragment_editors, container, false);
         pager = (ViewPager) view.findViewById(R.id.editors_pager);
         tabStrip = (PagerTitleStrip) view.findViewById(R.id.editors_strip);
@@ -100,27 +124,18 @@ public class Editors extends Fragment {
         adapter.registerDataSetObserver(new DataSetObserver() {
             @Override
             public void onChanged() {
-                pager.setVisibility(adapter.getCount() > 0 ? View.VISIBLE : View.GONE);
+                int visible = adapter.getCount() > 0 ? View.VISIBLE : View.GONE;
+                pager.setVisibility(visible);
+                tabStrip.setVisibility(visible);
+                pageListener.onPageSelected(controller.editors().selected());
             }
         });
+        pager.addOnPageChangeListener(pageListener);
         pager.setAdapter(adapter);
         pager.setSaveEnabled(false);
-        pager.setCurrentItem(controller.editors().selected());
-        pager.setOnPageChangeListener(new ViewPager.OnPageChangeListener() {
-            @Override
-            public void onPageScrolled(int position, float positionOffset,
-                                       int positionOffsetPixels) {
-            }
-
-            @Override
-            public void onPageSelected(int position) {
-                controller.editors().selected(position);
-            }
-
-            @Override
-            public void onPageScrollStateChanged(int state) {
-            }
-        });
+        int selectIndex = controller.editors().selected();
+        logger.d("New editors", selectIndex);
+        pager.setCurrentItem(selectIndex);
         view.findViewById(R.id.editors_close).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {

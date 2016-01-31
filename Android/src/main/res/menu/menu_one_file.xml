@@ -4,7 +4,7 @@
     <item
         android:id="@+id/menu_show_editors"
         android:title="@string/menu_show_editors"
-        app:showAsAction="ifRoom"
+        app:showAsAction="never"
         android:orderInCategory="0"/>
     <item
         android:id="@+id/menu_view_options"
@@ -25,6 +25,6 @@
     <item
         android:id="@+id/menu_paste_text"
         android:title="@string/menu_paste_text"
-        app:showAsAction="ifRoom"
+        app:showAsAction="never"
         android:orderInCategory="2"/>
 </menu>

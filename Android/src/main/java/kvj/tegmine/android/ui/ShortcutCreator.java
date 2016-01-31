@@ -99,7 +99,7 @@ public class ShortcutCreator extends AppCompatActivity implements FileSystemBrow
             launchIntent.putExtra(Tegmine.BUNDLE_EDIT_TYPE, Tegmine.EDIT_TYPE_EDIT);
         }
         Bundle itemsBundle = new Bundle();
-        itemsBundle.putString("select", selected.toURL());
+        itemsBundle.putString(Tegmine.BUNDLE_SELECT, selected.toURL());
         launchIntent.putExtras(itemsBundle);
         intent.putExtra(Intent.EXTRA_SHORTCUT_INTENT, launchIntent);
         intent.putExtra(Intent.EXTRA_SHORTCUT_NAME, title);
@@ -113,6 +113,7 @@ public class ShortcutCreator extends AppCompatActivity implements FileSystemBrow
         findViewById(R.id.shortcut_file_selector).setBackgroundColor(controller.theme().backgroundColor());
         FileSystemBrowser
             browser = new FileSystemBrowser().create(this, controller, null).setListener(this);
+        browser.setupToolbar(this).setSubtitle("Shortcut configuration");
         getSupportFragmentManager().beginTransaction().replace(R.id.shortcut_file_selector, browser).commit();
         ArrayAdapter<CharSequence> templateAdapter =
             new ArrayAdapter<CharSequence>(this, android.R.layout.simple_spinner_item);
@@ -137,5 +138,10 @@ public class ShortcutCreator extends AppCompatActivity implements FileSystemBrow
             // Put file name
             form.setValue("title", item.name);
         }
+    }
+
+    @Override
+    public void updateBrowserTitle(String title) {
+        // TODO: Update title
     }
 }

@@ -18,8 +18,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
-import android.widget.ImageView;
-import android.widget.TextView;
 
 import org.kvj.bravo7.SuperActivity;
 import org.kvj.bravo7.log.Logger;
@@ -52,11 +50,9 @@ public class OneEditor extends Fragment implements ProgressListener {
 
     private TegmineController controller = App.controller();
     private EditText editor = null;
-    private TextView title = null;
     private FileSystemItem item = null;
     private SyntaxDef syntax = null;
     private FileItemWatcher watcher = null;
-    private ImageView titleIcon = null;
     private ViewGroup findWidget = null;
     private EditText findEdit = null;
 
@@ -100,7 +96,6 @@ public class OneEditor extends Fragment implements ProgressListener {
             }
         });
         editor = (EditText) view.findViewById(R.id.editor_text);
-        title = (TextView) view.findViewById(R.id.editor_title_text);
         editor.setOnKeyListener(new View.OnKeyListener() {
             @Override
             public boolean onKey(View view, int i, KeyEvent keyEvent) {
@@ -108,8 +103,6 @@ public class OneEditor extends Fragment implements ProgressListener {
             }
         });
         this.syntax = controller.findSyntax(item);
-        title.setText(item.details());
-        titleIcon = (ImageView) view.findViewById(R.id.editor_title_icon);
         if (null == info.text) { // First time - load text
             loadContents();
         } else {
@@ -475,11 +468,6 @@ public class OneEditor extends Fragment implements ProgressListener {
         editor.setTextSize(TypedValue.COMPLEX_UNIT_SP, controller.theme().editorTextSp());
         findEdit.setTextColor(controller.theme().textColor());
         findEdit.setTextSize(TypedValue.COMPLEX_UNIT_SP, controller.theme().editorTextSp());
-        controller.applyHeaderStyle(title);
-        titleIcon.setImageResource(doEdit ?
-                        controller.theme().fileEditIcon() :
-                        controller.theme().fileAddIcon()
-        );
     }
 
     @Override

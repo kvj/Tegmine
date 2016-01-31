@@ -12,7 +12,6 @@ import android.support.v4.app.Fragment;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.TextUtils;
-import android.util.TypedValue;
 import android.view.ContextMenu;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -21,11 +20,6 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AbsListView;
-import android.widget.AdapterView;
-import android.widget.ImageView;
-import android.widget.ListView;
-import android.widget.TextView;
 
 import org.kvj.bravo7.SuperActivity;
 import org.kvj.bravo7.form.FormController;
@@ -58,7 +52,6 @@ import kvj.tegmine.android.ui.form.FileSystemItemWidgetAdapter;
 public class OneFileViewer extends Fragment implements ProgressListener {
 
     private RecyclerView listView = null;
-    private ImageView titleIcon = null;
 
     public void requestFocus() {
         if (null != listView) {
@@ -80,12 +73,14 @@ public class OneFileViewer extends Fragment implements ProgressListener {
     }
 
     public static interface FileViewerListener {
+
         public void openEditor(Bundle data);
+
+        public void updateViewerTitle(String title);
     }
 
     private Logger logger = Logger.forInstance(this);
     private TegmineController controller = null;
-    private TextView titleText = null;
     private OneFileAdapter adapter = null;
     private List<LineMeta> offsets = null;
     private FormController form = new FormController(null);
@@ -106,9 +101,6 @@ public class OneFileViewer extends Fragment implements ProgressListener {
         if (null == controller) {
             return;
         }
-        titleText.setTextSize(TypedValue.COMPLEX_UNIT_SP, controller.theme().headerTextSp());
-        titleText.setTextColor(controller.theme().textColor());
-        titleIcon.setImageResource(controller.theme().fileIcon());
         adapter.notifyDataSetChanged();
     }
 
@@ -137,6 +129,10 @@ public class OneFileViewer extends Fragment implements ProgressListener {
         return this;
     }
 
+    public FileSystemItem item() {
+        return form.getValue("select");
+    }
+
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         if (null == controller) { // Invalid fragment
@@ -144,9 +140,9 @@ public class OneFileViewer extends Fragment implements ProgressListener {
         }
         setHasOptionsMenu(true);
         View view = inflater.inflate(R.layout.fragment_one_file, container, false);
-        titleText = (TextView) view.findViewById(R.id.one_file_title_text);
-        titleText.setText(item.details());
-        titleIcon = (ImageView) view.findViewById(R.id.one_file_title_icon);
+        if (null != listener) {
+            listener.updateViewerTitle(item.name);
+        }
         view.findViewById(R.id.one_file_do_add).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {

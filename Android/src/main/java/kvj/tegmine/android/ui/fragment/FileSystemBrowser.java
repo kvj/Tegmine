@@ -5,11 +5,12 @@ import android.os.Bundle;
 import android.support.design.widget.NavigationView;
 import android.support.v4.app.Fragment;
 import android.support.v4.widget.DrawerLayout;
+import android.support.v7.app.AppCompatActivity;
 import android.support.v7.view.menu.MenuBuilder;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.Toolbar;
 import android.text.TextUtils;
-import android.util.TypedValue;
 import android.view.ContextMenu;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -18,8 +19,6 @@ import android.view.SubMenu;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
-import android.widget.ImageView;
-import android.widget.TextView;
 
 import org.kvj.bravo7.form.FormController;
 import org.kvj.bravo7.form.impl.ViewFinder;
@@ -46,7 +45,6 @@ public class FileSystemBrowser extends Fragment implements ProgressListener {
     private RecyclerView listView = null;
     private DrawerLayout drawer = null;
     private NavigationView drawerPane = null;
-    private ImageView titleIcon = null;
 
     @Override
     public void activityStarted() {
@@ -73,10 +71,11 @@ public class FileSystemBrowser extends Fragment implements ProgressListener {
         public void openNewWindow(Bundle data);
 
         public void openFile(Bundle data, FileSystemItem item);
+
+        public void updateBrowserTitle(String title);
     }
 
     private TegmineController controller = null;
-    private TextView titleText = null;
     private FileBrowserAdapter adapter = null;
     private Logger logger = Logger.forInstance(this);
     private FormController form = null;
@@ -112,9 +111,6 @@ public class FileSystemBrowser extends Fragment implements ProgressListener {
         if (null == controller) {
             return;
         }
-        titleText.setTextColor(controller.theme().textColor());
-        titleText.setTextSize(TypedValue.COMPLEX_UNIT_SP, controller.theme().headerTextSp());
-        titleIcon.setImageResource(controller.theme().folderIcon());
         drawerPane.setBackgroundColor(controller.theme().backgroundColor());
         adapter.notifyDataSetChanged();
     }
@@ -125,8 +121,6 @@ public class FileSystemBrowser extends Fragment implements ProgressListener {
             return null;
         }
         View view = inflater.inflate(R.layout.fragment_file_browser, container, false);
-        titleText = (TextView) view.findViewById(R.id.file_browser_title_text);
-        titleIcon = (ImageView) view.findViewById(R.id.file_browser_title_icon);
         listView = (RecyclerView) view.findViewById(android.R.id.list);
         listView.setLayoutManager(new LinearLayoutManager(container.getContext()));
         registerForContextMenu(listView);
@@ -168,9 +162,9 @@ public class FileSystemBrowser extends Fragment implements ProgressListener {
 
     private void updateTitle() {
         if (controller.isRoot(adapter.root())) { // Have root defined
-            titleText.setText(controller.fileSystemProvider(adapter.root().providerName()).label());
+            listener.updateBrowserTitle(controller.fileSystemProvider(adapter.root()).label());
         } else {
-            titleText.setText(adapter.root().details());
+            listener.updateBrowserTitle(adapter.root().details());
         }
     }
 
@@ -413,5 +407,18 @@ public class FileSystemBrowser extends Fragment implements ProgressListener {
             menu.findItem(R.id.context_remove).setVisible(
                     controller.itemHasFeature(item, FileSystemProvider.Features.CanRemoveFile));
         }
+    }
+
+    public Toolbar setupToolbar(AppCompatActivity activity) {
+        Toolbar toolbar = (Toolbar) activity.findViewById(R.id.main_toolbar);
+        activity.setSupportActionBar(toolbar);
+        toolbar.setNavigationIcon(activity.getDrawerToggleDelegate().getThemeUpIndicator());
+        toolbar.setNavigationOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                toggleNavigation();
+            }
+        });
+        return toolbar;
     }
 }

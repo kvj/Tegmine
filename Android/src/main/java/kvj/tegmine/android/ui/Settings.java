@@ -2,6 +2,7 @@ package kvj.tegmine.android.ui;
 
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
 
 import org.kvj.bravo7.log.Logger;
 import org.kvj.bravo7.ng.App;
@@ -22,6 +23,7 @@ public class Settings extends AppCompatActivity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.dialog_settings);
+        setSupportActionBar((Toolbar) findViewById(R.id.main_toolbar));
         onController();
     }
 

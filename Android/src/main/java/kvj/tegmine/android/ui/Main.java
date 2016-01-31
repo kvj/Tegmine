@@ -4,20 +4,22 @@ import android.animation.LayoutTransition;
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.widget.ContentLoadingProgressBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.text.TextUtils;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
 import android.widget.LinearLayout;
 
 import org.kvj.bravo7.form.FormController;
@@ -61,6 +63,8 @@ public class Main extends AppCompatActivity implements
     private Editors editors = null;
     private ContentLoadingProgressBar progressBar = null;
     private SensorManager mSensorManager = null;
+    private String viewerTitle = null;
+    private String browserTitle = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -71,8 +75,7 @@ public class Main extends AppCompatActivity implements
         toolbar = (Toolbar) findViewById(R.id.main_toolbar);
         progressBar = (ContentLoadingProgressBar)findViewById(R.id.main_progress_bar);
         setSupportActionBar(toolbar);
-        setupToolbar(toolbar);
-        form.add(new TransientAdapter<String>(new StringBundleAdapter(), Tegmine.VIEW_TYPE_BROWSER), Tegmine.BUNDLE_VIEW_TYPE);
+        form.add(new TransientAdapter<>(new StringBundleAdapter(), Tegmine.VIEW_TYPE_BROWSER), Tegmine.BUNDLE_VIEW_TYPE);
         multiPane = (LinearLayout) findViewById(R.id.main_view);
         multiView = multiPane != null;
         if (multiView) {
@@ -88,22 +91,28 @@ public class Main extends AppCompatActivity implements
             });
         }
         form.load(this, savedInstanceState);
+        logger.d("Intent:", getIntent(), Intent.ACTION_ASSIST);
+        if (null != getIntent() && Intent.ACTION_ASSIST.equals(getIntent().getAction())) { // ASSIST
+            logger.d("Assist mode:");
+            if (null == savedInstanceState) { // Create new
+                savedInstanceState = new Bundle();
+            }
+            startAssist(savedInstanceState);
+        }
         onController(savedInstanceState);
     }
 
-    private void setupToolbar(Toolbar toolbar) {
-        toolbar.setTitle(R.string.app_name);
-        toolbar.setNavigationIcon(getDrawerToggleDelegate().getThemeUpIndicator());
-        toolbar.setNavigationOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if (null != browser) {
-                    browser.toggleNavigation();
-                }
-            }
-        });
+    private void startAssist(Bundle bundle) {
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+        String mode = preferences.getString(Tegmine.BUNDLE_VIEW_TYPE, null);
+        logger.d("Assist mode:", mode);
+        if (!TextUtils.isEmpty(mode)) { // Have
+            form.setValue(Tegmine.BUNDLE_VIEW_TYPE, mode);
+            bundle.putString(Tegmine.BUNDLE_EDIT_TYPE, preferences.getString(Tegmine.BUNDLE_EDIT_TYPE, Tegmine.EDIT_TYPE_ADD));
+            bundle.putString(Tegmine.BUNDLE_EDIT_TEMPLATE, preferences.getString(Tegmine.BUNDLE_EDIT_TEMPLATE, null));
+            bundle.putString(Tegmine.BUNDLE_SELECT, preferences.getString(Tegmine.BUNDLE_SELECT, null));
+        }
     }
-
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -128,6 +137,7 @@ public class Main extends AppCompatActivity implements
 
     private void showBrowser(Bundle bundle) {
         browser = new FileSystemBrowser().setListener(this).create(this, controller, bundle);
+        browser.setupToolbar(this);
         if (multiView) { // Load to first cell
             openIn(browser, R.id.main_left_view, "file_browser");
         } else {
@@ -150,8 +160,7 @@ public class Main extends AppCompatActivity implements
             editors.add(data);
             return;
         }
-        editors = new Editors().create(this, controller, data);
-        editors.listeners().add(this);
+        editors = new Editors().addListener(this).create(this, controller, data);
         if (multiView) {
             openIn(editors, R.id.main_right_view, "editor");
         } else {
@@ -167,7 +176,6 @@ public class Main extends AppCompatActivity implements
     public void onController(Bundle savedInstanceState) {
         applyTheme();
         String mode = form.getValue(Tegmine.BUNDLE_VIEW_TYPE, String.class);
-
         if (Tegmine.VIEW_TYPE_BROWSER.equals(mode)) { // Open single browser
             showBrowser(savedInstanceState);
         }
@@ -327,6 +335,19 @@ public class Main extends AppCompatActivity implements
             intent.putExtras(data);
             startActivityForResult(intent, REQUEST_EDITOR);
         }
+    }
+
+    @Override
+    public void updateViewerTitle(String title) {
+        this.viewerTitle = title;
+        toolbar.setTitle(controller.fileSystemProvider(viewer.item()).label());
+        toolbar.setSubtitle(title);
+    }
+
+    @Override
+    public void updateBrowserTitle(String title) {
+        this.browserTitle = title;
+        toolbar.setSubtitle(title);
     }
 
     @Override

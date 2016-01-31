@@ -1,5 +1,8 @@
 package kvj.tegmine.android.ui.fragment;
 
+import android.app.Activity;
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.Preference;
 import android.preference.PreferenceFragment;
@@ -10,9 +13,10 @@ import org.kvj.bravo7.log.Logger;
 import org.kvj.bravo7.util.Tasks;
 
 import kvj.tegmine.android.R;
+import kvj.tegmine.android.Tegmine;
 import kvj.tegmine.android.data.TegmineController;
 import kvj.tegmine.android.data.def.FileSystemException;
-import kvj.tegmine.android.data.def.FileSystemItem;
+import kvj.tegmine.android.ui.ShortcutCreator;
 import kvj.tegmine.android.ui.dialog.FileChooser;
 
 /**
@@ -20,9 +24,20 @@ import kvj.tegmine.android.ui.dialog.FileChooser;
  */
 public class MainPreferences extends PreferenceFragment {
 
+    private static final String PREF_CONF_FILE = "p_config_file";
+    private static final CharSequence PREF_REVERT = "p_config_revert";
     private TegmineController controller = null;
     private Logger logger = Logger.forInstance(this);
     private FragmentManager supportFragmentManager;
+    private SharedPreferences.OnSharedPreferenceChangeListener confFileListener = new SharedPreferences.OnSharedPreferenceChangeListener() {
+        @Override
+        public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
+            if (key.equals(PREF_CONF_FILE)) {
+                Preference configFile = getPreferenceScreen().findPreference(PREF_CONF_FILE);
+                configFile.setSummary(sharedPreferences.getString(PREF_CONF_FILE, ""));
+            }
+        }
+    };
 
     public MainPreferences create(TegmineController controller, FragmentManager supportFragmentManager) {
         this.controller = controller;
@@ -67,39 +82,42 @@ public class MainPreferences extends PreferenceFragment {
         });
     }
 
-    private Preference setupConfigFilePreference(final String name, final String revert_name) {
-        final Preference configFile = getPreferenceScreen().findPreference(name);
-        final Preference.OnPreferenceChangeListener listener = new Preference.OnPreferenceChangeListener() {
-            @Override
-            public boolean onPreferenceChange(Preference preference, Object newValue) {
-                configFile.setSummary(newValue.toString());
-                return true;
-            }
-        };
-        configFile.setOnPreferenceChangeListener(listener);
-        String value = getPreferenceManager().getSharedPreferences().getString(name, "");
-        listener.onPreferenceChange(configFile, value);
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        SharedPreferences preferences = getPreferenceManager().getSharedPreferences();
+        if (requestCode == Tegmine.REQUEST_FILE && resultCode == Activity.RESULT_OK) { // Selected
+            logger.d("Selected file:", data.getAction());
+            preferences.edit().putString("p_config_file", data.getAction()).commit();
+        }
+        if (requestCode == Tegmine.REQUEST_SHORTCUT && resultCode == Activity.RESULT_OK) { // Selected
+            Intent intent = data.getParcelableExtra(Intent.EXTRA_SHORTCUT_INTENT);
+            logger.d("Selected shortcut:", intent);
+            SharedPreferences.Editor editor = getPreferenceManager().getSharedPreferences().edit();
+            editor.putString(Tegmine.BUNDLE_VIEW_TYPE, intent.getStringExtra(Tegmine.BUNDLE_VIEW_TYPE));
+            editor.putString(Tegmine.BUNDLE_EDIT_TYPE, intent.getStringExtra(Tegmine.BUNDLE_EDIT_TYPE));
+            editor.putString(Tegmine.BUNDLE_EDIT_TEMPLATE, intent.getStringExtra(Tegmine.BUNDLE_EDIT_TEMPLATE));
+            editor.putString(Tegmine.BUNDLE_SELECT, intent.getStringExtra(Tegmine.BUNDLE_SELECT));
+            editor.commit();
+        }
+    }
+
+    private Preference setupConfigFilePreference() {
+        getPreferenceManager().getSharedPreferences().registerOnSharedPreferenceChangeListener(confFileListener);
+        final Preference configFile = getPreferenceScreen().findPreference(PREF_CONF_FILE);
         configFile.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
             @Override
             public boolean onPreferenceClick(Preference preference) {
-                FileChooser.newDialog(controller, new FileChooser.FileChooserListener() {
-                    @Override
-                    public void onFile(FileSystemItem item) {
-                        getPreferenceManager().getSharedPreferences().edit()
-                            .putString(name, item.toURL()).commit();
-                        listener.onPreferenceChange(configFile, item.toURL());
-                    }
-                }).show(supportFragmentManager, "dialog");
+                startActivityForResult(new Intent(getActivity(), FileChooser.class), Tegmine.REQUEST_FILE);
                 return true;
             }
         });
-        Preference pref = getPreferenceScreen().findPreference(revert_name);
+        confFileListener.onSharedPreferenceChanged(getPreferenceManager().getSharedPreferences(), PREF_CONF_FILE);
+        Preference pref = getPreferenceScreen().findPreference(PREF_REVERT);
         pref.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
             @Override
             public boolean onPreferenceClick(Preference preference) {
                 String url = getString(R.string.p_config_file_default);
-                getPreferenceManager().getSharedPreferences().edit().putString(name, url).commit();
-                listener.onPreferenceChange(configFile, url);
+                getPreferenceManager().getSharedPreferences().edit().putString(PREF_CONF_FILE, url).commit();
                 reloadConfig();
                 return true;
             }
@@ -110,9 +128,33 @@ public class MainPreferences extends PreferenceFragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        getPreferenceManager().getSharedPreferences().registerOnSharedPreferenceChangeListener(confFileListener);
         addPreferencesFromResource(R.xml.main_settings);
-        setupConfigFilePreference("p_config_file", getString(R.string.p_config_revert));
+        setupConfigFilePreference();
         setupConfigReloadPreference(getString(R.string.p_config_reload));
+        setupAssistPreference();
+    }
+
+    private void setupAssistPreference() {
+        getPreferenceScreen().findPreference(getString(R.string.p_config_assist_set))
+                .setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
+                    @Override
+                    public boolean onPreferenceClick(Preference preference) {
+                        Intent intent = new Intent(getActivity(), ShortcutCreator.class);
+                        startActivityForResult(intent, Tegmine.REQUEST_SHORTCUT);
+                        return true;
+                    }
+                });
+        getPreferenceScreen().findPreference(getString(R.string.p_config_assist_reset))
+                .setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
+                    @Override
+                    public boolean onPreferenceClick(Preference preference) {
+                        getPreferenceManager().getSharedPreferences()
+                                .edit().remove(Tegmine.BUNDLE_VIEW_TYPE).commit();
+                        controller.messageShort("Shortcut cleared");
+                        return true;
+                    }
+                });
     }
 
 }

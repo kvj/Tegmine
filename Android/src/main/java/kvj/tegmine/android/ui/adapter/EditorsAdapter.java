@@ -73,7 +73,7 @@ public class EditorsAdapter extends PagerAdapter {
     @Override
     public CharSequence getPageTitle(int position) {
         EditorInfo info = controller.editors().tab(position);
-        return String.format("#%d %s", position, info.title);
+        return String.format("%s", info.title);
     }
 
 }

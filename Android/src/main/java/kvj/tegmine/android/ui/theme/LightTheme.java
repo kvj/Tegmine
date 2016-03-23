@@ -164,6 +164,14 @@ public class LightTheme {
         return dark? R.drawable.icn_file_save_dark: R.drawable.icn_file_save_light;
     }
 
+    public int refreshIcon() {
+        return dark? R.drawable.ic_widget_refresh_dk: R.drawable.ic_widget_refresh_lt;
+    }
+
+    public int configIcon() {
+        return dark? R.drawable.ic_widget_config_dk: R.drawable.ic_widget_config_lt;
+    }
+
     public boolean loadColor(Colors col, String color) {
         if (null != col) {
             int attr = key2attr(color);

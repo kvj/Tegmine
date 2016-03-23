@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+    <PreferenceCategory android:title="@string/app_name">
+        <EditTextPreference android:key="@string/conf_widget_label" android:title="Widget Label"/>
+        <EditTextPreference android:key="@string/conf_widget_name" android:title="Widget Name"/>
+        <CheckBoxPreference android:key="@string/conf_widget_line_wrap" android:title="Word wrap"/>
+    </PreferenceCategory>
+    <Preference
+        android:key="@string/conf_widget_url"
+        android:title="Select file"/>
+    <EditTextPreference
+        android:key="@string/conf_widget_data"
+        android:title="Data"/>
+</PreferenceScreen>

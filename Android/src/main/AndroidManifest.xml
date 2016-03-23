@@ -41,6 +41,32 @@
                 android:exported="true">
 
         </provider>
+        <activity android:name=".ui.appwidget.Widget00Config" >
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
+            </intent-filter>
+        </activity>
+
+        <receiver android:name=".ui.appwidget.Widget00" >
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget00_info" />
+        </receiver>
+
+        <service
+            android:name=".ui.appwidget.Widget00$Service"
+            android:permission="android.permission.BIND_REMOTEVIEWS" />
+
+        <receiver android:name=".data.UserReceiver">
+            <intent-filter>
+                <action android:name="android.intent.action.USER_PRESENT"/>
+            </intent-filter>
+        </receiver>
+
     </application>
 
 </manifest>

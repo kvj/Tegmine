@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    style="@style/widget_bg"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_margin="3dp"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="0"
+                android:orientation="horizontal">
+
+                <android.widget.ImageButton
+                    android:layout_weight="0"
+                    android:id="@+id/widget_00_config_icon"
+                    style="@style/widget_IconButton"
+                    android:src="@drawable/ic_widget_config_dk" />
+
+                <TextView
+                    android:id="@+id/widget_00_title"
+                    style="@style/widget_text.title"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_gravity="center_vertical"
+                    android:gravity="center" />
+
+                <android.widget.ImageButton
+                    android:layout_weight="0"
+                    android:id="@+id/widget_00_refresh_icon"
+                    style="@style/widget_IconButton"
+                    android:src="@drawable/ic_widget_refresh_dk" />
+            </LinearLayout>
+
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1">
+
+                <TextView
+                    android:id="@+id/widget_00_empty"
+                    style="@style/widget_text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:layout_weight="0"
+                    android:text="No data" />
+
+                <ListView
+                    android:id="@+id/widget_00_list"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:divider="@android:color/transparent"
+                    android:drawSelectorOnTop="false"
+                    android:listSelector="@null"></ListView>
+            </FrameLayout>
+        </LinearLayout>
+    </RelativeLayout>
+
+</FrameLayout>

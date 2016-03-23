@@ -1,4 +1,6 @@
 <resources>
+    <color name="textLight">@android:color/primary_text_light</color>
+    <color name="textDark">@android:color/primary_text_dark</color>
 
     <!-- Base application theme. -->
     <style name="AppThemeLight" parent="Theme.AppCompat.Light">
@@ -39,6 +41,25 @@
         <item name="android:layout_marginBottom">16dp</item>
         <item name="android:layout_marginLeft">16dp</item>
         <!--<item name="android:stateListAnimator">@anim/circle_btn_anim</item>-->
+    </style>
+    <style name="widget_bg">
+        <item name="android:background">@android:color/transparent</item>
+    </style>
+    <style name="widget_text" parent="@android:style/TextAppearance.Medium">
+        <item name="android:background">@null</item>
+        <item name="android:textColor">#ff000000</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:padding">2sp</item>
+        <item name="android:typeface">monospace</item>
+    </style>
+    <style name="widget_text.title" parent="widget_text">
+        <item name="android:textStyle">bold</item>
+    </style>
+    <style name="widget_IconButton">
+        <item name="android:background">?android:attr/selectableItemBackground</item>
+        <item name="android:layout_width">40dp</item>
+        <item name="android:layout_height">40dp</item>
+        <item name="android:layout_gravity">center</item>
     </style>
 
 </resources>

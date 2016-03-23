@@ -22,6 +22,12 @@
     <string name="p_config_assist_set">p_config_assist_set</string>
     <string name="p_config_assist_reset">p_config_assist_reset</string>
     <string name="p_config_assist">p_config_assist</string>
+    <string name="conf_widget_title">conf_widget_title</string>
+    <string name="conf_widget_label">conf_widget_label</string>
+    <string name="conf_widget_name">conf_widget_name</string>
+    <string name="conf_widget_data">conf_widget_data</string>
+    <string name="conf_widget_line_wrap">conf_widget_line_wrap</string>
+    <string name="conf_widget_url">conf_widget_url</string>
     <string-array name="shortcut_types">
         <item>Display file</item>
         <item>Append to</item>

@@ -38,6 +38,7 @@ import kvj.tegmine.android.Tegmine;
 import kvj.tegmine.android.data.TegmineController;
 import kvj.tegmine.android.data.def.FileSystemException;
 import kvj.tegmine.android.data.def.FileSystemItem;
+import kvj.tegmine.android.data.def.FileSystemProvider;
 import kvj.tegmine.android.data.model.FileItemWatcher;
 import kvj.tegmine.android.data.model.LineMeta;
 import kvj.tegmine.android.data.model.ProgressListener;
@@ -52,6 +53,7 @@ import kvj.tegmine.android.ui.form.FileSystemItemWidgetAdapter;
 public class OneFileViewer extends Fragment implements ProgressListener {
 
     private RecyclerView listView = null;
+    private FileSystemProvider provider = null;
 
     public void requestFocus() {
         if (null != listView) {
@@ -111,7 +113,7 @@ public class OneFileViewer extends Fragment implements ProgressListener {
         form.add(new TransientAdapter<>(new BooleanBundleAdapter(), controller.showNumbers()),
                  "showNumbers");
         form.add(new TransientAdapter<>(new BooleanBundleAdapter(), controller.wrapLines()),
-                 "wrapLines");
+                "wrapLines");
         form.load(activity, bundle);
         item = form.getValue("select", FileSystemItem.class);
         logger.d("new FileViewer:", item, bundle, controller.showNumbers(), controller.wrapLines());
@@ -119,6 +121,7 @@ public class OneFileViewer extends Fragment implements ProgressListener {
             controller.messageShort("File not found");
             return null;
         }
+        provider = controller.fileSystemProvider(item);
         watcher = new FileItemWatcher(controller, item) {
             @Override
             public void itemChanged(FileSystemItem item) {
@@ -192,7 +195,7 @@ public class OneFileViewer extends Fragment implements ProgressListener {
         adapter.setBounds(0, -1, new Runnable() {
             @Override
             public void run() {
-                if (controller.scrollToBottom() && adapter.getItemCount() > 0) {
+                if (provider.scrollToBottom() && adapter.getItemCount() > 0) {
                     listView.scrollToPosition(adapter.getItemCount()-1);
                     listView.post(new Runnable() {
                         @Override
@@ -280,8 +283,8 @@ public class OneFileViewer extends Fragment implements ProgressListener {
             protected FileSystemException doInBackground() {
                 OutputStream stream = null;
                 try {
-                    stream = controller.fileSystemProvider().append(item);
-                    controller.writeEdited(stream, text.toString().trim(), false);
+                    stream = provider.append(item);
+                    controller.writeEdited(provider, stream, text.toString().trim(), false);
                     watcher.reset();
                 } catch (FileSystemException e) {
                     return e;

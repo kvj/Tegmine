@@ -34,6 +34,7 @@ import kvj.tegmine.android.R;
 import kvj.tegmine.android.data.TegmineController;
 import kvj.tegmine.android.data.def.FileSystemException;
 import kvj.tegmine.android.data.def.FileSystemItem;
+import kvj.tegmine.android.data.def.FileSystemProvider;
 import kvj.tegmine.android.data.model.EditorInfo;
 import kvj.tegmine.android.data.model.FileItemWatcher;
 import kvj.tegmine.android.data.model.LineMeta;
@@ -51,6 +52,7 @@ public class OneEditor extends Fragment implements ProgressListener {
     private TegmineController controller = App.controller();
     private EditText editor = null;
     private FileSystemItem item = null;
+    private FileSystemProvider provider = null;
     private SyntaxDef syntax = null;
     private FileItemWatcher watcher = null;
     private ViewGroup findWidget = null;
@@ -83,6 +85,7 @@ public class OneEditor extends Fragment implements ProgressListener {
         if (null == item) { // Invalid
             return null;
         }
+        provider = controller.fileSystemProvider(item);
         imm = (InputMethodManager) controller.context().getSystemService(
             Context.INPUT_METHOD_SERVICE);
         info.view = this;
@@ -212,8 +215,8 @@ public class OneEditor extends Fragment implements ProgressListener {
             @Override
             protected Void doInBackground() {
                 List<LineMeta> lines = new ArrayList<>();
-                controller.split(lines, info.text);
-                controller.linesForEditor(lines, builder, syntax);
+                controller.split(controller.fileSystemProvider(item), lines, info.text);
+                controller.linesForEditor(controller.fileSystemProvider(item), lines, builder, syntax);
                 return null;
             }
 
@@ -266,6 +269,9 @@ public class OneEditor extends Fragment implements ProgressListener {
     }
 
     boolean findVisible() {
+        if (null == findWidget) { // Not visible
+            return false;
+        }
         return findWidget.getVisibility() == View.VISIBLE;
     }
 
@@ -303,6 +309,15 @@ public class OneEditor extends Fragment implements ProgressListener {
 
     public void resetWatcher() {
         watcher.reset();
+    }
+
+    public void insert(String text) {
+        toInfo();
+        int sel = info.selectionStart;
+        info.text = info.text.substring(0, sel)+text+info.text.substring(info.selectionEnd);
+        info.selectionStart = sel+text.length();
+        info.selectionEnd = -1;
+        info2Editor();
     }
 
     private class PositionInText {
@@ -347,24 +362,24 @@ public class OneEditor extends Fragment implements ProgressListener {
         List<String> lines = new ArrayList<>();
         Collections.addAll(lines, input.split("\n"));
         StringBuilder indented = new StringBuilder();
-        for (int i = 0; i < controller.spacesInTab(); i++) {
+        for (int i = 0; i < controller.spacesInTab(provider); i++) {
             indented.append(' ');
         }
         for (int i = start.lineNo; i <= finish.lineNo && i<lines.size(); i++) {
             if (!reverse) { // Add indent
                 lines.set(i, indented.toString() + lines.get(i));
                 if (i == start.lineNo) { // First time
-                    selStart += controller.spacesInTab();
+                    selStart += controller.spacesInTab(provider);
                 }
-                selFinish += controller.spacesInTab();
+                selFinish += controller.spacesInTab(provider);
             } else {
-                int indent = controller.indent(lines.get(i));
+                int indent = controller.indent(provider, lines.get(i));
                 if (indent > 0) { // Remove indent
-                    lines.set(i, lines.get(i).substring(controller.spacesInTab()));
+                    lines.set(i, lines.get(i).substring(controller.spacesInTab(provider)));
                     if (i == start.lineNo) { // First time
-                        selStart -= controller.spacesInTab();
+                        selStart -= controller.spacesInTab(provider);
                     }
-                    selFinish -= controller.spacesInTab();
+                    selFinish -= controller.spacesInTab(provider);
                 }
             }
         }
@@ -401,7 +416,7 @@ public class OneEditor extends Fragment implements ProgressListener {
                     }
                     List<LineMeta> lines = new ArrayList<>();
                     controller.loadFilePart(lines, item, 0, -1);
-                    controller.linesForEditor(lines, buffer, syntax);
+                    controller.linesForEditor(provider, lines, buffer, syntax);
                     return null;
                 } catch (FileSystemException e) {
                     return e;
@@ -445,8 +460,8 @@ public class OneEditor extends Fragment implements ProgressListener {
     }
 
     void applyTemplate(TemplateDef tmpl) {
-        TegmineController.TemplateApplyResult applyResult = controller.applyTemplate(editor.getText().toString(), tmpl);
-        if (null != applyResult) { // Nothing to add
+        TegmineController.TemplateApplyResult applyResult = controller.applyTemplate(provider, editor.getText().toString(), tmpl);
+        if (null != applyResult) { // New text
             toInfo();
             if (!TextUtils.isEmpty(info.text) && !info.text.endsWith("\n")) { // No new line at bottom
                 info.text += "\n";
@@ -460,7 +475,7 @@ public class OneEditor extends Fragment implements ProgressListener {
     }
 
     private void applyTheme() {
-        if (null == info) {
+        if (null == info || null == editor) {
             return;
         }
         boolean doEdit = info.mode == EditorInfo.Mode.Edit;
@@ -497,11 +512,11 @@ public class OneEditor extends Fragment implements ProgressListener {
             if (source.length() == 1 && source.charAt(0) == '\n') {
                 // New line
                 String line = findString(spanned.toString(), dstart).line;
-                int indent = controller.indent(line);
+                int indent = controller.indent(provider, line);
                 String sign = controller.signInLine(line);
 //            logger.d("Indent:", line, indent, sign);
                 StringBuilder builder = new StringBuilder(source);
-                controller.addIndent(builder, indent);
+                controller.addIndent(provider, builder, indent);
                 if (null != sign) {
                     builder.append(sign);
                     builder.append(' ');
@@ -569,7 +584,7 @@ public class OneEditor extends Fragment implements ProgressListener {
             for (int i = 0; i < parts.length; i++) { // Replace text
                 String line = parts[i];
                 SpannableStringBuilder lineBuilder = new SpannableStringBuilder();
-                controller.applyTheme(syntax, line, lineBuilder);
+                controller.applyTheme(provider, syntax, line, lineBuilder);
                 spans = lineBuilder.getSpans(0, lineBuilder.length(), CharacterStyle.class);
                 for (CharacterStyle span : spans) { // $COMMENT
                     builder.setSpan(span,

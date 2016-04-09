@@ -169,7 +169,19 @@ public class LightTheme {
     }
 
     public int configIcon() {
-        return dark? R.drawable.ic_widget_config_dk: R.drawable.ic_widget_config_lt;
+        return dark? R.drawable.ic_widget_conf_dk: R.drawable.ic_widget_conf_lt;
+    }
+
+    public int saveIcon() {
+        return dark? R.drawable.ic_action_save_dk: R.drawable.ic_action_save_lt;
+    }
+
+    public int closeIcon() {
+        return dark? R.drawable.ic_action_close_dk: R.drawable.ic_action_close_lt;
+    }
+
+    public int voiceIcon() {
+        return dark? R.drawable.ic_action_voice_dk: R.drawable.ic_action_voice_lt;
     }
 
     public boolean loadColor(Colors col, String color) {

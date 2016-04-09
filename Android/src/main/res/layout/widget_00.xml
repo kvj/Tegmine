@@ -25,7 +25,7 @@
                     android:layout_weight="0"
                     android:id="@+id/widget_00_config_icon"
                     style="@style/widget_IconButton"
-                    android:src="@drawable/ic_widget_config_dk" />
+                    android:src="@drawable/ic_widget_conf_dk" />
 
                 <TextView
                     android:id="@+id/widget_00_title"

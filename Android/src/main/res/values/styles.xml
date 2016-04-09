@@ -57,8 +57,8 @@
     </style>
     <style name="widget_IconButton">
         <item name="android:background">?android:attr/selectableItemBackground</item>
-        <item name="android:layout_width">40dp</item>
-        <item name="android:layout_height">40dp</item>
+        <item name="android:layout_width">42dp</item>
+        <item name="android:layout_height">42dp</item>
         <item name="android:layout_gravity">center</item>
     </style>
 

@@ -19,6 +19,7 @@ import java.util.List;
 import kvj.tegmine.android.data.TegmineController;
 import kvj.tegmine.android.data.def.FileSystemException;
 import kvj.tegmine.android.data.def.FileSystemItem;
+import kvj.tegmine.android.data.def.FileSystemProvider;
 import kvj.tegmine.android.data.model.LineMeta;
 import kvj.tegmine.android.data.model.SyntaxDef;
 import kvj.tegmine.android.data.model.util.Wrappers;
@@ -64,6 +65,7 @@ public class FileItemProvider extends ContentProvider {
             logger.e("Item not found:", url);
             throw new IllegalArgumentException("Item not found:" + url+", "+uri);
         }
+        FileSystemProvider provider = controller.fileSystemProvider(item);
         SyntaxDef syntax = controller.findSyntax(item);
         List<LineMeta> buffer = new ArrayList<>();
         try {
@@ -85,7 +87,7 @@ public class FileItemProvider extends ContentProvider {
             LineMeta line = buffer.get(idx);
             Object[] row = new Object[fields.length];
             StringBuilder sb = new StringBuilder();
-            controller.addIndent(sb, line.indent() - indent);
+            controller.addIndent(provider, sb, line.indent() - indent);
             sb.append(line.data());
             for (int i = 0; i < fields.length; i++) {
                 Object value = null;
@@ -97,7 +99,7 @@ public class FileItemProvider extends ContentProvider {
                 }
                 if ("colored".equals(fields[i])) {
                     SpannableStringBuilder b = new SpannableStringBuilder();
-                    controller.applyTheme(syntax, sb.toString(), b, SyntaxDef.Feature.Shrink);
+                    controller.applyTheme(provider, syntax, sb.toString(), b, SyntaxDef.Feature.Shrink);
                     Parcel p = Parcel.obtain();
                     TextUtils.writeToParcel(b, p, 0);
                     p.setDataPosition(0);

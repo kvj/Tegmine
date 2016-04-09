@@ -111,27 +111,22 @@ public class TegmineController extends Controller {
         editors = new EditorsController(this);
     }
 
-    public FileSystemProvider fileSystemProvider() {
-        logger.d("Default provider:", defaultProvider);
-        return defaultProvider;
-    }
-
     public FileSystemProvider fileSystemProvider(FileSystemItem item) {
         if (null == item) { // Failsafe
-            return fileSystemProvider();
+            return defaultProvider;
         }
         return fileSystemProvider(item.providerName());
     }
 
     public FileSystemProvider fileSystemProvider(String name) {
         if (null == name) { // Default is requested:
-            return fileSystemProvider();
+            return defaultProvider;
         }
         FileSystemProvider provider = fileSystemProviders.get(name);
         if (null != provider) { // OK
             return provider;
         }
-        return fileSystemProvider(); // Failsafe
+        return defaultProvider; // Failsafe
     }
 
     public LightTheme theme() {
@@ -141,7 +136,8 @@ public class TegmineController extends Controller {
     public List<LineMeta> makeFileLayout(FileSystemItem item) throws FileSystemException {
         // Read file and make list with line offsets
         List<LineMeta> offsets = new ArrayList<>();
-        InputStream stream = fileSystemProvider().read(item);
+        FileSystemProvider provider = fileSystemProvider(item);
+        InputStream stream = provider.read(item);
         long offset = 0;
         long from = 0;
         int data;
@@ -150,7 +146,7 @@ public class TegmineController extends Controller {
             while ((data = stream.read()) >= 0) { // Read until end
                 offset++;
                 if (data == '\n') { // New line
-                    LineMeta meta = new LineMeta(indent(oneLine.toString("utf-8")), from);
+                    LineMeta meta = new LineMeta(indent(provider, oneLine.toString("utf-8")), from);
                     oneLine.reset();
                     offsets.add(meta);
                     from = offset;
@@ -159,7 +155,7 @@ public class TegmineController extends Controller {
                 }
             }
             if (from<offset) { // Add last
-                LineMeta meta = new LineMeta(indent(oneLine.toString("utf-8")), from);
+                LineMeta meta = new LineMeta(indent(provider, oneLine.toString("utf-8")), from);
                 offsets.add(meta);
             }
             stream.close();
@@ -181,13 +177,13 @@ public class TegmineController extends Controller {
         return s.substring(start);
     }
 
-    public void split(List<LineMeta> lines, String text) {
+    public void split(FileSystemProvider provider, List<LineMeta> lines, String text) {
         if (TextUtils.isEmpty(text)) { // No lines
             return;
         }
         String[] lineStrs = text.split("\n");
         for (String line : lineStrs) {
-            LineMeta meta = new LineMeta(indent(line, false), -1);
+            LineMeta meta = new LineMeta(indent(provider, line, false), -1);
             meta.data(ltrim(line));
             lines.add(meta);
         }
@@ -210,11 +206,16 @@ public class TegmineController extends Controller {
         int start = 0;
         int len = buffer.size();
         if (!TextUtils.isEmpty(def)) {
-            if (def.startsWith("?")) {
+            if (def.startsWith("?") || def.startsWith("/")) {
                 // Search backwards
                 int sstart = buffer.size() - 1;
                 int ssend = -1;
                 int sdir = -1;
+                if (def.startsWith("/")) { // Search forward
+                    ssend = buffer.size();
+                    sstart = 0;
+                    sdir = 1;
+                }
                 String lookFor = def.substring(1);
                 for (int i = sstart; i != ssend; i += sdir) {
                     if (buffer.get(i).data().indexOf(lookFor) != -1) {
@@ -244,7 +245,7 @@ public class TegmineController extends Controller {
             String line;
             int linesRead = 0;
             while ((line = reader.readLine()) != null) { // Read lines one by one
-                LineMeta meta = new LineMeta(indent(line), -1);
+                LineMeta meta = new LineMeta(indent(fileSystemProvider(item), line), -1);
                 meta.data(line.trim());
                 buffer.add(meta);
                 linesRead++;
@@ -260,11 +261,11 @@ public class TegmineController extends Controller {
         }
     }
 
-    public int indent(String line) {
-        return indent(line, true);
+    public int indent(FileSystemProvider provider, String line) {
+        return indent(provider, line, true);
     }
 
-    public int indent(String line, boolean trimEmpty) {
+    public int indent(FileSystemProvider provider, String line, boolean trimEmpty) {
         if (TextUtils.isEmpty(line)) { // Empty line - indent undefined
             return -1;
         }
@@ -274,7 +275,7 @@ public class TegmineController extends Controller {
         int spaces = 0;
         for (int i = 0; i < line.length(); i++) { // Search for a first non space/tab
             if (line.charAt(i) == '\t') { // Tab
-                spaces += spacesInTab();
+                spaces += spacesInTab(provider);
             } else if (line.charAt(i) == ' ') { // Space
                 spaces++;
             } else {
@@ -282,21 +283,21 @@ public class TegmineController extends Controller {
                 break;
             }
         }
-        return spaces / spacesInTab();
+        return spaces / spacesInTab(provider);
     }
 
-    public int spacesInTab() {
-        return SPACES_IN_TAB;
+    public int spacesInTab(FileSystemProvider provider) {
+        return provider.tabSize();
     }
 
-    public void linesForEditor(List<LineMeta> lines, SpannableStringBuilder buffer, SyntaxDef syntax) {
+    public void linesForEditor(FileSystemProvider provider, List<LineMeta> lines, SpannableStringBuilder buffer, SyntaxDef syntax) {
         for (int i = 0; i < lines.size(); i++) { // Iterate over lines
             LineMeta line = lines.get(i);
             String trimmed = line.data();
             if (i>0) { // Add new line
                 buffer.append('\n');
             }
-            for (int j = 0; j < line.indent() * spacesInTab(); j++) { // Add spaces
+            for (int j = 0; j < line.indent() * spacesInTab(provider); j++) { // Add spaces
                 buffer.append(' ');
             }
             if (null == syntax) { //
@@ -314,7 +315,7 @@ public class TegmineController extends Controller {
         view.setTextSize(TypedValue.COMPLEX_UNIT_SP, theme().headerTextSp());
     }
 
-    public void writeEdited(OutputStream stream, String contents, boolean doEdit) throws FileSystemException {
+    public void writeEdited(FileSystemProvider provider, OutputStream stream, String contents, boolean doEdit) throws FileSystemException {
         if (TextUtils.isEmpty(contents)) { // No data entered
             return;
         }
@@ -330,8 +331,14 @@ public class TegmineController extends Controller {
                 if (i>0) { // Add new line
                     bufferedStream.write('\n');
                 }
-                for (int j = 0; j < indent(line); j++) { // Add tabs
-                    bufferedStream.write('\t');
+                for (int j = 0; j < indent(provider, line); j++) { // Add tabs
+                    if (provider.useTab()) { // Tabs in output
+                        bufferedStream.write('\t');
+                    } else { // Spaces mode
+                        for (int k = 0; k < provider.tabSize(); k++) { // Add spaces
+                            bufferedStream.write(' ');
+                        }
+                    }
                 }
                 bufferedStream.write(line.trim().getBytes("utf-8"));
             }
@@ -600,12 +607,12 @@ public class TegmineController extends Controller {
             config = new HashMap<>();
             readObject(lines, 0, config, 0);
             logger.d("Config:", lines, config);
+            newLineBefore = objectBoolean(config, "newLineBefore", false);
+            newLineAfter = objectBoolean(config, "newLineAfter", true);
+            scrollToBottom = objectBoolean(config, "scrollToBottom", true);
             reloadStorage(config);
             loadIncludes(config);
 
-            newLineBefore = objectBoolean(config, "newLineBefore", newLineBefore);
-            newLineAfter = objectBoolean(config, "newLineAfter", newLineAfter);
-            scrollToBottom = objectBoolean(config, "scrollToBottom", true);
             watchSeconds = objectInteger(config, "watchSeconds", watchSeconds);
             clientName = objectString(config, "client", clientName);
             showNumbers = objectBoolean(config, "showNumbers", showNumbers);
@@ -675,6 +682,9 @@ public class TegmineController extends Controller {
                     }
                     provider.filePattern(loadPattern(conf, "file_pattern"));
                     provider.folderPattern(loadPattern(conf, "folder_pattern"));
+                    provider.tab(objectBoolean(conf, "useTab", true));
+                    provider.tabSize(objectInteger(conf, "tabSize", SPACES_IN_TAB));
+                    provider.scrollToBottom(objectBoolean(conf, "scrollToBottom", scrollToBottom));
                 }
             }
         }
@@ -738,10 +748,6 @@ public class TegmineController extends Controller {
         return templates;
     }
 
-    public boolean scrollToBottom() {
-        return scrollToBottom;
-    }
-
     public boolean isRoot(FileSystemItem item) {
         return fileSystemProvider(item.providerName()).root().equals(item);
     }
@@ -769,7 +775,7 @@ public class TegmineController extends Controller {
     }
 
     private static Pattern tmplPattern = Pattern.compile("\\$\\{([^\\}]+?)\\}");
-    public TemplateApplyResult applyTemplate(String text, TemplateDef tmpl) {
+    public TemplateApplyResult applyTemplate(FileSystemProvider provider, String text, TemplateDef tmpl) {
         if (null == tmpl) { // No template
             return null;
         }
@@ -781,7 +787,7 @@ public class TegmineController extends Controller {
             StringBuilder repl = new StringBuilder("???");
             if ("t".equals(value)) { // Tab
                 repl.setLength(0);
-                for (int i = 0; i < spacesInTab(); i++) { // Add spaces
+                for (int i = 0; i < spacesInTab(provider); i++) { // Add spaces
                     repl.append(' ');
                 }
             }
@@ -814,13 +820,13 @@ public class TegmineController extends Controller {
         return new TemplateApplyResult(buffer.toString(), cursor);
     }
 
-    public void addIndent(StringBuilder sb, int indent) {
-        for (int i = 0; i < indent * spacesInTab(); i++) { // Add spaces
+    public void addIndent(FileSystemProvider provider, StringBuilder sb, int indent) {
+        for (int i = 0; i < indent * spacesInTab(provider); i++) { // Add spaces
             sb.append(' ');
         }
     }
 
-    public String part(List<LineMeta> lines, int from) {
+    public String part(FileSystemProvider provider, List<LineMeta> lines, int from) {
         StringBuilder sb = new StringBuilder();
         int topIndent = lines.get(from).indent();
         sb.append(lines.get(from).data()); // Top line
@@ -832,7 +838,7 @@ public class TegmineController extends Controller {
             }
             sb.append('\n');
             if (indent>0) { // Indent relative
-                addIndent(sb, indent - topIndent);
+                addIndent(provider, sb, indent - topIndent);
             }
             sb.append(line.data());
         }
@@ -849,14 +855,14 @@ public class TegmineController extends Controller {
         return syntaxedStringBuilder;
     }
 
-    public SyntaxDef.SyntaxedStringBuilder applyTheme(SyntaxDef syntax, String line, SpannableStringBuilder builder, SyntaxDef.Feature... features) {
+    public SyntaxDef.SyntaxedStringBuilder applyTheme(FileSystemProvider provider, SyntaxDef syntax, String line, SpannableStringBuilder builder, SyntaxDef.Feature... features) {
         if (null == syntax) {
             builder.append(line);
             return null;
         }
         for (int i = 0; i < line.length(); i++) { // Search for a first non space/tab
             if (line.charAt(i) == '\t') { // Tab
-                for (int j = 0; j < spacesInTab(); j++) { // Add spaces
+                for (int j = 0; j < spacesInTab(provider); j++) { // Add spaces
                     builder.append(' ');
                 }
             } else if (line.charAt(i) == ' ') { // Space

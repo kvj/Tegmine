@@ -1,8 +1,10 @@
 package kvj.tegmine.android.ui.fragment;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.database.DataSetObserver;
 import android.os.Bundle;
+import android.speech.RecognizerIntent;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v4.view.PagerTitleStrip;
@@ -16,6 +18,7 @@ import android.view.MenuItem;
 import android.view.SubMenu;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageButton;
 
 import org.kvj.bravo7.SuperActivity;
 import org.kvj.bravo7.form.FormController;
@@ -25,11 +28,13 @@ import org.kvj.bravo7.util.Listeners;
 import org.kvj.bravo7.util.Tasks;
 
 import java.io.OutputStream;
+import java.util.List;
 
 import kvj.tegmine.android.R;
 import kvj.tegmine.android.Tegmine;
 import kvj.tegmine.android.data.TegmineController;
 import kvj.tegmine.android.data.def.FileSystemException;
+import kvj.tegmine.android.data.def.FileSystemProvider;
 import kvj.tegmine.android.data.model.EditorInfo;
 import kvj.tegmine.android.data.model.TemplateDef;
 import kvj.tegmine.android.ui.adapter.EditorsAdapter;
@@ -59,6 +64,7 @@ public class Editors extends Fragment {
         public void onPageScrollStateChanged(int state) {
         }
     };
+    private ImageButton closeBth = null, saveBth = null, voiceBth = null;
 
     public EditorInfo add(Bundle data) {
         final EditorInfo info = controller.editors().fromBundle(data);// Loaded?
@@ -136,19 +142,58 @@ public class Editors extends Fragment {
         int selectIndex = controller.editors().selected();
         logger.d("New editors", selectIndex);
         pager.setCurrentItem(selectIndex);
-        view.findViewById(R.id.editors_close).setOnClickListener(new View.OnClickListener() {
+        closeBth = (ImageButton) view.findViewById(R.id.editors_close);
+        closeBth.setImageResource(controller.theme().closeIcon());
+        saveBth = (ImageButton) view.findViewById(R.id.editors_save);
+        saveBth.setImageResource(controller.theme().saveIcon());
+        voiceBth = (ImageButton) view.findViewById(R.id.editors_voice);
+        voiceBth.setImageResource(controller.theme().voiceIcon());
+        closeBth.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 closeSelected(true);
             }
         });
-        view.findViewById(R.id.editors_save).setOnClickListener(new View.OnClickListener() {
+        saveBth.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 saveSelected(true);
             }
         });
+        voiceBth.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                insertVoiceSelected();
+            }
+        });
         return view;
+    }
+
+    private void insertVoiceSelected() {
+        Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,
+                RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+        startActivityForResult(intent, Tegmine.REQUEST_VOICE);
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == Tegmine.REQUEST_VOICE && resultCode == Activity.RESULT_OK) {
+            List<String> results = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
+            if (results.isEmpty()) {
+                return;
+            }
+            String spokenText = results.get(0);
+            if (TextUtils.isEmpty(spokenText)) { // Failure
+                return;
+            }
+            final EditorInfo selected = selected();
+            if (null == selected || null == selected.view) {
+                return;
+            }
+            selected.view.insert(spokenText);
+        }
+        super.onActivityResult(requestCode, resultCode, data);
     }
 
     private View.OnKeyListener keyListener = new View.OnKeyListener() {
@@ -234,6 +279,7 @@ public class Editors extends Fragment {
         }
         selected.view.toInfo();
         final boolean doEdit = selected.mode == EditorInfo.Mode.Edit;
+        final FileSystemProvider provider = controller.fileSystemProvider(selected.view.item());
         Tasks.SimpleTask<FileSystemException> task = new Tasks.SimpleTask<FileSystemException>() {
             @Override
             protected FileSystemException doInBackground() {
@@ -243,11 +289,11 @@ public class Editors extends Fragment {
                 OutputStream stream = null;
                 try {
                     if (doEdit) { // Replace
-                        stream = controller.fileSystemProvider().replace(selected.view.item());
+                        stream = provider.replace(selected.view.item());
                     } else {
-                        stream = controller.fileSystemProvider().append(selected.view.item());
+                        stream = provider.append(selected.view.item());
                     }
-                    controller.writeEdited(stream, selected.text, doEdit);
+                    controller.writeEdited(provider, stream, selected.text, doEdit);
                     selected.view.resetWatcher();
                 } catch (FileSystemException e) {
                     return e;
@@ -274,10 +320,9 @@ public class Editors extends Fragment {
         // Close selected tab and show dialog if needed
         final int sel = controller.editors().selected();
         final EditorInfo selected = selected();
-        if (null == selected) {
-            return;
+        if (null != selected) {
+            selected.view.toInfo();
         }
-        selected.view.toInfo();
         final Runnable closeTask = new Runnable() {
             @Override
             public void run() {
@@ -296,7 +341,7 @@ public class Editors extends Fragment {
                 }
             }
         };
-        if (confirm && selected.crc != EditorInfo.hash(selected.text)) { // Changed
+        if (null != selected && confirm && selected.crc != EditorInfo.hash(selected.text)) { // Changed
             // Changed - show confirm
             logger.d("Changed?", selected.crc, EditorInfo.hash(selected.text));
             SuperActivity.showQuestionDialog(getActivity(), null,

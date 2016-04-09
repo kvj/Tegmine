@@ -20,6 +20,10 @@ abstract public class FileSystemProvider<T extends FileSystemItem> {
     protected String label = null;
     protected boolean hidden = false;
 
+    protected boolean tab = true;
+    protected int tabSize = 2;
+    protected boolean scrollToBottom = false;
+
     protected Wrappers.Tuple2<Pattern, Integer> filePattern = null;
     protected Wrappers.Tuple2<Pattern, Integer> folderPattern = null;
 
@@ -135,5 +139,28 @@ abstract public class FileSystemProvider<T extends FileSystemItem> {
 
     public boolean hidden() {
         return hidden;
+    }
+    public void tab(boolean use_tab) {
+        this.tab = use_tab;
+    }
+
+    public boolean useTab() {
+        return tab;
+    }
+
+    public void tabSize(int tabSize) {
+        this.tabSize = tabSize;
+    }
+
+    public int tabSize() {
+        return tabSize;
+    }
+
+    public boolean scrollToBottom() {
+        return scrollToBottom;
+    }
+
+    public void scrollToBottom(boolean scrollToBottom) {
+        this.scrollToBottom = scrollToBottom;
     }
 }

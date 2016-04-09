@@ -22,6 +22,7 @@ public class Tegmine extends App<TegmineController> {
     public static final String BUNDLE_PROVIDER = "provider";
     public static final int REQUEST_FILE = 3;
     public static final int REQUEST_SHORTCUT = 4;
+    public static final int REQUEST_VOICE = 5;
 
     @Override
     protected TegmineController create() {

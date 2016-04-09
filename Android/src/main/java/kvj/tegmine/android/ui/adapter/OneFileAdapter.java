@@ -1,6 +1,5 @@
 package kvj.tegmine.android.ui.adapter;
 
-import android.content.Context;
 import android.support.v7.widget.RecyclerView;
 import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
@@ -9,7 +8,6 @@ import android.view.ContextMenu;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.BaseAdapter;
 import android.widget.TextView;
 
 import org.kvj.bravo7.log.Logger;
@@ -27,6 +25,7 @@ import kvj.tegmine.android.R;
 import kvj.tegmine.android.data.TegmineController;
 import kvj.tegmine.android.data.def.FileSystemException;
 import kvj.tegmine.android.data.def.FileSystemItem;
+import kvj.tegmine.android.data.def.FileSystemProvider;
 import kvj.tegmine.android.data.model.LineMeta;
 import kvj.tegmine.android.data.model.SyntaxDef;
 import kvj.tegmine.android.data.model.util.Wrappers;
@@ -35,6 +34,8 @@ import kvj.tegmine.android.data.model.util.Wrappers;
  * Created by kvorobyev on 2/17/15.
  */
 public abstract class OneFileAdapter extends RecyclerView.Adapter<OneFileAdapter.Holder> {
+
+    private final FileSystemProvider provider;
 
     class Holder extends RecyclerView.ViewHolder implements View.OnClickListener,
                                                             View.OnLongClickListener,
@@ -111,6 +112,7 @@ public abstract class OneFileAdapter extends RecyclerView.Adapter<OneFileAdapter
         this.controller = controller;
         this.item = item;
         this.syntax = controller.findSyntax(item);
+        this.provider = controller.fileSystemProvider(item);
     }
 
     public void setBounds(final int offset, final int linesCount, final Runnable afterDone) {
@@ -172,7 +174,7 @@ public abstract class OneFileAdapter extends RecyclerView.Adapter<OneFileAdapter
             holder.border.setVisibility(line.folded()? View.VISIBLE: View.GONE);
             int indent = line.indent();
             SpannableStringBuilder builder = new SpannableStringBuilder();
-            controller.applyTheme(syntax, line.data(), builder, SyntaxDef.Feature.Shrink);
+            controller.applyTheme(provider, syntax, line.data(), builder, SyntaxDef.Feature.Shrink);
             holder.text.setText(builder);
             int leftIndent = (int) controller.sp2px(indent * controller.theme().fileIndentSp());
             holder.text.setPadding(leftIndent, 0, 0, 0);
@@ -233,7 +235,7 @@ public abstract class OneFileAdapter extends RecyclerView.Adapter<OneFileAdapter
         if (position >= visibleLines.size() || position<0) { // Invalid position
             return null;
         }
-        return controller.part(lines, visibleLines.get(position)).toString();
+        return controller.part(provider, lines, visibleLines.get(position)).toString();
     }
 
     public void toggle(int position) {

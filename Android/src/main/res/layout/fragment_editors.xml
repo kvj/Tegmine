@@ -23,15 +23,17 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal">
-        <android.support.v7.widget.AppCompatButton
+        <android.widget.ImageButton
+            android:src="@drawable/ic_action_voice_dk"
+            android:id="@+id/editors_voice"
+            style="@style/widget_IconButton"/>
+        <android.widget.ImageButton
+            android:src="@drawable/ic_action_close_dk"
             android:id="@+id/editors_close"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Close"/>
-        <android.support.v7.widget.AppCompatButton
+            style="@style/widget_IconButton"/>
+        <android.widget.ImageButton
+            android:src="@drawable/ic_action_save_dk"
             android:id="@+id/editors_save"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Save"/>
+            style="@style/widget_IconButton"/>
     </LinearLayout>
 </LinearLayout>

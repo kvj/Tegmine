@@ -1,6 +1,7 @@
 package kvj.tegmine.android.ui.appwidget;
 
 import android.annotation.TargetApi;
+import android.content.Intent;
 import android.os.Build;
 import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
@@ -22,9 +23,11 @@ import kvj.tegmine.android.Tegmine;
 import kvj.tegmine.android.data.TegmineController;
 import kvj.tegmine.android.data.def.FileSystemException;
 import kvj.tegmine.android.data.def.FileSystemItem;
+import kvj.tegmine.android.data.def.FileSystemProvider;
 import kvj.tegmine.android.data.model.LineMeta;
 import kvj.tegmine.android.data.model.SyntaxDef;
 import kvj.tegmine.android.data.model.util.Wrappers;
+import kvj.tegmine.android.ui.Main;
 
 /**
  * Created by vorobyev on 7/27/15.
@@ -50,6 +53,7 @@ public class Widget00 extends AppWidget implements AppWidget.AppWidgetUpdate {
         logger.d("Update widget", id);
         RemoteViews rv = controller.create(R.layout.widget_00);
         Configurator conf = controller.configurator(id);
+        String url = conf.settingsString(R.string.conf_widget_url, "");
         String title = conf.settingsString(R.string.conf_widget_title, "");
         if (TextUtils.isEmpty(title)) {
             title = conf.settingsString(R.string.conf_widget_label, "<Untitled>");
@@ -63,7 +67,14 @@ public class Widget00 extends AppWidget implements AppWidget.AppWidgetUpdate {
         rv.setImageViewResource(R.id.widget_00_config_icon, tegmine.theme().configIcon());
         rv.setOnClickPendingIntent(R.id.widget_00_config_icon, controller.configPendingIntent(id));
         rv.setRemoteAdapter(R.id.widget_00_list,
-                            controller.remoteIntent(id, Widget00.Service.class));
+                controller.remoteIntent(id, Widget00.Service.class));
+        FileSystemItem item = tegmine.fromURL(url);
+        if (item != null) { // URL is OK
+            Intent launchIntent = new Intent(tegmine.context(), Main.class);
+            launchIntent.putExtra(Tegmine.BUNDLE_VIEW_TYPE, Tegmine.VIEW_TYPE_FILE);
+            launchIntent.putExtra(Tegmine.BUNDLE_SELECT, url);
+            rv.setPendingIntentTemplate(R.id.widget_00_list, controller.activityPending(launchIntent));
+        }
         rv.setEmptyView(R.id.widget_00_list, R.id.widget_00_empty);
         controller.notify(id, R.id.widget_00_list);
         return rv;
@@ -89,6 +100,7 @@ public class Widget00 extends AppWidget implements AppWidget.AppWidgetUpdate {
         TegmineController tegmine = Tegmine.controller();
         List<CharSequence> lines = new ArrayList<>();
         private boolean wordWrap = false;
+        private Intent clickIntent = new Intent(); // Line not important
 
         @Override
         public void onDataSetChanged() {
@@ -102,6 +114,7 @@ public class Widget00 extends AppWidget implements AppWidget.AppWidgetUpdate {
 //                tegmine.messageShort("Invalid URL: "+url);
                 return;
             }
+            FileSystemProvider provider = tegmine.fileSystemProvider(item);
             SyntaxDef syntax = tegmine.findSyntax(item);
             List<LineMeta> buffer = new ArrayList<>();
             try {
@@ -121,10 +134,10 @@ public class Widget00 extends AppWidget implements AppWidget.AppWidgetUpdate {
             for (int idx = frame.v1(); idx < frame.v1()+frame.v2(); idx++) {
                 LineMeta line = buffer.get(idx);
                 StringBuilder sb = new StringBuilder();
-                tegmine.addIndent(sb, line.indent() - indent);
+                tegmine.addIndent(provider, sb, line.indent() - indent);
                 sb.append(line.data());
                 SpannableStringBuilder b = new SpannableStringBuilder();
-                tegmine.applyTheme(syntax, sb.toString(), b, SyntaxDef.Feature.Shrink);
+                tegmine.applyTheme(provider, syntax, sb.toString(), b, SyntaxDef.Feature.Shrink);
                 lines.add(b);
             }
         }
@@ -140,6 +153,7 @@ public class Widget00 extends AppWidget implements AppWidget.AppWidgetUpdate {
             rv.setTextViewText(R.id.widget_00_line_text, lines.get(i));
             rv.setBoolean(R.id.widget_00_line_text, "setSingleLine", !wordWrap);
             Widget00.applyTheme(rv, R.id.widget_00_line_text, tegmine);
+            rv.setOnClickFillInIntent(R.id.widget_00_line_text, clickIntent);
             return rv;
         }
     }

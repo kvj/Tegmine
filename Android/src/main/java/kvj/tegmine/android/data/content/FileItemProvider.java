@@ -69,7 +69,7 @@ public class FileItemProvider extends ContentProvider {
         SyntaxDef syntax = controller.findSyntax(item);
         List<LineMeta> buffer = new ArrayList<>();
         try {
-            controller.loadFilePart(buffer, item, 0, -1);
+            controller.loadFilePart(buffer, item, null, 0, -1);
         } catch (FileSystemException e) {
             logger.e(e, "Failed to read:", item);
             throw new IllegalArgumentException("IO error:" + item);

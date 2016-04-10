@@ -1,6 +1,5 @@
 package kvj.tegmine.android.ui.fragment;
 
-import android.animation.ObjectAnimator;
 import android.app.Activity;
 import android.content.ClipData;
 import android.content.ClipDescription;
@@ -175,16 +174,6 @@ public class OneFileViewer extends Fragment implements ProgressListener {
         adapter.showNumbers(form.getValue("showNumbers", Boolean.class));
         adapter.wrapLines(form.getValue("wrapLines", Boolean.class));
         listView.setAdapter(adapter);
-        final View buttonsPane = view.findViewById(R.id.one_file_buttons);
-        listView.addOnScrollListener(new RecyclerView.OnScrollListener() {
-            @Override
-            public void onScrollStateChanged(RecyclerView recyclerView, int state) {
-                if (state == RecyclerView.SCROLL_STATE_IDLE) {
-                    // Stopped
-                    changeButtonsDim(buttonsPane, listView);
-                }
-            }
-        });
         listView.setOnKeyListener(new View.OnKeyListener() {
             @Override
             public boolean onKey(View view, int key, KeyEvent keyEvent) {
@@ -197,12 +186,6 @@ public class OneFileViewer extends Fragment implements ProgressListener {
             public void run() {
                 if (provider.scrollToBottom() && adapter.getItemCount() > 0) {
                     listView.scrollToPosition(adapter.getItemCount()-1);
-                    listView.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            changeButtonsDim(buttonsPane, listView);
-                        }
-                    });
                 }
             }
         });
@@ -249,19 +232,6 @@ public class OneFileViewer extends Fragment implements ProgressListener {
             }
         }
         return false;
-    }
-
-    private boolean buttonsDimmed = false;
-
-    private void changeButtonsDim(View buttonsPane, RecyclerView listView) {
-        boolean dimButtons = (listView.computeVerticalScrollOffset() + listView.computeVerticalScrollExtent() >= listView.computeVerticalScrollRange())
-                             && (listView.computeVerticalScrollRange() >= listView.getHeight());
-        if (dimButtons != buttonsDimmed) { // State changed
-            ObjectAnimator anim = ObjectAnimator.ofFloat(buttonsPane, "alpha", dimButtons ? 1f : 0.3f, dimButtons ? 0.3f : 1f);
-            anim.setDuration(300);
-            anim.start();
-            buttonsDimmed = dimButtons;
-        }
     }
 
     @Override

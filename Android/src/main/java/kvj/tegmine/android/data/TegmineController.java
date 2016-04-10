@@ -233,7 +233,7 @@ public class TegmineController extends Controller {
         return new Wrappers.Pair<>(start, len);
     }
 
-    public void loadFilePart(List<LineMeta> buffer, FileSystemItem item, long from, int lines) throws FileSystemException {
+    public void loadFilePart(List<LineMeta> buffer, FileSystemItem item, SyntaxDef syntax, long from, int lines) throws FileSystemException {
         try {
             InputStream stream = fileSystemProvider(item).read(item);
             long skipped = stream.skip(from);
@@ -247,13 +247,30 @@ public class TegmineController extends Controller {
             while ((line = reader.readLine()) != null) { // Read lines one by one
                 LineMeta meta = new LineMeta(indent(fileSystemProvider(item), line), -1);
                 meta.data(line.trim());
-                buffer.add(meta);
-                linesRead++;
-                if ((lines > 0) && (linesRead >= lines)) { // Enough
+                if ((lines > 0) && (linesRead >= lines) && meta.indent() == 0) { // Enough
                     break;
                 }
+                buffer.add(meta);
+                linesRead++;
             }
             stream.close();
+            if (syntax != null && syntax.hasFolding()) { // Apply folding patterns
+                for (int i = 0; i < buffer.size(); i++) { // Check every line except last
+                    LineMeta ll = buffer.get(i);
+                    if (syntax.folded(ll)) { // Folded
+                        ll.folded(true); // Hide any children lines
+                        while (i+1 < buffer.size()) { // Have children
+                            LineMeta sl = buffer.get(i+1);
+                            if (sl.indent() > ll.indent() || sl.indent() == -1) { // Child
+                                sl.visible(false);
+                                i++;
+                            } else {
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
             return;
         } catch (IOException e) {
             logger.e(e, "Failed to read file");
@@ -479,7 +496,7 @@ public class TegmineController extends Controller {
     }
     private Map<String, Object> file2Object(FileSystemItem item, Map<String, Object> object) throws FileSystemException {
         List<LineMeta> lines = new ArrayList<>();
-        loadFilePart(lines, item, 0, -1);
+        loadFilePart(lines, item, null, 0, -1);
         readObject(lines, 0, object, 0);
         return object;
     }
@@ -603,7 +620,7 @@ public class TegmineController extends Controller {
                 throw new FileSystemException("Failed to read config file");
             }
             List<LineMeta> lines = new ArrayList<>();
-            loadFilePart(lines, configItem, 0, -1);
+            loadFilePart(lines, configItem, null, 0, -1);
             config = new HashMap<>();
             readObject(lines, 0, config, 0);
             logger.d("Config:", lines, config);

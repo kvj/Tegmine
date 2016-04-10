@@ -50,7 +50,7 @@ public class Widget00 extends AppWidget implements AppWidget.AppWidgetUpdate {
 
     @Override
     public RemoteViews update(AppWidgetController controller, int id) {
-        logger.d("Update widget", id);
+//        logger.d("Update widget", id);
         RemoteViews rv = controller.create(R.layout.widget_00);
         Configurator conf = controller.configurator(id);
         String url = conf.settingsString(R.string.conf_widget_url, "");
@@ -70,7 +70,7 @@ public class Widget00 extends AppWidget implements AppWidget.AppWidgetUpdate {
                 controller.remoteIntent(id, Widget00.Service.class));
         FileSystemItem item = tegmine.fromURL(url);
         if (item != null) { // URL is OK
-            Intent launchIntent = new Intent(tegmine.context(), Main.class);
+            Intent launchIntent = controller.remoteIntent(id, Main.class);
             launchIntent.putExtra(Tegmine.BUNDLE_VIEW_TYPE, Tegmine.VIEW_TYPE_FILE);
             launchIntent.putExtra(Tegmine.BUNDLE_SELECT, url);
             rv.setPendingIntentTemplate(R.id.widget_00_list, controller.activityPending(launchIntent));
@@ -118,21 +118,24 @@ public class Widget00 extends AppWidget implements AppWidget.AppWidgetUpdate {
             SyntaxDef syntax = tegmine.findSyntax(item);
             List<LineMeta> buffer = new ArrayList<>();
             try {
-                tegmine.loadFilePart(buffer, item, 0, -1);
+                tegmine.loadFilePart(buffer, item, syntax, 0, -1);
             } catch (FileSystemException e) {
                 logger.e(e, "Failed to read:", item);
                 return;
             }
             String condition = conf.settingsString(R.string.conf_widget_data, "");
-            logger.d("Lines:", buffer.size(), condition);
+//            logger.d("Lines:", buffer.size(), condition);
             Wrappers.Pair<Integer> frame = tegmine.findIn(buffer, condition);
-            logger.d("Result:", frame.v1(), frame.v2());
+//            logger.d("Result:", frame.v1(), frame.v2());
             int indent = 0;
             if (frame.v2() > 0) {
                 indent = buffer.get(frame.v1()).indent();
             }
             for (int idx = frame.v1(); idx < frame.v1()+frame.v2(); idx++) {
                 LineMeta line = buffer.get(idx);
+                if (!line.visible()) { // Hidden line
+                    continue;
+                }
                 StringBuilder sb = new StringBuilder();
                 tegmine.addIndent(provider, sb, line.indent() - indent);
                 sb.append(line.data());

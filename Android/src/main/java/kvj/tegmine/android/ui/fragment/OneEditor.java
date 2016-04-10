@@ -415,7 +415,7 @@ public class OneEditor extends Fragment implements ProgressListener {
                         return null;
                     }
                     List<LineMeta> lines = new ArrayList<>();
-                    controller.loadFilePart(lines, item, 0, -1);
+                    controller.loadFilePart(lines, item, null, 0, -1);
                     controller.linesForEditor(provider, lines, buffer, syntax);
                     return null;
                 } catch (FileSystemException e) {

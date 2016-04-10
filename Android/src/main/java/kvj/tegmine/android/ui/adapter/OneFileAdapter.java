@@ -36,6 +36,7 @@ import kvj.tegmine.android.data.model.util.Wrappers;
 public abstract class OneFileAdapter extends RecyclerView.Adapter<OneFileAdapter.Holder> {
 
     private final FileSystemProvider provider;
+    private final int lastLineMargin;
 
     class Holder extends RecyclerView.ViewHolder implements View.OnClickListener,
                                                             View.OnLongClickListener,
@@ -113,6 +114,7 @@ public abstract class OneFileAdapter extends RecyclerView.Adapter<OneFileAdapter
         this.item = item;
         this.syntax = controller.findSyntax(item);
         this.provider = controller.fileSystemProvider(item);
+        this.lastLineMargin = (int) controller.context().getResources().getDimension(R.dimen.last_line_margin);
     }
 
     public void setBounds(final int offset, final int linesCount, final Runnable afterDone) {
@@ -123,8 +125,8 @@ public abstract class OneFileAdapter extends RecyclerView.Adapter<OneFileAdapter
                 protected Boolean doInBackground() {
                     lines.clear(); // From start
                     try {
-//                        logger.d("Will load from:", offset, linesCount);
-                        controller.loadFilePart(lines, item, offset, linesCount);
+//                        logger.d("Will load from:", offset, linesCount, syntax);
+                        controller.loadFilePart(lines, item, syntax, offset, linesCount);
                         int linesTotal = lines.size();
                         int digits = 1;
                         while (linesTotal >= 10) {
@@ -168,6 +170,8 @@ public abstract class OneFileAdapter extends RecyclerView.Adapter<OneFileAdapter
     @Override
     public void onBindViewHolder(Holder holder, int position) {
         LineMeta line = line(position);
+        boolean lastLine = position == visibleLines.size()-1;
+        holder.itemView.setPadding(0, 0, 0, lastLine? lastLineMargin: 0);
         if (null == line) { // Invalid line
             holder.text.setText("");
         } else {

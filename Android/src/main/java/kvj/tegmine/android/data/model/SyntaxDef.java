@@ -34,6 +34,10 @@ import kvj.tegmine.android.ui.theme.LightTheme;
 public class SyntaxDef {
 
 
+    public boolean hasFolding() {
+        return !folding.isEmpty();
+    }
+
     public enum Feature {Shrink};
 
     public static class SyntaxBlock {
@@ -272,9 +276,15 @@ public class SyntaxDef {
         Set<String> features = new HashSet<>();
     }
 
+    private class FoldingPatternDef {
+        String name = null;
+        Pattern pattern = null;
+    }
+
     private final String code;
     private final List<Pattern> filePattern = new ArrayList<>();
     private List<PatternDef> patterns = new ArrayList<>();
+    private List<FoldingPatternDef> folding = new ArrayList<>();
 
     public SyntaxDef(List<String> patterns, String code) {
         this.code = code;
@@ -379,7 +389,32 @@ public class SyntaxDef {
                 logger.d("Configured pattern:", p.name, p.pattern, p.includesStr, p.includes, p.shrink);
                 patterns.add(p);
             }
+            mapping = TegmineController.objectObject(data, "folding");
+            if (null != mapping) {
+                for (Map.Entry<String, Object> oneMapping : mapping.entrySet()) {
+                    FoldingPatternDef p = new FoldingPatternDef();
+                    p.name = oneMapping.getKey();
+                    Map<String, Object> ruleConfig = TegmineController.objectObject(mapping, p.name);
+                    String pattern = TegmineController.objectString(ruleConfig, "pattern", null);
+                    if (null == pattern) {
+                        logger.w("No pattern", p.name);
+                        continue;
+                    }
+                    p.pattern = Pattern.compile(pattern);
+                    folding.add(p);
+                }
+            }
+
         }
+    }
+
+    public boolean folded(LineMeta line) {
+        for (FoldingPatternDef foldPattern : folding) { // Apply every pattern
+            if (foldPattern.pattern.matcher(line.data()).matches()) { // Found
+                return true;
+            }
+        }
+        return false;
     }
 
     LightTheme.Colors inObject(Map<String, Object> data, String name) {

@@ -286,7 +286,7 @@ public class FileSystemBrowser extends Fragment implements ProgressListener {
         }
     }
 
-    private void question(String title, Dialogs.Callback<Void> callback) {
+    private void question(String title, Dialogs.Callback<Integer> callback) {
         Dialogs.questionDialog(getActivity(), null, title, callback);
     }
 
@@ -368,15 +368,17 @@ public class FileSystemBrowser extends Fragment implements ProgressListener {
                 });
                 return true;
             case R.id.context_remove:
-                question(String.format("Sure want to remove '%s'?", item.name), new Dialogs.Callback<Void>() {
+                question(String.format("Sure want to remove '%s'?", item.name), new Dialogs.Callback<Integer>() {
                     @Override
-                    public void run(Void data) {
-                        executeOperation(item, new FileSystemOperation() {
-                            @Override
-                            public void exec(FileSystemItem item, FileSystemProvider provider) throws FileSystemException {
-                                provider.remove(item);
-                            }
-                        });
+                    public void run(Integer data) {
+                        if (0 == data) {
+                            executeOperation(item, new FileSystemOperation() {
+                                @Override
+                                public void exec(FileSystemItem item, FileSystemProvider provider) throws FileSystemException {
+                                    provider.remove(item);
+                                }
+                            });
+                        }
                     }
                 });
                 return true;

@@ -4,7 +4,7 @@ buildscript {
     }
 
     dependencies {
-        classpath 'com.android.tools.build:gradle:2.0.0'
+        classpath 'com.android.tools.build:gradle:2.1.2'
     }
 }
 repositories {
@@ -31,10 +31,10 @@ android {
 
     dependencies {
         compile project(':Lima1')
-        compile 'com.android.support:appcompat-v7:23.3.0'
-        compile 'com.android.support:support-v4:23.3.0'
-        compile 'com.android.support:recyclerview-v7:23.3.0'
-        compile 'com.android.support:design:23.3.0'
+        compile 'com.android.support:appcompat-v7:23.4.0'
+        compile 'com.android.support:support-v4:23.4.0'
+        compile 'com.android.support:recyclerview-v7:23.4.0'
+        compile 'com.android.support:design:23.4.0'
     }
 
     signingConfigs {

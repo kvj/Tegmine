@@ -373,17 +373,15 @@ public class FileSystemBrowser extends Fragment implements ProgressListener {
                 });
                 return true;
             case R.id.context_remove:
-                question(String.format("Sure want to remove '%s'?", item.name), new Dialogs.Callback<Integer>() {
+                question(String.format("Sure want to remove '%s'?", item.name), new Dialogs.Callback<Void>() {
                     @Override
-                    public void run(Integer data) {
-                        if (0 == data) {
-                            executeOperation(item, new FileSystemOperation() {
-                                @Override
-                                public void exec(FileSystemItem item, FileSystemProvider provider) throws FileSystemException {
-                                    provider.remove(item);
-                                }
-                            });
-                        }
+                    public void run(Void data) {
+                        executeOperation(item, new FileSystemOperation() {
+                            @Override
+                            public void exec(FileSystemItem item, FileSystemProvider provider) throws FileSystemException {
+                                provider.remove(item);
+                            }
+                        });
                     }
                 });
                 return true;

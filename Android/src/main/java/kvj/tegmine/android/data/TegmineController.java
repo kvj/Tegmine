@@ -38,7 +38,6 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import kvj.tegmine.android.BuildConfig;
 import kvj.tegmine.android.R;
 import kvj.tegmine.android.data.def.FileSystemException;
 import kvj.tegmine.android.data.def.FileSystemItem;
@@ -60,7 +59,6 @@ public class TegmineController extends Controller {
 
     private static final int SPACES_IN_TAB = 2;
     private final AutoThemeChanger autoThemeChanger;
-    private ApkUpdater updater = null;
     private final EditorsController editors;
     private Map<String, FileSystemProvider> fileSystemProviders = new LinkedHashMap<>();
     private Map<String, TemplateDef> templates = new LinkedHashMap<>();
@@ -84,9 +82,6 @@ public class TegmineController extends Controller {
 
     public TegmineController(Context context) {
         super(context, "Tegmine:");
-        if (BuildConfig.DEBUG) {
-            updater = new ApkUpdater(context);
-        }
         autoThemeChanger = new AutoThemeChanger() {
 
             @Override
@@ -767,10 +762,6 @@ public class TegmineController extends Controller {
 
     public boolean isRoot(FileSystemItem item) {
         return fileSystemProvider(item.providerName()).root().equals(item);
-    }
-
-    public void checkForUpdates() {
-        updater.checkForUpdates();
     }
 
     public static class TemplateApplyResult {

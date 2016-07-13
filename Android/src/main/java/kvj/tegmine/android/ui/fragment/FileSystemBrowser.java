@@ -286,8 +286,13 @@ public class FileSystemBrowser extends Fragment implements ProgressListener {
         }
     }
 
-    private void question(String title, Dialogs.Callback<Integer> callback) {
-        Dialogs.questionDialog(getActivity(), null, title, callback);
+    private void question(String title, final Dialogs.Callback<Void> callback) {
+        Dialogs.questionDialog(getActivity(), null, title, new Dialogs.Callback<Integer>() {
+            @Override
+            public void run(Integer data) {
+                if (data == 0) callback.run(null);
+            }
+        });
     }
 
     private interface FileSystemOperation {

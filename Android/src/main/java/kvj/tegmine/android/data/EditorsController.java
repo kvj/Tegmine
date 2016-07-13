@@ -117,8 +117,11 @@ public class EditorsController {
     }
 
     public void remove(int sel) {
-        tab(sel).mode = EditorInfo.Mode.None;
-        tabs.remove(tab(sel));
+        EditorInfo tab = tab(sel);
+        if (tab != null) {
+            tab.mode = EditorInfo.Mode.None;
+            tabs.remove(tab);
+        }
         saveState();
     }
 

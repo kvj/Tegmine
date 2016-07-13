@@ -1,3 +1,1 @@
-include ':Lima1', ':AutoUpdateApk', ':Android'
-
-project(':AutoUpdateApk').projectDir = file("../AutoUpdateApk")
+include ':Lima1', ':Android'

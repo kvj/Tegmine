@@ -30,7 +30,6 @@ import org.kvj.bravo7.log.Logger;
 import org.kvj.bravo7.ng.App;
 import org.kvj.bravo7.util.Compat;
 
-import kvj.tegmine.android.BuildConfig;
 import kvj.tegmine.android.R;
 import kvj.tegmine.android.Tegmine;
 import kvj.tegmine.android.data.TegmineController;
@@ -63,8 +62,6 @@ public class Main extends AppCompatActivity implements
     private Editors editors = null;
     private ContentLoadingProgressBar progressBar = null;
     private SensorManager mSensorManager = null;
-    private String viewerTitle = null;
-    private String browserTitle = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -91,9 +88,7 @@ public class Main extends AppCompatActivity implements
             });
         }
         form.load(this, savedInstanceState);
-        logger.d("Intent:", getIntent(), Intent.ACTION_ASSIST);
         if (null != getIntent() && Intent.ACTION_ASSIST.equals(getIntent().getAction())) { // ASSIST
-            logger.d("Assist mode:");
             if (null == savedInstanceState) { // Create new
                 savedInstanceState = new Bundle();
             }
@@ -117,7 +112,6 @@ public class Main extends AppCompatActivity implements
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu_main, menu);
-        menu.findItem(R.id.menu_check_updates).setVisible(BuildConfig.DEBUG);
         return true;
     }
 
@@ -127,9 +121,6 @@ public class Main extends AppCompatActivity implements
         switch (id) {
             case R.id.menu_settings:
                 startActivity(new Intent(this, Settings.class));
-                break;
-            case R.id.menu_check_updates:
-                controller.checkForUpdates();
                 break;
         }
         return super.onOptionsItemSelected(item);
@@ -339,14 +330,12 @@ public class Main extends AppCompatActivity implements
 
     @Override
     public void updateViewerTitle(String title) {
-        this.viewerTitle = title;
         toolbar.setTitle(controller.fileSystemProvider(viewer.item()).label());
         toolbar.setSubtitle(title);
     }
 
     @Override
     public void updateBrowserTitle(String title) {
-        this.browserTitle = title;
         toolbar.setSubtitle(title);
     }
 

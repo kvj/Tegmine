@@ -78,8 +78,9 @@ public class EditorsController {
                     // Want to add but editing now - edit
                     selected = i;
                     info.template = data.getString(Tegmine.BUNDLE_EDIT_TEMPLATE, null);
+                    info.sharedText = data.getString(Tegmine.BUNDLE_EDIT_SHARED);
                     if (null != info.view) { // Also have view
-                        info.view.appendTemplate();
+                        info.view.appendTemplate(data.getString(Tegmine.BUNDLE_EDIT_SHARED));
                     }
                     return info; // No load needed
                 }
@@ -92,6 +93,7 @@ public class EditorsController {
         info.mode = mode;
         info.itemURL = url;
         info.template = data.getString(Tegmine.BUNDLE_EDIT_TEMPLATE, null);
+        info.sharedText = data.getString(Tegmine.BUNDLE_EDIT_SHARED);
         loadTitle(info);
         saveState();
         return info;

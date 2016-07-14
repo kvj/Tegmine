@@ -12,4 +12,7 @@
         <Preference android:title="Set shortcut" android:key="@string/p_config_assist_set"/>
         <Preference android:title="Reset to default" android:key="@string/p_config_assist_reset"/>
     </PreferenceCategory>
+    <PreferenceCategory android:title="Share text shortcut">
+        <Preference android:title="Set shortcut" android:key="@string/p_config_share_set"/>
+    </PreferenceCategory>
 </PreferenceScreen>

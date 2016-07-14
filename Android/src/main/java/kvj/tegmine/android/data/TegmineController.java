@@ -784,47 +784,52 @@ public class TegmineController extends Controller {
 
     private static Pattern tmplPattern = Pattern.compile("\\$\\{([^\\}]+?)\\}");
     public TemplateApplyResult applyTemplate(FileSystemProvider provider, String text, TemplateDef tmpl) {
-        if (null == tmpl) { // No template
-            return null;
-        }
-        Matcher m = tmplPattern.matcher(tmpl.template());
-        StringBuffer buffer = new StringBuffer();
         int cursor = -1;
-        while (m.find()) {
-            String value = m.group(1);
-            StringBuilder repl = new StringBuilder("???");
-            if ("t".equals(value)) { // Tab
-                repl.setLength(0);
-                for (int i = 0; i < spacesInTab(provider); i++) { // Add spaces
-                    repl.append(' ');
+        StringBuffer buffer = new StringBuffer();
+        if (null != tmpl) { // No template
+            Matcher m = tmplPattern.matcher(tmpl.template());
+            while (m.find()) {
+                String value = m.group(1);
+                StringBuilder repl = new StringBuilder("???");
+                if ("t".equals(value)) { // Tab
+                    repl.setLength(0);
+                    for (int i = 0; i < spacesInTab(provider); i++) { // Add spaces
+                        repl.append(' ');
+                    }
+                }
+                if ("n".equals(value)) { // New line
+                    repl.setLength(0);
+                    repl.append('\n');
+                }
+                if ("client".equals(value)) { // Client name
+                    repl.setLength(0);
+                    repl.append(clientName);
+                }
+                if ("c".equals(value)) { // Cursor - remove
+                    repl.setLength(0);
+                    if (!TextUtils.isEmpty(text)) {
+                        repl.append(text); // Add shared text
+                    }
+                }
+                if (value.startsWith("d:")) { // Date format
+                    repl.setLength(0);
+                    repl.append(new SimpleDateFormat(value.substring(2)).format(new Date()));
+                }
+                // logger.d("Template:", tmpl.template(), value, repl);
+                m.appendReplacement(buffer, repl.toString());
+                if ("c".equals(value)) { // Cursor - remember position
+                    cursor = buffer.length();
                 }
             }
-            if ("n".equals(value)) { // New line
-                repl.setLength(0);
-                repl.append('\n');
-            }
-            if ("client".equals(value)) { // Client name
-                repl.setLength(0);
-                repl.append(clientName);
-            }
-            if ("c".equals(value)) { // Cursor - remove
-                repl.setLength(0);
-            }
-            if (value.startsWith("d:")) { // Date format
-                repl.setLength(0);
-                repl.append(new SimpleDateFormat(value.substring(2)).format(new Date()));
-            }
-            // logger.d("Template:", tmpl.template(), value, repl);
-            m.appendReplacement(buffer, repl.toString());
-            if ("c".equals(value)) { // Cursor - remember position
-                cursor = buffer.length();
-            }
+            m.appendTail(buffer);
         }
-        m.appendTail(buffer);
         if (-1 == cursor) { // Not set yet
+            if (!TextUtils.isEmpty(text)) {
+                buffer.append(text); // Add shared text
+            }
             cursor = buffer.length();
         }
-        logger.d("Template:", tmpl.template(), String.format("[%s]", buffer.toString()), buffer.length(), cursor);
+        logger.d("Template:", tmpl, String.format("[%s]", buffer.toString()), buffer.length(), cursor);
         return new TemplateApplyResult(buffer.toString(), cursor);
     }
 

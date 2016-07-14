@@ -43,6 +43,7 @@ public class EditorInfo {
     public String text = null;
     public String findText = "";
     public String template = null;
+    public String sharedText = null;
     public Mode mode = Mode.None;
     public int selectionStart = -1;
     public int selectionEnd = -1;
@@ -95,6 +96,6 @@ public class EditorInfo {
 
     @Override
     public String toString() {
-        return String.format("EditorInfo [%s, %s, %d]", mode, itemURL, crc);
+        return String.format("EditorInfo [%s, %s, %d, %s, %s]", mode, itemURL, crc, sharedText, template);
     }
 }

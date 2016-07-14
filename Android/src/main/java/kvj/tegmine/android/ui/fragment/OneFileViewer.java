@@ -107,14 +107,14 @@ public class OneFileViewer extends Fragment implements ProgressListener {
 
     public OneFileViewer create(Activity activity, final TegmineController controller, Bundle bundle) {
         this.controller = controller;
-        form.add(new FileSystemItemWidgetAdapter(controller), "select");
+        form.add(new FileSystemItemWidgetAdapter(controller), Tegmine.BUNDLE_SELECT);
         form.add(new FileSystemItemWidgetAdapter(controller).bundleProviderKey(Tegmine.BUNDLE_PROVIDER), "root");
         form.add(new TransientAdapter<>(new BooleanBundleAdapter(), controller.showNumbers()),
                  "showNumbers");
         form.add(new TransientAdapter<>(new BooleanBundleAdapter(), controller.wrapLines()),
                 "wrapLines");
         form.load(activity, bundle);
-        item = form.getValue("select", FileSystemItem.class);
+        item = form.getValue(Tegmine.BUNDLE_SELECT, FileSystemItem.class);
         logger.d("new FileViewer:", item, bundle, controller.showNumbers(), controller.wrapLines());
         if (null == item) {
             controller.messageShort("File not found");
@@ -132,7 +132,7 @@ public class OneFileViewer extends Fragment implements ProgressListener {
     }
 
     public FileSystemItem item() {
-        return form.getValue("select");
+        return form.getValue(Tegmine.BUNDLE_SELECT);
     }
 
     @Override
@@ -423,7 +423,7 @@ public class OneFileViewer extends Fragment implements ProgressListener {
     }
 
     public void saveState(Bundle outState) {
-        form.save(outState, "root", "select", "wrapLines", "showNumbers");
+        form.save(outState, "root", Tegmine.BUNDLE_SELECT, "wrapLines", "showNumbers");
     }
 
     private void startEditor(String editType, String tmpl) {
@@ -434,7 +434,7 @@ public class OneFileViewer extends Fragment implements ProgressListener {
         if (null != tmpl) {
             bundle.putString(Tegmine.BUNDLE_EDIT_TEMPLATE, tmpl);
         }
-        form.save(bundle, true, "root", "select");
+        form.save(bundle, true, "root", Tegmine.BUNDLE_SELECT);
         if (null != listener) {
             listener.openEditor(bundle);
         }

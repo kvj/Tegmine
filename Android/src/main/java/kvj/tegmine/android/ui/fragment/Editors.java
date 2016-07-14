@@ -228,7 +228,7 @@ public class Editors extends Fragment {
             public boolean onMenuItemClick(MenuItem item) {
                 EditorInfo info = selected();
                 if (null != info && null != info.view) {
-                    info.view.applyTemplate(tmpl);
+                    info.view.applyTemplate(tmpl, "");
                 }
                 return true;
             }

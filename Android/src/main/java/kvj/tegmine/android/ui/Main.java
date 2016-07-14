@@ -88,25 +88,46 @@ public class Main extends AppCompatActivity implements
             });
         }
         form.load(this, savedInstanceState);
-        if (null != getIntent() && Intent.ACTION_ASSIST.equals(getIntent().getAction())) { // ASSIST
-            if (null == savedInstanceState) { // Create new
-                savedInstanceState = new Bundle();
+        if (null != getIntent()) {
+            String data = getIntent().getStringExtra(Intent.EXTRA_TEXT);
+            if (Intent.ACTION_ASSIST.equals(getIntent().getAction())) {
+                if (null == savedInstanceState) { // Create new
+                    savedInstanceState = new Bundle();
+                }
+                startAssist(savedInstanceState);
             }
-            startAssist(savedInstanceState);
+            if (Intent.ACTION_SEND.equals(getIntent().getAction()) && !TextUtils.isEmpty(data)) {
+                if (null == savedInstanceState) { // Create new
+                    savedInstanceState = new Bundle();
+                }
+                startShare(savedInstanceState, data);
+            }
         }
         onController(savedInstanceState);
     }
 
-    private void startAssist(Bundle bundle) {
+    private void fromSettings(Bundle bundle, String prefix) {
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
-        String mode = preferences.getString(Tegmine.BUNDLE_VIEW_TYPE, null);
+        String mode = preferences.getString(Tegmine.prefixed(prefix, Tegmine.BUNDLE_VIEW_TYPE), null);
         logger.d("Assist mode:", mode);
         if (!TextUtils.isEmpty(mode)) { // Have
             form.setValue(Tegmine.BUNDLE_VIEW_TYPE, mode);
-            bundle.putString(Tegmine.BUNDLE_EDIT_TYPE, preferences.getString(Tegmine.BUNDLE_EDIT_TYPE, Tegmine.EDIT_TYPE_ADD));
-            bundle.putString(Tegmine.BUNDLE_EDIT_TEMPLATE, preferences.getString(Tegmine.BUNDLE_EDIT_TEMPLATE, null));
-            bundle.putString(Tegmine.BUNDLE_SELECT, preferences.getString(Tegmine.BUNDLE_SELECT, null));
+            bundle.putString(Tegmine.BUNDLE_EDIT_TYPE,
+                             preferences.getString(Tegmine.prefixed(prefix, Tegmine.BUNDLE_EDIT_TYPE), Tegmine.EDIT_TYPE_ADD));
+            bundle.putString(Tegmine.BUNDLE_EDIT_TEMPLATE,
+                             preferences.getString(Tegmine.prefixed(prefix, Tegmine.BUNDLE_EDIT_TEMPLATE), null));
+            bundle.putString(Tegmine.BUNDLE_SELECT,
+                             preferences.getString(Tegmine.prefixed(prefix, Tegmine.BUNDLE_SELECT), null));
         }
+    }
+
+    private void startShare(Bundle bundle, String data) {
+        fromSettings(bundle, Tegmine.SHORTCUT_MODE_SHARE);
+        bundle.putString(Tegmine.BUNDLE_EDIT_SHARED, data);
+    }
+
+    private void startAssist(Bundle bundle) {
+        fromSettings(bundle, Tegmine.SHORTCUT_MODE_ASSIST);
     }
 
     @Override

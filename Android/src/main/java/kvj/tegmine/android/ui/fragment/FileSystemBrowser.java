@@ -101,7 +101,7 @@ public class FileSystemBrowser extends Fragment implements ProgressListener {
         this.controller = controller;
         form = new FormController(new ViewFinder.ActivityViewFinder(activity));
         form.add(new FileSystemItemWidgetAdapter(controller, null).bundleProviderKey(Tegmine.BUNDLE_PROVIDER), "root");
-        form.add(new FileSystemItemWidgetAdapter(controller), "select");
+        form.add(new FileSystemItemWidgetAdapter(controller), Tegmine.BUNDLE_SELECT);
         form.load(activity, bundle);
         logger.d("Will create view", controller, bundle);
         return this;
@@ -149,7 +149,7 @@ public class FileSystemBrowser extends Fragment implements ProgressListener {
                 return FileSystemBrowser.this.onContextItemSelected(item, position);
             }
         };
-        adapter.load(form.getValue("root", FileSystemItem.class), form.getValue("select", FileSystemItem.class));
+        adapter.load(form.getValue("root", FileSystemItem.class), form.getValue(Tegmine.BUNDLE_SELECT, FileSystemItem.class));
         listView.setAdapter(adapter);
         updateTitle();
         refresh();

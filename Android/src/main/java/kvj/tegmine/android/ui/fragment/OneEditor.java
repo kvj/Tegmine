@@ -111,7 +111,7 @@ public class OneEditor extends Fragment implements ProgressListener {
         } else {
             info2Editor();
             enableEditorListeners();
-            appendTemplate();
+            appendTemplate(info.sharedText);
         }
         watcher = new FileItemWatcher(controller, item) {
             @Override
@@ -256,7 +256,7 @@ public class OneEditor extends Fragment implements ProgressListener {
             // Ctrl + template key
             TemplateDef tmpl = controller.templateFromKeyEvent(keyEvent);
             if (null != tmpl) {
-                applyTemplate(tmpl);
+                applyTemplate(tmpl, "");
                 return true;
             }
         }
@@ -430,7 +430,7 @@ public class OneEditor extends Fragment implements ProgressListener {
                     info.crc = EditorInfo.hash(buffer.toString()); // Save
                     text2Editor(buffer, buffer.length(), -1);
                     enableEditorListeners();
-                    appendTemplate();
+                    appendTemplate(info.sharedText);
                     watcher.reset();
                 } else {
                     logger.e(e, "Failed to load file contents");
@@ -441,9 +441,10 @@ public class OneEditor extends Fragment implements ProgressListener {
 
     }
 
-    public void appendTemplate() {
-        applyTemplate(controller.templates().get(info.template));
+    public void appendTemplate(String data) {
+        applyTemplate(controller.templates().get(info.template), data);
         info.template = null; // Only once
+        info.sharedText = null;
     }
 
     private void text2Editor(SpannableStringBuilder text, int selectionStart, int selectionEnd) {
@@ -459,8 +460,8 @@ public class OneEditor extends Fragment implements ProgressListener {
         }
     }
 
-    void applyTemplate(TemplateDef tmpl) {
-        TegmineController.TemplateApplyResult applyResult = controller.applyTemplate(provider, editor.getText().toString(), tmpl);
+    void applyTemplate(TemplateDef tmpl, String data) {
+        TegmineController.TemplateApplyResult applyResult = controller.applyTemplate(provider, data, tmpl);
         if (null != applyResult) { // New text
             toInfo();
             if (!TextUtils.isEmpty(info.text) && !info.text.endsWith("\n")) { // No new line at bottom

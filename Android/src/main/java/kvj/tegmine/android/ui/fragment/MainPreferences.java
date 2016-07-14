@@ -91,12 +91,13 @@ public class MainPreferences extends PreferenceFragment {
         }
         if (requestCode == Tegmine.REQUEST_SHORTCUT && resultCode == Activity.RESULT_OK) { // Selected
             Intent intent = data.getParcelableExtra(Intent.EXTRA_SHORTCUT_INTENT);
-            logger.d("Selected shortcut:", intent);
+            String mode = data.getStringExtra(Tegmine.BUNDLE_SHORTCUT_MODE);
+            logger.d("Selected shortcut:", intent, mode);
             SharedPreferences.Editor editor = getPreferenceManager().getSharedPreferences().edit();
-            editor.putString(Tegmine.BUNDLE_VIEW_TYPE, intent.getStringExtra(Tegmine.BUNDLE_VIEW_TYPE));
-            editor.putString(Tegmine.BUNDLE_EDIT_TYPE, intent.getStringExtra(Tegmine.BUNDLE_EDIT_TYPE));
-            editor.putString(Tegmine.BUNDLE_EDIT_TEMPLATE, intent.getStringExtra(Tegmine.BUNDLE_EDIT_TEMPLATE));
-            editor.putString(Tegmine.BUNDLE_SELECT, intent.getStringExtra(Tegmine.BUNDLE_SELECT));
+            editor.putString(Tegmine.prefixed(mode, Tegmine.BUNDLE_VIEW_TYPE), intent.getStringExtra(Tegmine.BUNDLE_VIEW_TYPE));
+            editor.putString(Tegmine.prefixed(mode, Tegmine.BUNDLE_EDIT_TYPE), intent.getStringExtra(Tegmine.BUNDLE_EDIT_TYPE));
+            editor.putString(Tegmine.prefixed(mode, Tegmine.BUNDLE_EDIT_TEMPLATE), intent.getStringExtra(Tegmine.BUNDLE_EDIT_TEMPLATE));
+            editor.putString(Tegmine.prefixed(mode, Tegmine.BUNDLE_SELECT), intent.getStringExtra(Tegmine.BUNDLE_SELECT));
             editor.commit();
         }
     }
@@ -133,6 +134,20 @@ public class MainPreferences extends PreferenceFragment {
         setupConfigFilePreference();
         setupConfigReloadPreference(getString(R.string.p_config_reload));
         setupAssistPreference();
+        setupSharePreference();
+    }
+
+    private void setupSharePreference() {
+        getPreferenceScreen().findPreference(getString(R.string.p_config_share_set))
+            .setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
+                @Override
+                public boolean onPreferenceClick(Preference preference) {
+                    Intent intent = new Intent(getActivity(), ShortcutCreator.class);
+                    intent.putExtra(Tegmine.BUNDLE_SHORTCUT_MODE, Tegmine.SHORTCUT_MODE_SHARE);
+                    startActivityForResult(intent, Tegmine.REQUEST_SHORTCUT);
+                    return true;
+                }
+            });
     }
 
     private void setupAssistPreference() {
@@ -141,6 +156,7 @@ public class MainPreferences extends PreferenceFragment {
                     @Override
                     public boolean onPreferenceClick(Preference preference) {
                         Intent intent = new Intent(getActivity(), ShortcutCreator.class);
+                        intent.putExtra("mode", Tegmine.SHORTCUT_MODE_ASSIST);
                         startActivityForResult(intent, Tegmine.REQUEST_SHORTCUT);
                         return true;
                     }

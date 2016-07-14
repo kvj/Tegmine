@@ -81,6 +81,10 @@ public class ShortcutCreator extends AppCompatActivity implements FileSystemBrow
             Intent.ShortcutIconResource.fromContext(this, R.mipmap.ic_app);
         Intent intent = new Intent();
         Intent launchIntent = new Intent(this, Main.class);
+        Intent orig = getIntent();
+        if (null != orig) {
+            intent.putExtra(Tegmine.BUNDLE_SHORTCUT_MODE, orig.getStringExtra(Tegmine.BUNDLE_SHORTCUT_MODE));
+        }
         if (mode == 0) {
             launchIntent.putExtra(Tegmine.BUNDLE_VIEW_TYPE, Tegmine.VIEW_TYPE_FILE);
         } else {

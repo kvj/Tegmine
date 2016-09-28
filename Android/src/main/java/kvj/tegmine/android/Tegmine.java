@@ -26,6 +26,7 @@ public class Tegmine extends App<TegmineController> {
     public static final int REQUEST_FILE = 3;
     public static final int REQUEST_SHORTCUT = 4;
     public static final int REQUEST_VOICE = 5;
+    public static final int REQUEST_PERMISSIONS = 6;
     public static final String BUNDLE_SHORTCUT_MODE = "shortcut_mode";
     public static final String SHORTCUT_MODE_SHARE = "share";
     public static final String SHORTCUT_MODE_ASSIST = "assist";

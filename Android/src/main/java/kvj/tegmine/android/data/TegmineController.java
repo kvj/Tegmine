@@ -42,6 +42,8 @@ import kvj.tegmine.android.R;
 import kvj.tegmine.android.data.def.FileSystemException;
 import kvj.tegmine.android.data.def.FileSystemItem;
 import kvj.tegmine.android.data.def.FileSystemProvider;
+import kvj.tegmine.android.data.def.WidgetExtension;
+import kvj.tegmine.android.data.impl.extension.NotificationsExtension;
 import kvj.tegmine.android.data.impl.provider.asset.AssetFileSystemProvider;
 import kvj.tegmine.android.data.impl.provider.local.LocalFileSystemProvider;
 import kvj.tegmine.android.data.model.AutoThemeChanger;
@@ -56,6 +58,9 @@ import kvj.tegmine.android.ui.theme.LightTheme;
  * Created by kvorobyev on 2/13/15.
  */
 public class TegmineController extends Controller {
+
+
+    private Map<String, WidgetExtension> widgetExtensions = new HashMap<>();
 
     private static final int SPACES_IN_TAB = 2;
     private final AutoThemeChanger autoThemeChanger;
@@ -98,6 +103,7 @@ public class TegmineController extends Controller {
                 }
             }
         };
+        widgetExtensions.put("notifications", new NotificationsExtension(this));
         try {
             reloadConfig();
         } catch (FileSystemException e) {
@@ -981,6 +987,16 @@ public class TegmineController extends Controller {
 
     public boolean itemHasFeature(FileSystemItem item, FileSystemProvider.Features feature) {
         return fileSystemProvider(item).hasFeature(item, feature);
+    }
+
+    public List<WidgetExtension> extensions(String def) {
+        List<WidgetExtension> result = new ArrayList<>();
+        if (TextUtils.isEmpty(def)) return result;
+        for (String s : def.split(",")) {
+            String id = s.trim();
+            if (widgetExtensions.containsKey(id)) result.add(widgetExtensions.get(id));
+        }
+        return result;
     }
 
 }

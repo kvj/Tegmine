@@ -24,6 +24,7 @@ import kvj.tegmine.android.data.TegmineController;
 import kvj.tegmine.android.data.def.FileSystemException;
 import kvj.tegmine.android.data.def.FileSystemItem;
 import kvj.tegmine.android.data.def.FileSystemProvider;
+import kvj.tegmine.android.data.def.WidgetExtension;
 import kvj.tegmine.android.data.model.LineMeta;
 import kvj.tegmine.android.data.model.SyntaxDef;
 import kvj.tegmine.android.data.model.util.Wrappers;
@@ -68,13 +69,10 @@ public class Widget00 extends AppWidget implements AppWidget.AppWidgetUpdate {
         rv.setOnClickPendingIntent(R.id.widget_00_config_icon, controller.configPendingIntent(id));
         rv.setRemoteAdapter(R.id.widget_00_list,
                 controller.remoteIntent(id, Widget00.Service.class));
-        FileSystemItem item = tegmine.fromURL(url);
-        if (item != null) { // URL is OK
-            Intent launchIntent = controller.remoteIntent(id, Main.class);
-            launchIntent.putExtra(Tegmine.BUNDLE_VIEW_TYPE, Tegmine.VIEW_TYPE_FILE);
-            launchIntent.putExtra(Tegmine.BUNDLE_SELECT, url);
-            rv.setPendingIntentTemplate(R.id.widget_00_list, controller.activityPending(launchIntent));
-        }
+        Intent launchIntent = controller.remoteIntent(id, Main.class);
+        launchIntent.putExtra(Tegmine.BUNDLE_VIEW_TYPE, Tegmine.VIEW_TYPE_FILE);
+        launchIntent.putExtra(Tegmine.BUNDLE_SELECT, url);
+        rv.setPendingIntentTemplate(R.id.widget_00_list, controller.activityPending(launchIntent));
         rv.setEmptyView(R.id.widget_00_list, R.id.widget_00_empty);
         controller.notify(id, R.id.widget_00_list);
         return rv;
@@ -95,6 +93,28 @@ public class Widget00 extends AppWidget implements AppWidget.AppWidgetUpdate {
         return super.title(controller, id);
     }
 
+    private static FileSystemItem loadItem(Configurator conf) {
+        TegmineController tegmine = Tegmine.controller();
+        String url = conf.settingsString(R.string.conf_widget_url, "");
+        return tegmine.fromURL(url);
+    }
+
+    private static List<LineMeta> loadContents(Configurator conf, FileSystemItem item) {
+        TegmineController tegmine = Tegmine.controller();
+        Logger logger = Logger.forClass(Widget00.class);
+        SyntaxDef syntax = tegmine.findSyntax(item);
+        List<LineMeta> buffer = new ArrayList<>();
+        try {
+            tegmine.loadFilePart(buffer, item, syntax, 0, -1);
+        } catch (FileSystemException e) {
+            logger.e(e, "Failed to read:", item);
+            return null;
+        }
+        String condition = conf.settingsString(R.string.conf_widget_data, "");
+        Wrappers.Pair<Integer> frame = tegmine.findIn(buffer, condition);
+        return buffer.subList(frame.v1(), frame.v1()+frame.v2());
+    }
+
     static class Adapter extends AppWidgetRemote.AppWidgetRemoteAdapter {
 
         TegmineController tegmine = Tegmine.controller();
@@ -108,31 +128,21 @@ public class Widget00 extends AppWidget implements AppWidget.AppWidgetUpdate {
             lines.clear();
             Configurator conf = controller.configurator(id);
             wordWrap = conf.settingsBoolean(R.string.conf_widget_line_wrap, false);
-            String url = conf.settingsString(R.string.conf_widget_url, "");
-            FileSystemItem item = tegmine.fromURL(url);
+            FileSystemItem item = loadItem(conf);
             if (item == null) { // Invalid
-//                tegmine.messageShort("Invalid URL: "+url);
+                return;
+            }
+            List<LineMeta> buffer = loadContents(conf, item);
+            if (buffer == null) { // Not loaded
                 return;
             }
             FileSystemProvider provider = tegmine.fileSystemProvider(item);
             SyntaxDef syntax = tegmine.findSyntax(item);
-            List<LineMeta> buffer = new ArrayList<>();
-            try {
-                tegmine.loadFilePart(buffer, item, syntax, 0, -1);
-            } catch (FileSystemException e) {
-                logger.e(e, "Failed to read:", item);
-                return;
-            }
-            String condition = conf.settingsString(R.string.conf_widget_data, "");
-//            logger.d("Lines:", buffer.size(), condition);
-            Wrappers.Pair<Integer> frame = tegmine.findIn(buffer, condition);
-//            logger.d("Result:", frame.v1(), frame.v2());
             int indent = 0;
-            if (frame.v2() > 0) {
-                indent = buffer.get(frame.v1()).indent();
+            if (!buffer.isEmpty()) {
+                indent = buffer.get(0).indent();
             }
-            for (int idx = frame.v1(); idx < frame.v1()+frame.v2(); idx++) {
-                LineMeta line = buffer.get(idx);
+            for (LineMeta line : buffer) {
                 if (!line.visible()) { // Hidden line
                     continue;
                 }
@@ -142,6 +152,9 @@ public class Widget00 extends AppWidget implements AppWidget.AppWidgetUpdate {
                 SpannableStringBuilder b = new SpannableStringBuilder();
                 tegmine.applyTheme(provider, syntax, sb.toString(), b, SyntaxDef.Feature.Shrink);
                 lines.add(b);
+            }
+            for (WidgetExtension ext : tegmine.extensions(conf.settingsString(R.string.conf_widget_ext, ""))) {
+                ext.process(item, buffer, id);
             }
         }
 

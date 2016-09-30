@@ -29,6 +29,7 @@
     <string name="conf_widget_line_wrap">conf_widget_line_wrap</string>
     <string name="conf_widget_url">conf_widget_url</string>
     <string name="p_config_share_set">p_config_share_set</string>
+    <string name="conf_widget_ext">conf_widget_ext</string>
     <string-array name="shortcut_types">
         <item>Display file</item>
         <item>Append to</item>

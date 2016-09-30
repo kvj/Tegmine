@@ -72,6 +72,10 @@
             </intent-filter>
         </receiver>
 
+        <receiver
+                android:name=".data.impl.extension.NotificationsReceiver"
+                android:exported="true"/>
+
     </application>
 
 </manifest>

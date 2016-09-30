@@ -8,7 +8,12 @@
     <Preference
         android:key="@string/conf_widget_url"
         android:title="Select file"/>
-    <EditTextPreference
-        android:key="@string/conf_widget_data"
-        android:title="Data"/>
+    <PreferenceCategory android:title="Extra">
+        <EditTextPreference
+                android:key="@string/conf_widget_data"
+                android:title="Data"/>
+        <EditTextPreference
+                android:key="@string/conf_widget_ext"
+                android:title="Extensions"/>
+    </PreferenceCategory>
 </PreferenceScreen>

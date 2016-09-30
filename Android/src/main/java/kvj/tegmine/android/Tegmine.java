@@ -30,6 +30,9 @@ public class Tegmine extends App<TegmineController> {
     public static final String BUNDLE_SHORTCUT_MODE = "shortcut_mode";
     public static final String SHORTCUT_MODE_SHARE = "share";
     public static final String SHORTCUT_MODE_ASSIST = "assist";
+    public static final String BUNDLE_URL = "url";
+    public static final String BUNDLE_WIDGET_ID = "widget_id";
+    public static final String BUNDLE_TITLE = "title";
 
     @Override
     protected TegmineController create() {

@@ -17,6 +17,7 @@ import android.widget.Toast;
 
 import org.kvj.bravo7.log.Logger;
 import org.kvj.bravo7.ng.Controller;
+import org.kvj.bravo7.ng.widget.AppWidgetController;
 import org.kvj.bravo7.util.Listeners;
 
 import java.io.BufferedOutputStream;
@@ -52,6 +53,7 @@ import kvj.tegmine.android.data.model.ProgressListener;
 import kvj.tegmine.android.data.model.SyntaxDef;
 import kvj.tegmine.android.data.model.TemplateDef;
 import kvj.tegmine.android.data.model.util.Wrappers;
+import kvj.tegmine.android.ui.appwidget.Widget00;
 import kvj.tegmine.android.ui.theme.LightTheme;
 
 /**
@@ -370,11 +372,18 @@ public class TegmineController extends Controller {
             if (null != bufferedStream) {
                 try {
                     bufferedStream.close();
+                    updateWidgets();
                 } catch (Throwable t) {
                     logger.e(t, "Failed to commit stream");
                 }
             }
         }
+    }
+
+    private void updateWidgets() {
+        AppWidgetController controller = AppWidgetController.instance(context);
+        controller.updateAll(new Widget00());
+
     }
 
     private static final String TEGMINE_SCHEME = "tegmine+";

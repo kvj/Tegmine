@@ -31,7 +31,7 @@ public class NotificationsExtension implements WidgetExtension {
 
     Logger logger = Logger.forInstance(this);
     private final TegmineController controller;
-    Pattern pattern = Pattern.compile("\\s<(((\\d{2}/)?\\d{1,2}/\\d{1,2})?\\s?(\\d{1,2}:\\d{2})?)>");
+    Pattern pattern = Pattern.compile("(\\s|^)<(((\\d{2}/)?\\d{1,2}/\\d{1,2})?\\s?(\\d{1,2}:\\d{2})?)>");
     SimpleDateFormat sdf = new SimpleDateFormat("yy/M/d H:mm");
     SimpleDateFormat sdfY = new SimpleDateFormat("yy/");
     SimpleDateFormat sdfD = new SimpleDateFormat("yy/M/d");
@@ -58,6 +58,7 @@ public class NotificationsExtension implements WidgetExtension {
     @Override
     public void process(FileSystemItem item, List<LineMeta> lines, int id) {
         logger.d("Looking for dates:", item.toURL(), lines.size());
+        String defaultTime = TegmineController.objectString(controller.config(), "notifications_time", "8:00");
         List<EntryInfo> entries = new ArrayList<>();
         Calendar c = Calendar.getInstance();
         c.add(Calendar.MINUTE, 1);
@@ -65,19 +66,18 @@ public class NotificationsExtension implements WidgetExtension {
         for (LineMeta line : lines) {
             Matcher m = pattern.matcher(line.data());
             if (m.find()) {
-                String date = m.group(2);
-                String time = m.group(4);
-                logger.d("Found:", date, time);
+                String date = m.group(3);
+                String time = m.group(5);
+//                logger.d("Found:", date, time);
                 if (TextUtils.isEmpty(date) && TextUtils.isEmpty(time)) continue;
                 if (TextUtils.isEmpty(date))
                     date = sdfD.format(now);
                 else {
-                    if (TextUtils.isEmpty(m.group(3))) // No year
+                    if (TextUtils.isEmpty(m.group(4))) // No year
                         date = sdfY.format(now) + date;
                 }
                 if (TextUtils.isEmpty(time)) {
-                    // Default time TODO: read from config
-                    time = "8:00";
+                    time = defaultTime;
                 }
                 StringBuffer sb = new StringBuffer();
                 m.appendReplacement(sb, "");
@@ -89,7 +89,7 @@ public class NotificationsExtension implements WidgetExtension {
                     logger.w(e, "Invalid date/time", date, time);
                     continue;
                 }
-                logger.d("Found date:", parsed, sb, line.data());
+//                logger.d("Found date:", parsed, sb, line.data());
                 if (now.after(parsed)) continue; // Skip past dates
                 entries.add(new EntryInfo(parsed, sb.toString()));
             }

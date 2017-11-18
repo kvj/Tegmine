@@ -6,7 +6,7 @@ import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.support.v7.app.NotificationCompat;
+import android.support.v4.app.NotificationCompat;
 
 import org.kvj.bravo7.log.Logger;
 import org.kvj.bravo7.ng.widget.AppWidgetController;
@@ -37,7 +37,7 @@ public class NotificationsReceiver extends BroadcastReceiver {
             String title = intent.getStringExtra(Tegmine.BUNDLE_TITLE);
             logger.d("Ready to show:", id, title);
             NotificationManager nm = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
-            NotificationCompat.Builder n = new NotificationCompat.Builder(context);
+            NotificationCompat.Builder n = new NotificationCompat.Builder(context, "widget00");
             n.setContentTitle(controller.title(id, widget));
             n.setContentText(title);
             n.setSmallIcon(R.drawable.ic_notification);

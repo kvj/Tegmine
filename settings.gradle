@@ -1,1 +1,3 @@
 include ':Lima1', ':Android'
+project(':Lima1').projectDir = new File('../Lima1Common')
+

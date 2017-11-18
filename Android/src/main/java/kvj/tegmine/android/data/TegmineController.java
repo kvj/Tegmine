@@ -1,12 +1,16 @@
 package kvj.tegmine.android.data;
 
+import android.Manifest;
 import android.app.Activity;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.net.Uri;
 import android.os.Environment;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
 import android.util.TypedValue;
@@ -40,6 +44,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import kvj.tegmine.android.R;
+import kvj.tegmine.android.Tegmine;
 import kvj.tegmine.android.data.def.FileSystemException;
 import kvj.tegmine.android.data.def.FileSystemItem;
 import kvj.tegmine.android.data.def.FileSystemProvider;
@@ -486,15 +491,24 @@ public class TegmineController extends Controller {
         autoThemeChanger.clear();
         sizes.clear();
         defaultProvider = null;
-        if (!fileSystemProviders.containsKey("sdcard")) { // Failsafe - should always be there
-            FileSystemProvider provider = new LocalFileSystemProvider(Environment.getExternalStorageDirectory(), "sdcard");
-            provider.label("SD Card");
-            fileSystemProviders.put("sdcard", provider);
+
+        if (havePermissions()) {
+            FileSystemProvider sdProvider = new LocalFileSystemProvider(Environment.getExternalStorageDirectory(), "sdcard");
+            sdProvider.label("SD Card");
+            fileSystemProviders.put("sdcard", sdProvider);
+            defaultProvider = sdProvider;
         }
-        if (!fileSystemProviders.containsKey("assets")) { // Failsafe - should always be there
-            FileSystemProvider provider = new AssetFileSystemProvider("assets", context);
-            fileSystemProviders.put("assets", provider);
-        }
+
+        FileSystemProvider privateProvider = new LocalFileSystemProvider(context.getFilesDir(), "private");
+        privateProvider.label("Private");
+        fileSystemProviders.put("private", privateProvider);
+        if (defaultProvider == null)
+            defaultProvider = privateProvider;
+
+        FileSystemProvider assetProvider = new AssetFileSystemProvider("assets", context);
+        assetProvider.label("Assets");
+        fileSystemProviders.put("assets", assetProvider);
+
         defaultProvider = fileSystemProviders.get("sdcard");
         colorSchemes.put("default", new LightTheme(this));
         selectedTheme = "default";
@@ -647,8 +661,8 @@ public class TegmineController extends Controller {
             newLineBefore = objectBoolean(config, "newLineBefore", false);
             newLineAfter = objectBoolean(config, "newLineAfter", true);
             scrollToBottom = objectBoolean(config, "scrollToBottom", true);
-            reloadStorage(config);
             loadIncludes(config);
+            reloadStorage(config);
 
             watchSeconds = objectInteger(config, "watchSeconds", watchSeconds);
             clientName = objectString(config, "client", clientName);

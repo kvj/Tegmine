@@ -1,6 +1,9 @@
 package kvj.tegmine.android.ui.fragment;
 
 import android.app.Activity;
+import android.content.ClipData;
+import android.content.ClipboardManager;
+import android.content.Context;
 import android.os.Bundle;
 import android.support.design.widget.NavigationView;
 import android.support.v4.app.Fragment;
@@ -14,6 +17,8 @@ import android.text.TextUtils;
 import android.view.ContextMenu;
 import android.view.Gravity;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.SubMenu;
 import android.view.View;
@@ -120,6 +125,7 @@ public class FileSystemBrowser extends Fragment implements ProgressListener {
         if (null == controller) { // Invalid fragment
             return null;
         }
+        setHasOptionsMenu(true);
         View view = inflater.inflate(R.layout.fragment_file_browser, container, false);
         listView = (RecyclerView) view.findViewById(android.R.id.list);
         listView.setLayoutManager(new LinearLayoutManager(container.getContext()));
@@ -252,6 +258,46 @@ public class FileSystemBrowser extends Fragment implements ProgressListener {
         }
         menu.setGroupCheckable(R.id.menu_storages_group, true, true);
         mb.onItemsChanged(true);
+    }
+
+
+    @Override
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+        inflater.inflate(R.menu.menu_file_browser, menu);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        if (null == controller) return true; // Ignore
+        switch (item.getItemId()) {
+            case R.id.context_new_file:
+                input("New file name:", "File", new Dialogs.Callback<String>() {
+                    @Override
+                    public void run(final String data) {
+                        executeOperation(adapter.root(), new FileSystemOperation() {
+                            @Override
+                            public void exec(FileSystemItem item, FileSystemProvider provider) throws FileSystemException {
+                                provider.create(FileSystemItemType.File, item, data);
+                            }
+                        });
+                    }
+                });
+                return true;
+            case R.id.context_new_folder:
+                input("New folder name:", "Folder", new Dialogs.Callback<String>() {
+                    @Override
+                    public void run(final String data) {
+                        executeOperation(adapter.root(), new FileSystemOperation() {
+                            @Override
+                            public void exec(FileSystemItem item, FileSystemProvider provider) throws FileSystemException {
+                                provider.create(FileSystemItemType.Folder, item, data);
+                            }
+                        });
+                    }
+                });
+                return true;
+        }
+        return super.onOptionsItemSelected(item);
     }
 
     @Override

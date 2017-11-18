@@ -71,30 +71,15 @@ public class Main extends AppCompatActivity implements
     private boolean created = false;
 
 
-    private String[] permissions = {
-            Manifest.permission.READ_EXTERNAL_STORAGE,
-            Manifest.permission.WRITE_EXTERNAL_STORAGE
-    };
-
-    private boolean havePermissions() {
-        for (String permission : permissions) { // Check all granted
-            if (ContextCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED) {
-                // Not yet
-                ActivityCompat.requestPermissions(this, permissions, Tegmine.REQUEST_PERMISSIONS);
-                return false;
-            }
-        }
-        return true;
-    }
-
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        finish();
         for (int result : grantResults) { // Check results
             if (result != PackageManager.PERMISSION_GRANTED) { // Error
+                setupPane(null);
                 return;
             }
         }
+        finish();
         try {
             controller.reloadConfig();
             // All OK - restart
@@ -104,21 +89,15 @@ public class Main extends AppCompatActivity implements
         }
     }
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        setTheme(controller.theme().dark() ? R.style.AppThemeDark : R.style.AppThemeLight);
-        super.onCreate(savedInstanceState);
-        if (!havePermissions()) { // Stop
-            return;
-        }
+    private void setupPane(Bundle savedInstanceState) {
         mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         setContentView(R.layout.activity_main);
         created = true;
-        toolbar = (Toolbar) findViewById(R.id.main_toolbar);
-        progressBar = (ContentLoadingProgressBar)findViewById(R.id.main_progress_bar);
+        toolbar = findViewById(R.id.main_toolbar);
+        progressBar = findViewById(R.id.main_progress_bar);
         setSupportActionBar(toolbar);
         form.add(new TransientAdapter<>(new StringBundleAdapter(), Tegmine.VIEW_TYPE_BROWSER), Tegmine.BUNDLE_VIEW_TYPE);
-        multiPane = (LinearLayout) findViewById(R.id.main_view);
+        multiPane = findViewById(R.id.main_view);
         multiView = multiPane != null;
         if (multiView) {
             Compat.levelAware(Build.VERSION_CODES.JELLY_BEAN, new Runnable() {
@@ -149,6 +128,17 @@ public class Main extends AppCompatActivity implements
             }
         }
         onController(savedInstanceState);
+    }
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        setTheme(controller.theme().dark() ? R.style.AppThemeDark : R.style.AppThemeLight);
+        super.onCreate(savedInstanceState);
+        if (!controller.havePermissions()) { // Stop
+            ActivityCompat.requestPermissions(this, Tegmine.STORAGE_PERMISSIONS, Tegmine.REQUEST_PERMISSIONS);
+            return;
+        }
+        setupPane(savedInstanceState);
     }
 
     private void fromSettings(Bundle bundle, String prefix) {

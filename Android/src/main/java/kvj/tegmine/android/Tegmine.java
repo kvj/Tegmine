@@ -1,5 +1,6 @@
 package kvj.tegmine.android;
 
+import android.Manifest;
 import android.text.TextUtils;
 
 import org.kvj.bravo7.ng.App;
@@ -33,6 +34,11 @@ public class Tegmine extends App<TegmineController> {
     public static final String BUNDLE_URL = "url";
     public static final String BUNDLE_WIDGET_ID = "widget_id";
     public static final String BUNDLE_TITLE = "title";
+    public static String[] STORAGE_PERMISSIONS = {
+            Manifest.permission.READ_EXTERNAL_STORAGE,
+            Manifest.permission.WRITE_EXTERNAL_STORAGE
+    };
+
 
     @Override
     protected TegmineController create() {

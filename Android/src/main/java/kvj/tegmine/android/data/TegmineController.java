@@ -621,6 +621,16 @@ public class TegmineController extends Controller {
         return fromURL(path);
     }
 
+    public boolean havePermissions() {
+        for (String permission : Tegmine.STORAGE_PERMISSIONS) { // Check all granted
+            if (ContextCompat.checkSelfPermission(context(), permission) != PackageManager.PERMISSION_GRANTED) {
+                // Not yet
+                return false;
+            }
+        }
+        return true;
+    }
+
     public void reloadConfig() throws FileSystemException {
         FileSystemException ex = null;
         setupFailsave();

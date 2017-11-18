@@ -385,6 +385,13 @@ public class FileSystemBrowser extends Fragment implements ProgressListener {
                     }
                 });
                 return true;
+            case R.id.context_copy_cboard:
+                ClipboardManager clipboard = (ClipboardManager) getActivity().getSystemService(Context.CLIPBOARD_SERVICE);
+                final String contents = item.toURL();
+                ClipData clip = ClipData.newPlainText(contents, contents);
+                clipboard.setPrimaryClip(clip);
+                controller.messageShort("Copied to clipboard");
+                return true;
         }
         return false;
     }

@@ -15,4 +15,7 @@
     <item
         android:id="@+id/context_remove"
         android:title="@string/menu_remove"/>
+    <item
+        android:id="@+id/context_copy_cboard"
+        android:title="@string/menu_copy_clipboard"/>
 </menu>

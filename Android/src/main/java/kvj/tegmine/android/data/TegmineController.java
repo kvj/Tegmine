@@ -71,7 +71,6 @@ public class TegmineController extends Controller {
 
     private static final int SPACES_IN_TAB = 2;
     private final AutoThemeChanger autoThemeChanger;
-    private final EditorsController editors;
     private Map<String, FileSystemProvider> fileSystemProviders = new LinkedHashMap<>();
     private Map<String, TemplateDef> templates = new LinkedHashMap<>();
     private FileSystemProvider defaultProvider = null;
@@ -116,7 +115,6 @@ public class TegmineController extends Controller {
         } catch (FileSystemException e) {
             logger.e(e, "Failed to load config");
         }
-        editors = new EditorsController(this);
     }
 
     public FileSystemProvider fileSystemProvider(FileSystemItem item) {
@@ -979,10 +977,6 @@ public class TegmineController extends Controller {
     public float sp2px(float dp) {
         Resources r = context.getResources();
         return r.getDisplayMetrics().scaledDensity * dp;
-    }
-
-    public EditorsController editors() {
-        return editors;
     }
 
     public void openLink(Activity activity, String url, FileSystemItem item) {

@@ -4,6 +4,7 @@ import android.os.Bundle;
 
 import org.kvj.bravo7.form.BundleAdapter;
 import org.kvj.bravo7.log.Logger;
+import org.kvj.bravo7.util.Compat;
 
 import kvj.tegmine.android.data.TegmineController;
 import kvj.tegmine.android.data.def.FileSystemItem;
@@ -21,13 +22,13 @@ public class FileSystemItemAdapter extends BundleAdapter<FileSystemItem> {
     }
 
     @Override
-    public FileSystemItem get(Bundle bundle, String name, FileSystemItem def) {
+    public FileSystemItem get(Bundle bundle, String name, Compat.Producer<FileSystemItem> def) {
         String url = bundle.getString(name);
         FileSystemItem item = controller.fromURL(url);
         if (null != item) { // Found item
             return item;
         }
-        return def;
+        return def.produce();
     }
 
     @Override

@@ -160,10 +160,6 @@ public class LightTheme {
         return dark? R.drawable.icn_file_add_dark: R.drawable.icn_file_add_light;
     }
 
-    public int fileSaveIcon() {
-        return dark? R.drawable.icn_file_save_dark: R.drawable.icn_file_save_light;
-    }
-
     public int refreshIcon() {
         return dark? R.drawable.ic_widget_refresh_dk: R.drawable.ic_widget_refresh_lt;
     }
@@ -174,10 +170,6 @@ public class LightTheme {
 
     public int saveIcon() {
         return dark? R.drawable.ic_action_save_dk: R.drawable.ic_action_save_lt;
-    }
-
-    public int closeIcon() {
-        return dark? R.drawable.ic_action_close_dk: R.drawable.ic_action_close_lt;
     }
 
     public int voiceIcon() {

@@ -1,6 +1,5 @@
 package kvj.tegmine.android.ui;
 
-import android.Manifest;
 import android.animation.LayoutTransition;
 import android.annotation.TargetApi;
 import android.content.Context;
@@ -18,7 +17,6 @@ import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentTransaction;
-import android.support.v4.content.ContextCompat;
 import android.support.v4.widget.ContentLoadingProgressBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -41,14 +39,14 @@ import kvj.tegmine.android.data.TegmineController;
 import kvj.tegmine.android.data.def.FileSystemException;
 import kvj.tegmine.android.data.def.FileSystemItem;
 import kvj.tegmine.android.data.model.ProgressListener;
-import kvj.tegmine.android.ui.fragment.Editors;
+import kvj.tegmine.android.ui.fragment.Editor;
 import kvj.tegmine.android.ui.fragment.FileSystemBrowser;
 import kvj.tegmine.android.ui.fragment.OneFileViewer;
 
 
 public class Main extends AppCompatActivity implements
         FileSystemBrowser.BrowserListener,
-        Editors.EditorsListener,
+        Editor.EditorListener,
         OneFileViewer.FileViewerListener,
         ProgressListener,
         SensorEventListener {
@@ -65,7 +63,7 @@ public class Main extends AppCompatActivity implements
 
     private FileSystemBrowser browser = null;
     private OneFileViewer viewer = null;
-    private Editors editors = null;
+    private Editor editor = null;
     private ContentLoadingProgressBar progressBar = null;
     private SensorManager mSensorManager = null;
     private boolean created = false;
@@ -202,19 +200,18 @@ public class Main extends AppCompatActivity implements
         }
     }
 
-    private void showEditor(Bundle data) {
-        if (null != editors) {
-            // Add existing
-            editors.add(data);
-            return;
-        }
-        editors = new Editors().addListener(this).create(this, controller, data);
-        if (multiView) {
-            openIn(editors, R.id.main_right_view, "editor");
-        } else {
-            openIn(editors, R.id.main_single_view, "editor");
-        }
-
+    private void showEditor(final Intent intent, final Bundle data) {
+        hideEditor(true, new Runnable() {
+            @Override
+            public void run() {
+                editor = new Editor().setListener(Main.this).create(intent, controller, data);
+                if (multiView) {
+                    openIn(editor, R.id.main_right_view, "editor");
+                } else {
+                    openIn(editor, R.id.main_single_view, "editor");
+                }
+            }
+        });
     }
 
     private void applyTheme() {
@@ -238,7 +235,7 @@ public class Main extends AppCompatActivity implements
                 showBrowser(savedInstanceState);
                 showViewer(savedInstanceState);
             }
-            showEditor(savedInstanceState);
+            showEditor(getIntent(), savedInstanceState);
         }
         resizeMultiPane();
         controller.progressListeners().add(this);
@@ -268,8 +265,8 @@ public class Main extends AppCompatActivity implements
         if (null != viewer) {
             viewer.saveState(outState);
         }
-        if (null != editors) {
-            editors.saveState(outState);
+        if (null != editor) {
+            editor.saveState(outState);
         }
     }
 
@@ -282,14 +279,18 @@ public class Main extends AppCompatActivity implements
         final Runnable doHide = new Runnable() {
             @Override
             public void run() {
-                if (multiView && null != editors) { // Just remove from right view
-                    getSupportFragmentManager().beginTransaction().remove(editors).commit();
-                    editors = null;
+                if (multiView && null != editor) { // Just remove from right view
+                    getSupportFragmentManager().beginTransaction().remove(editor).commit();
+                    editor = null;
                 }
                 afterHide.run();
             }
         };
-        doHide.run();
+        if (confirm && null != editor && editor.changed()) {
+            controller.question(this, "Contents were modified. Really close?", doHide, null);
+        } else {
+            doHide.run();
+        }
     }
 
     private int[] resizePaneIDs = {R.id.main_left_view, R.id.main_center_view, R.id.main_right_view};
@@ -325,10 +326,7 @@ public class Main extends AppCompatActivity implements
             browser.requestFocus();
             return;
         }
-        final boolean haveEditor = editors != null;
-        if (haveEditor && editors.closeFindDialog()) { // Closed find dialog
-            return;
-        }
+        final boolean haveEditor = editor != null;
         hideEditor(confirm, new Runnable() {
             @Override
             public void run() {
@@ -362,7 +360,7 @@ public class Main extends AppCompatActivity implements
     public void openFile(Bundle data, FileSystemItem item) {
         if (multiView) { // Show viever here
             showViewer(data);
-            if (null == editors) { // No editor now
+            if (null == editor) { // No editor now
                 setType(Tegmine.VIEW_TYPE_FILE);
             }
             return;
@@ -375,13 +373,13 @@ public class Main extends AppCompatActivity implements
 
     @Override
     public void openEditor(final Bundle data) {
+        Intent intent = new Intent(this, Main.class);
+        intent.putExtra(Tegmine.BUNDLE_VIEW_TYPE, Tegmine.VIEW_TYPE_EDITOR);
+        intent.putExtras(data);
         if (multiView) { // Show in center
-            showEditor(data);
+            showEditor(intent, null);
             setType(Tegmine.VIEW_TYPE_EDITOR);
         } else {
-            Intent intent = new Intent(this, Main.class);
-            intent.putExtra(Tegmine.BUNDLE_VIEW_TYPE, Tegmine.VIEW_TYPE_EDITOR);
-            intent.putExtras(data);
             startActivityForResult(intent, REQUEST_EDITOR);
         }
     }
@@ -461,7 +459,7 @@ public class Main extends AppCompatActivity implements
     }
 
     @Override
-    public void onHide() {
+    public void onAfterSave() {
         setResult(RESULT_OK);
         closeEditor(false);
     }

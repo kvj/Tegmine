@@ -336,6 +336,44 @@ public class TegmineController extends Controller {
         view.setTextSize(TypedValue.COMPLEX_UNIT_SP, theme().headerTextSp());
     }
 
+    public void writeLines(FileSystemProvider provider, OutputStream stream, List<LineMeta> lines) throws FileSystemException {
+        BufferedOutputStream bufferedStream = null;
+        try {
+            bufferedStream = new BufferedOutputStream(stream);
+            for (int i = 0; i < lines.size(); i++) { // Write lines one by one
+                LineMeta line = lines.get(i);
+                if (i>0) { // Add new line
+                    bufferedStream.write('\n');
+                }
+                for (int j = 0; j < line.indent(); j++) { // Add tabs
+                    if (provider.useTab()) { // Tabs in output
+                        bufferedStream.write('\t');
+                    } else { // Spaces mode
+                        for (int k = 0; k < provider.tabSize(); k++) { // Add spaces
+                            bufferedStream.write(' ');
+                        }
+                    }
+                }
+                bufferedStream.write(line.data().getBytes("utf-8"));
+            }
+            if (newLineAfter) { // Trailing new line
+                bufferedStream.write('\n');
+            }
+        } catch (Throwable t) { // IO error
+            logger.e(t, "Error writing contents:");
+            throw new FileSystemException("IO error");
+        } finally {
+            if (null != bufferedStream) {
+                try {
+                    bufferedStream.close();
+                    updateWidgets();
+                } catch (Throwable t) {
+                    logger.e(t, "Failed to commit stream");
+                }
+            }
+        }
+    }
+
     public void writeEdited(FileSystemProvider provider, OutputStream stream, String contents, boolean doEdit) throws FileSystemException {
         if (TextUtils.isEmpty(contents)) { // No data entered
             return;

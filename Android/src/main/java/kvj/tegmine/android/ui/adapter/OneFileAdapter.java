@@ -1,10 +1,11 @@
 package kvj.tegmine.android.ui.adapter;
 
+import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.helper.ItemTouchHelper;
 import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
 import android.util.TypedValue;
-import android.view.ContextMenu;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -30,16 +31,25 @@ import kvj.tegmine.android.data.model.LineMeta;
 import kvj.tegmine.android.data.model.SyntaxDef;
 import kvj.tegmine.android.data.model.util.Wrappers;
 
+import static android.support.v7.widget.helper.ItemTouchHelper.DOWN;
+import static android.support.v7.widget.helper.ItemTouchHelper.END;
+import static android.support.v7.widget.helper.ItemTouchHelper.START;
+import static android.support.v7.widget.helper.ItemTouchHelper.UP;
+
 /**
  * Created by kvorobyev on 2/17/15.
  */
 public abstract class OneFileAdapter extends RecyclerView.Adapter<OneFileAdapter.Holder> {
 
     private final FileSystemProvider provider;
+    private final ItemTouchHelper touchHelper;
+
+    public List<LineMeta> lines() {
+        return lines;
+    }
 
     class Holder extends RecyclerView.ViewHolder implements View.OnClickListener,
-                                                            View.OnLongClickListener,
-                                                            View.OnCreateContextMenuListener {
+            View.OnLongClickListener {
 
         private final View border;
         private final TextView text;
@@ -52,7 +62,7 @@ public abstract class OneFileAdapter extends RecyclerView.Adapter<OneFileAdapter
             lineno = view.findViewById(R.id.one_file_item_lineno);
             view.setOnClickListener(this);
             view.setOnLongClickListener(this);
-            view.setOnCreateContextMenuListener(this);
+            // view.setOnCreateContextMenuListener(this);
             border.setBackgroundColor(controller.theme().markColor());
             text.setTextSize(TypedValue.COMPLEX_UNIT_SP, controller.theme().fileTextSp());
             text.setTextColor(controller.theme().textColor());
@@ -68,18 +78,16 @@ public abstract class OneFileAdapter extends RecyclerView.Adapter<OneFileAdapter
 
         @Override
         public boolean onLongClick(View view) {
-            return false;
+            expandAll();
+            touchHelper.startDrag(this);
+            return true;
         }
 
-        @Override
-        public void onCreateContextMenu(ContextMenu contextMenu, View view,
-                                        ContextMenu.ContextMenuInfo contextMenuInfo) {
-            OneFileAdapter.this.onContextMenu(contextMenu, getAdapterPosition());
-        }
     }
 
     protected abstract void onClick(int position);
-    protected abstract void onContextMenu(ContextMenu menu, int position);
+
+    protected abstract void onEdit();
 
     private static final int MAX_LINES = 30;
     private final SyntaxDef syntax;
@@ -95,7 +103,7 @@ public abstract class OneFileAdapter extends RecyclerView.Adapter<OneFileAdapter
         this.wrapLines = wrapLines;
     }
 
-    private enum DataState {FrameLoaded, FrameRequested};
+    private enum DataState {FrameLoaded, FrameRequested}
 
     private final Object lock = new Object();
     private DataState state = DataState.FrameRequested;
@@ -107,11 +115,72 @@ public abstract class OneFileAdapter extends RecyclerView.Adapter<OneFileAdapter
     private final List<LineMeta> lines = new ArrayList<>(MAX_LINES);
     private final LinkedList<Integer> visibleLines = new LinkedList<>();
 
+    private final ItemTouchHelper.Callback touchCallback = new ItemTouchHelper.Callback() {
+
+        private int changes = 0;
+
+        @Override
+        public boolean isLongPressDragEnabled() {
+            return true;
+        }
+
+        @Override
+        public boolean isItemViewSwipeEnabled() {
+            return false;
+        }
+
+        @Override
+        public int getMovementFlags(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder) {
+            return makeMovementFlags(UP | DOWN, START | END);
+        }
+
+        @Override
+        public void onSelectedChanged(RecyclerView.ViewHolder viewHolder, int actionState) {
+//            logger.d("Selection changed:", viewHolder, actionState, changes);
+            super.onSelectedChanged(viewHolder, actionState);
+            switch (actionState) {
+                case ItemTouchHelper.ACTION_STATE_DRAG:
+                    changes = 0;
+                    break;
+                case ItemTouchHelper.ACTION_STATE_IDLE:
+                    if (changes > 0) {
+                        onEdit();
+                    }
+            }
+        }
+
+        @Override
+        public boolean onMove(RecyclerView recyclerView, RecyclerView.ViewHolder source, RecyclerView.ViewHolder target) {
+            int from = source.getAdapterPosition();
+            int to = target.getAdapterPosition();
+//            logger.d("onMove", from, to);
+            synchronized (lock) {
+                Collections.swap(visibleLines, from, to);
+                Collections.swap(lines, from, to);
+                notifyItemMoved(from, to);
+            }
+            changes++;
+            return true;
+        }
+
+        @Override
+        public void onSwiped(RecyclerView.ViewHolder viewHolder, int direction) {
+
+        }
+    };
+
     public OneFileAdapter(TegmineController controller, FileSystemItem item) {
         this.controller = controller;
         this.item = item;
         this.syntax = controller.findSyntax(item);
         this.provider = controller.fileSystemProvider(item);
+        this.touchHelper = new ItemTouchHelper(touchCallback);
+    }
+
+    @Override
+    public void onAttachedToRecyclerView(@NonNull RecyclerView recyclerView) {
+        super.onAttachedToRecyclerView(recyclerView);
+        touchHelper.attachToRecyclerView(recyclerView);
     }
 
     public void setBounds(final int offset, final int linesCount, final Runnable afterDone) {
@@ -160,7 +229,7 @@ public abstract class OneFileAdapter extends RecyclerView.Adapter<OneFileAdapter
     @Override
     public Holder onCreateViewHolder(ViewGroup parent, int viewType) {
         View v = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_one_file, parent,
-                                                                  false);
+                false);
         return new Holder(v);
     }
 
@@ -170,7 +239,7 @@ public abstract class OneFileAdapter extends RecyclerView.Adapter<OneFileAdapter
         if (null == line) { // Invalid line
             holder.text.setText("");
         } else {
-            holder.border.setVisibility(line.folded()? View.VISIBLE: View.GONE);
+            holder.border.setVisibility(line.folded() ? View.VISIBLE : View.GONE);
             int indent = line.indent();
             SpannableStringBuilder builder = new SpannableStringBuilder();
             controller.applyTheme(provider, syntax, line.data(), builder, SyntaxDef.Feature.Shrink);
@@ -184,7 +253,7 @@ public abstract class OneFileAdapter extends RecyclerView.Adapter<OneFileAdapter
                 holder.text.setSingleLine(true);
             }
             if (showNumbers) {
-                holder.lineno.setText(String.format(showNumbersFormat, visibleLines.get(position)+1));
+                holder.lineno.setText(String.format(showNumbersFormat, visibleLines.get(position) + 1));
                 holder.lineno.setVisibility(View.VISIBLE);
             } else {
                 holder.lineno.setVisibility(View.GONE);
@@ -231,10 +300,20 @@ public abstract class OneFileAdapter extends RecyclerView.Adapter<OneFileAdapter
     }
 
     public String partString(int position) {
-        if (position >= visibleLines.size() || position<0) { // Invalid position
+        if (position >= visibleLines.size() || position < 0) { // Invalid position
             return null;
         }
-        return controller.part(provider, lines, visibleLines.get(position)).toString();
+        return controller.part(provider, lines, visibleLines.get(position));
+    }
+
+    public void expandAll() {
+        int index = 0;
+        while (index < visibleLines.size()) {
+            LineMeta line = line(index);
+            if (line != null && line.folded())
+                toggle(index);
+            index++;
+        }
     }
 
     public void toggle(int position) {
@@ -244,14 +323,14 @@ public abstract class OneFileAdapter extends RecyclerView.Adapter<OneFileAdapter
                 return;
             }
             startLine.folded(!startLine.folded());
-            int index = visibleLines.get(position)+1;
+            int index = visibleLines.get(position) + 1;
             boolean insert = false;
             int lastIndex = lines.size(); // Last line
             int folded = 0;
             List<Integer> lineNos = new ArrayList<>();
             while (index < lines.size()) {
                 LineMeta line = lines.get(index);
-                if (line.indent()>startLine.indent() || line.indent() == -1) { // Fold
+                if (line.indent() > startLine.indent() || line.indent() == -1) { // Fold
                     folded++;
                     line.visible(!startLine.folded());
                     line.folded(false);
@@ -278,11 +357,11 @@ public abstract class OneFileAdapter extends RecyclerView.Adapter<OneFileAdapter
             } else {
                 // Add
                 if (insert) {
-                    visibleLines.addAll(position+1, lineNos);
+                    visibleLines.addAll(position + 1, lineNos);
                 } else {
                     visibleLines.addAll(lineNos);
                 }
-                notifyItemRangeInserted(position+1, lineNos.size());
+                notifyItemRangeInserted(position + 1, lineNos.size());
             }
         }
     }

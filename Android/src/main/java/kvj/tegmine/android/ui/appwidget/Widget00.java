@@ -51,6 +51,7 @@ public class Widget00 extends AppWidget implements AppWidget.AppWidgetUpdate {
 
     private Intent createLaunchIntent(AppWidgetController controller, int id, String url, String viewType, String editType) {
         Intent launchIntent = controller.remoteIntent(id, Main.class);
+        launchIntent.addFlags(Intent.FLAG_ACTIVITY_TASK_ON_HOME | Intent.FLAG_ACTIVITY_NEW_TASK);
         launchIntent.putExtra(Tegmine.BUNDLE_VIEW_TYPE, viewType);
         if (null != editType) {
             launchIntent.putExtra(Tegmine.BUNDLE_EDIT_TYPE, editType);

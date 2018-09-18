@@ -163,6 +163,7 @@ public class OneFileViewer extends Fragment implements ProgressListener {
         });
         listView = view.findViewById(android.R.id.list);
         listView.setLayoutManager(new LinearLayoutManager(container.getContext()));
+        listView.setHasFixedSize(!controller.wrapLines());
         adapter = new OneFileAdapter(controller, item) {
 
             @Override
@@ -171,6 +172,10 @@ public class OneFileViewer extends Fragment implements ProgressListener {
             }
 
             @Override
+            protected void onEdit() {
+                saveLines();
+            }
+
             protected void onContextMenu(ContextMenu menu, int position) {
                 onItemContextMenu(menu, position);
             }
@@ -249,6 +254,35 @@ public class OneFileViewer extends Fragment implements ProgressListener {
 
     private ClipboardManager getClipboard() {
         return (ClipboardManager) getActivity().getSystemService(Context.CLIPBOARD_SERVICE);
+    }
+
+    private void saveLines() {
+        Tasks.SimpleTask<FileSystemException> task = new Tasks.SimpleTask<FileSystemException>() {
+            @Override
+            protected FileSystemException doInBackground() {
+                OutputStream stream;
+                try {
+                    stream = provider.replace(item);
+                    logger.d("Writing lines:", adapter.lines());
+                    controller.writeLines(provider, stream, adapter.lines());
+                    watcher.reset();
+                } catch (FileSystemException e) {
+                    return e;
+                }
+                return null;
+            }
+
+            @Override
+            protected void onPostExecute(FileSystemException e) {
+                if (null == e) { // Saved
+                    refresh();
+                } else {
+                    logger.e(e, "Fail save error");
+                }
+            }
+        };
+        task.exec();
+
     }
 
     private void appendText(final CharSequence text, final Runnable afterFinish) {

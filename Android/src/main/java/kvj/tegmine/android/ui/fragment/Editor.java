@@ -30,8 +30,6 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import org.kvj.bravo7.SuperActivity;
-import org.kvj.bravo7.form.FormController;
 import org.kvj.bravo7.form.FormControllerNG;
 import org.kvj.bravo7.form.impl.ViewFinder;
 import org.kvj.bravo7.form.impl.bundle.StringBundleAdapter;
@@ -330,20 +328,7 @@ public class Editor extends Fragment implements ProgressListener {
                 // File has been changed - ask for reload
                 final boolean doEdit = Tegmine.EDIT_TYPE_EDIT.equals(form.get(Tegmine.BUNDLE_EDIT_TYPE));
                 if (doEdit) {
-                    // Makes sense - can ask for refresh
-                    SuperActivity
-                            .showQuestionDialog(getActivity(), "Reload editor?",
-                                    "File has been changed. Reload?",
-                                    new Runnable() {
-                                        @Override
-                                        public void run() {
-                                            // TODO: Replace with contents
-                                        }
-                                    }, new Runnable() {
-                                        @Override
-                                        public void run() {
-                                        }
-                                    });
+                    controller.messageLong("Warning: contents were modified outside of editor");
                 }
             }
         };

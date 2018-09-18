@@ -168,6 +168,14 @@ public class LightTheme {
         return dark? R.drawable.ic_widget_conf_dk: R.drawable.ic_widget_conf_lt;
     }
 
+    public int addIcon() {
+        return dark? R.drawable.ic_widget_add_dk: R.drawable.ic_widget_add_lt;
+    }
+
+    public int editIcon() {
+        return dark? R.drawable.ic_widget_edit_dk: R.drawable.ic_widget_edit_lt;
+    }
+
     public int saveIcon() {
         return dark? R.drawable.ic_action_save_dk: R.drawable.ic_action_save_lt;
     }

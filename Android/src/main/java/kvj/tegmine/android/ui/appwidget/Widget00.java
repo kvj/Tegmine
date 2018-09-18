@@ -49,6 +49,17 @@ public class Widget00 extends AppWidget implements AppWidget.AppWidgetUpdate {
         });
     }
 
+    private Intent createLaunchIntent(AppWidgetController controller, int id, String url, String viewType, String editType) {
+        Intent launchIntent = controller.remoteIntent(id, Main.class);
+        launchIntent.putExtra(Tegmine.BUNDLE_VIEW_TYPE, viewType);
+        if (null != editType) {
+            launchIntent.putExtra(Tegmine.BUNDLE_EDIT_TYPE, editType);
+        }
+        launchIntent.putExtra(Tegmine.BUNDLE_SELECT, url);
+        launchIntent.setType(String.format("%d.%s.%s", id, viewType, editType));
+        return launchIntent;
+    }
+
     @Override
     public RemoteViews update(AppWidgetController controller, int id) {
 //        logger.d("Update widget", id);
@@ -67,12 +78,19 @@ public class Widget00 extends AppWidget implements AppWidget.AppWidgetUpdate {
                 controller.refreshPendingIntent(id, Widget00.Service.class));
         rv.setImageViewResource(R.id.widget_00_config_icon, tegmine.theme().configIcon());
         rv.setOnClickPendingIntent(R.id.widget_00_config_icon, controller.configPendingIntent(id));
+        rv.setImageViewResource(R.id.widget_00_add_icon, tegmine.theme().addIcon());
+        rv.setImageViewResource(R.id.widget_00_edit_icon, tegmine.theme().editIcon());
         rv.setRemoteAdapter(R.id.widget_00_list,
                 controller.remoteIntent(id, Widget00.Service.class));
         Intent launchIntent = controller.remoteIntent(id, Main.class);
         launchIntent.putExtra(Tegmine.BUNDLE_VIEW_TYPE, Tegmine.VIEW_TYPE_FILE);
         launchIntent.putExtra(Tegmine.BUNDLE_SELECT, url);
-        rv.setPendingIntentTemplate(R.id.widget_00_list, controller.activityPending(launchIntent));
+        rv.setPendingIntentTemplate(R.id.widget_00_list,
+                controller.activityPending(createLaunchIntent(controller, id, url, Tegmine.VIEW_TYPE_FILE, null)));
+        rv.setOnClickPendingIntent(R.id.widget_00_add_icon,
+                controller.activityPending(createLaunchIntent(controller, id, url, Tegmine.VIEW_TYPE_EDITOR, Tegmine.EDIT_TYPE_ADD)));
+        rv.setOnClickPendingIntent(R.id.widget_00_edit_icon,
+                controller.activityPending(createLaunchIntent(controller, id, url, Tegmine.VIEW_TYPE_EDITOR, Tegmine.EDIT_TYPE_EDIT)));
         rv.setEmptyView(R.id.widget_00_list, R.id.widget_00_empty);
         controller.notify(id, R.id.widget_00_list);
         return rv;

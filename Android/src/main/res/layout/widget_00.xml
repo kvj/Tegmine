@@ -66,6 +66,30 @@
                     android:drawSelectorOnTop="false"
                     android:listSelector="@null"></ListView>
             </FrameLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="0"
+                android:orientation="horizontal">
+
+                <android.widget.ImageButton
+                    android:layout_weight="0"
+                    android:id="@+id/widget_00_edit_icon"
+                    style="@style/widget_IconButton"
+                    android:src="@drawable/ic_widget_edit_dk" />
+
+                <FrameLayout
+                    android:layout_weight="1"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content" />
+
+                <android.widget.ImageButton
+                    android:layout_weight="0"
+                    android:id="@+id/widget_00_add_icon"
+                    style="@style/widget_IconButton"
+                    android:src="@drawable/ic_widget_add_dk" />
+            </LinearLayout>
         </LinearLayout>
     </RelativeLayout>
 

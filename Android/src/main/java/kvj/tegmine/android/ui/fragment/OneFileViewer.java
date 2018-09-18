@@ -53,6 +53,8 @@ public class OneFileViewer extends Fragment implements ProgressListener {
 
     private RecyclerView listView = null;
     private FileSystemProvider provider = null;
+    private View addButton = null;
+    private View editButton = null;
 
     public void requestFocus() {
         if (null != listView) {
@@ -145,19 +147,21 @@ public class OneFileViewer extends Fragment implements ProgressListener {
         if (null != listener) {
             listener.updateViewerTitle(item.name);
         }
-        view.findViewById(R.id.one_file_do_add).setOnClickListener(new View.OnClickListener() {
+        addButton = view.findViewById(R.id.one_file_do_add);
+        addButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 startEditor(Tegmine.EDIT_TYPE_ADD, null);
             }
         });
-        view.findViewById(R.id.one_file_do_edit).setOnClickListener(new View.OnClickListener() {
+        editButton = view.findViewById(R.id.one_file_do_edit);
+        editButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 startEditor(Tegmine.EDIT_TYPE_EDIT, null);
             }
         });
-        listView = (RecyclerView) view.findViewById(android.R.id.list);
+        listView = view.findViewById(android.R.id.list);
         listView.setLayoutManager(new LinearLayoutManager(container.getContext()));
         adapter = new OneFileAdapter(controller, item) {
 

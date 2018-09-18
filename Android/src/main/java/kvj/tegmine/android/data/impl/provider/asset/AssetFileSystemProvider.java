@@ -1,17 +1,15 @@
 package kvj.tegmine.android.data.impl.provider.asset;
 
 import android.content.Context;
-
-import org.kvj.bravo7.ng.App;
+import android.content.res.AssetManager;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
-import kvj.tegmine.android.Tegmine;
-import kvj.tegmine.android.data.TegmineController;
 import kvj.tegmine.android.data.def.FileSystemException;
+import kvj.tegmine.android.data.def.FileSystemItemType;
 import kvj.tegmine.android.data.def.FileSystemProvider;
 
 /**
@@ -20,14 +18,13 @@ import kvj.tegmine.android.data.def.FileSystemProvider;
 public class AssetFileSystemProvider extends FileSystemProvider<AssetFileSystemItem> {
 
     private final Context context;
-    private AssetFileSystemItem root = null;
+    private AssetFileSystemItem root;
 
     public AssetFileSystemProvider(String name, Context context) {
         super(name);
         this.context = context;
         root = new AssetFileSystemItem(name, true);
         root.name = "Assets";
-        hidden = true;
     }
 
     @Override
@@ -50,11 +47,18 @@ public class AssetFileSystemProvider extends FileSystemProvider<AssetFileSystemI
     @Override
     protected List<AssetFileSystemItem> childrenT(AssetFileSystemItem parent) throws FileSystemException {
         try {
-            String[] files = context.getResources().getAssets().list("");
+            AssetManager assets = context.getResources().getAssets();
+            String[] files = assets.list("");
             List<AssetFileSystemItem> result = new ArrayList<>();
             for (String name : files) {
+                String[] subItems = assets.list(name);
+                if (subItems.length > 0) {
+                    // Folder - ignore
+                    continue;
+                }
                 AssetFileSystemItem item = new AssetFileSystemItem(this.name, false);
                 item.name = name;
+                item.type = FileSystemItemType.File;
                 result.add(item);
             }
             return result;

@@ -1,6 +1,5 @@
 package kvj.tegmine.android.data;
 
-import android.Manifest;
 import android.app.Activity;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
@@ -9,7 +8,6 @@ import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.net.Uri;
 import android.os.Environment;
-import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
@@ -507,7 +505,6 @@ public class TegmineController extends Controller {
         assetProvider.label("Assets");
         fileSystemProviders.put("assets", assetProvider);
 
-        defaultProvider = fileSystemProviders.get("sdcard");
         colorSchemes.put("default", new LightTheme(this));
         selectedTheme = "default";
     }

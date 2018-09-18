@@ -10,7 +10,7 @@ import kvj.tegmine.android.data.def.FileSystemItemType;
  */
 public class AssetFileSystemItem extends FileSystemItem<AssetFileSystemItem> {
 
-    private final boolean root;
+    final boolean root;
 
     protected AssetFileSystemItem(String provider, boolean root) {
         super(provider);

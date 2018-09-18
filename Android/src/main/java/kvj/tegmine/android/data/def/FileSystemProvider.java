@@ -66,7 +66,7 @@ abstract public class FileSystemProvider<T extends FileSystemItem> {
     }
 
     protected void removeT(T item) throws FileSystemException {
-        throw new FileSystemException("Not implemented");
+        throw new FileSystemException("Operation not supported");
     }
 
     public final void create(FileSystemItemType type, FileSystemItem folder, String name) throws FileSystemException {
@@ -74,7 +74,7 @@ abstract public class FileSystemProvider<T extends FileSystemItem> {
     }
 
     protected void createT(FileSystemItemType type, T folder, String name) throws FileSystemException {
-        throw new FileSystemException("Not implemented");
+        throw new FileSystemException("Operation not supported");
     }
 
     public final OutputStream replace(FileSystemItem file) throws FileSystemException {
@@ -82,7 +82,7 @@ abstract public class FileSystemProvider<T extends FileSystemItem> {
     }
 
     protected OutputStream replaceT(T file) throws FileSystemException {
-        throw new FileSystemException("Not implemented");
+        throw new FileSystemException("Operation not supported");
     }
 
     public final OutputStream append(FileSystemItem file) throws FileSystemException {
@@ -90,7 +90,7 @@ abstract public class FileSystemProvider<T extends FileSystemItem> {
     }
 
     protected OutputStream appendT(T file) throws FileSystemException {
-        throw new FileSystemException("Not implemented");
+        throw new FileSystemException("Operation not supported");
     }
 
     protected T cast(FileSystemItem item) {
@@ -128,7 +128,7 @@ abstract public class FileSystemProvider<T extends FileSystemItem> {
     }
 
     protected void renameT(T item, String name) throws FileSystemException {
-        throw new FileSystemException("Not implemented");
+        throw new FileSystemException("Operation not supported");
     }
 
     public final String version(FileSystemItem file) {

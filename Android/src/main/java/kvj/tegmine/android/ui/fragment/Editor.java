@@ -518,7 +518,7 @@ public class Editor extends Fragment implements ProgressListener {
                     } else {
                         stream = provider.append(item);
                     }
-                    controller.writeEdited(provider, stream, contents.toString().trim(), doEdit);
+                    controller.writeEdited(provider, stream, contents.toString(), doEdit);
                 } catch (FileSystemException e) {
                     return e;
                 }

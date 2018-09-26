@@ -81,6 +81,8 @@ public class TegmineController extends Controller {
 
     private boolean newLineBefore = true;
     private boolean newLineAfter = false;
+    private boolean autoSign = false;
+    private boolean autoSpellcheck = false;
     private String selectedTheme = "default";
     private boolean scrollToBottom = true;
     private String clientName = "Undefined";
@@ -258,10 +260,12 @@ public class TegmineController extends Controller {
                 linesRead++;
             }
             stream.close();
+            logger.d("Syntax:", syntax != null? syntax.hasFolding(): "No syntax");
             if (syntax != null && syntax.hasFolding()) { // Apply folding patterns
-                for (int i = 0; i < buffer.size(); i++) { // Check every line except last
+                for (int i = 0; i < buffer.size()-1; i++) { // Check every line except last
                     LineMeta ll = buffer.get(i);
                     if (syntax.folded(ll)) { // Folded
+                        logger.d("Folding line:", ll);
                         ll.folded(true); // Hide any children lines
                         while (i+1 < buffer.size()) { // Have children
                             LineMeta sl = buffer.get(i+1);
@@ -511,8 +515,24 @@ public class TegmineController extends Controller {
                 }
                 continue;
             }
-            // Value mode
-            to.put(lineStr.substring(0, spacePos).trim(), lineStr.substring(spacePos).trim());
+            String key = lineStr.substring(0, spacePos).trim();
+            String value = lineStr.substring(spacePos).trim();
+            if (key.equals("include")) {
+                // Include file here
+                FileSystemItem fileItem = fromURL(value);
+                if (null == fileItem) {
+                    logger.w("Failed to load include:", value);
+                    continue;
+                }
+                try {
+                    file2Object(fileItem, to);
+                } catch (FileSystemException e) {
+                    logger.e(e, "Failed to read include:", value, fileItem);
+                }
+            } else {
+                // Value mode
+                to.put(key, value);
+            }
         }
         return i;
     }
@@ -606,25 +626,6 @@ public class TegmineController extends Controller {
         return null;
     }
 
-    private void loadIncludes(Map<String, Object> config) {
-        List<String> list = objectList(config, String.class, "include");
-        if (null == list) { // Not found
-            return;
-        }
-        for (String url : list) { // Parse and extend config
-            FileSystemItem fileItem = fromURL(url);
-            if (null == fileItem) {
-                logger.w("Failed to load color scheme:", url);
-                continue;
-            }
-            try {
-                file2Object(fileItem, config);
-            } catch (FileSystemException e) {
-                logger.e(e, "Failed to read include:", url, fileItem);
-            }
-        }
-    }
-
     private void reloadColorSchemes() {
         Map<String, Object> colorsConfig = objectObject(config, "colorschemes");
         if (null != colorsConfig) {
@@ -694,7 +695,8 @@ public class TegmineController extends Controller {
             newLineBefore = objectBoolean(config, "newLineBefore", false);
             newLineAfter = objectBoolean(config, "newLineAfter", true);
             scrollToBottom = objectBoolean(config, "scrollToBottom", true);
-            loadIncludes(config);
+            autoSign = objectBoolean(config, "autoAddSign", false);
+            autoSpellcheck = objectBoolean(config, "autoSpellcheck", true);
             reloadStorage(config);
 
             watchSeconds = objectInteger(config, "watchSeconds", watchSeconds);
@@ -989,6 +991,8 @@ public class TegmineController extends Controller {
     private Pattern signPattern = Pattern.compile("^\\s*(\\S)\\s\\S.*$");
 
     public String signInLine(String line) {
+        if (!autoSign)
+            return null; // Not enabled
         Matcher m = signPattern.matcher(line);
         if (m.find()) {
             return m.group(1);
@@ -1061,4 +1065,7 @@ public class TegmineController extends Controller {
         return result;
     }
 
+    public boolean isAutoSpellcheck() {
+        return autoSpellcheck;
+    }
 }

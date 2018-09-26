@@ -62,7 +62,7 @@ public class SyntaxDef {
         }
 
         public void add(int start, int finish, PatternDef pattern) {
-            blocks.add(new SyntaxBlock(new Wrappers.Pair<Integer>(start, finish), pattern));
+            blocks.add(new SyntaxBlock(new Wrappers.Pair<>(start, finish), pattern));
         }
 
         public Iterable<SyntaxBlock> allInside(final int position) {
@@ -162,7 +162,7 @@ public class SyntaxDef {
                             text = m.group(syntaxBlock.pattern.featureGroup);
                         }
                     }
-                    result.add(new Wrappers.Pair<String>(feature, text));
+                    result.add(new Wrappers.Pair<>(feature, text));
                 }
             }
             return result;
